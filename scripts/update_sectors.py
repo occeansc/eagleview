@@ -1,39 +1,17 @@
 #!/usr/bin/env python3
 """
-Eagleview — Data Updater
-=========================
-Fetches ETF performance + top-10 holdings from Yahoo Finance,
-and benchmark index returns (S&P 500, Nasdaq, Dow),
-then upserts everything into Supabase.
-
-Usage:
-  python scripts/update_sectors.py
-
-Env vars required:
-  SUPABASE_URL          (project URL)
-  SUPABASE_SERVICE_KEY  (service_role key — NOT anon)
-
-Schedule: Mon / Wed / Fri at 22:00 UTC via GitHub Actions.
+Eagleview — Data Updater (requests-based, no supabase-py)
 """
 
-import os
-import sys
-import logging
+import os, sys, logging, json
 from datetime import datetime
-
+import requests
 import pandas as pd
 import yfinance as yf
-from supabase import create_client, Client
 
-# ── Logging ───────────────────────────────────────────────────────────────────
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s  %(levelname)-7s  %(message)s",
-    datefmt="%H:%M:%S",
-)
+logging.basicConfig(level=logging.INFO, format="%(asctime)s  %(levelname)-7s  %(message)s", datefmt="%H:%M:%S")
 log = logging.getLogger(__name__)
 
-# ── Sector → ETF mapping ──────────────────────────────────────────────────────
 SECTORS = [
     {"name": "Semiconductors",        "etf_ticker": "SMH"},
     {"name": "Energy & Utilities",    "etf_ticker": "XLE"},
@@ -57,38 +35,63 @@ SECTORS = [
     {"name": "Software & Cloud",      "etf_ticker": "IGV"},
 ]
 
-# ── Benchmark indices (actual index symbols for canonical numbers) ─────────────
 BENCHMARKS = [
     {"name": "S&P 500", "ticker": "^GSPC"},
     {"name": "Nasdaq",  "ticker": "^IXIC"},
     {"name": "Dow",     "ticker": "^DJI"},
 ]
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-
-def pct_return(hist: pd.DataFrame, trading_days: int) -> float | None:
-    if hist is None or len(hist) < trading_days + 1:
+def pct_return(hist, days):
+    if hist is None or len(hist) < days + 1:
         return None
     now  = float(hist["Close"].iloc[-1])
-    past = float(hist["Close"].iloc[-(trading_days + 1)])
+    past = float(hist["Close"].iloc[-(days + 1)])
     return round((now - past) / past * 100, 2)
 
-
-def ytd_return(hist: pd.DataFrame) -> float | None:
+def ytd_return(hist):
     if hist is None or hist.empty:
         return None
     year = datetime.now().year
     ytd  = hist[hist.index.year == year]
     if ytd.empty:
         return None
-    now   = float(hist["Close"].iloc[-1])
-    start = float(ytd["Close"].iloc[0])
-    return round((now - start) / start * 100, 2)
+    return round((float(hist["Close"].iloc[-1]) - float(ytd["Close"].iloc[0])) / float(ytd["Close"].iloc[0]) * 100, 2)
 
+class SupabaseClient:
+    def __init__(self, url, key):
+        self.base = url.rstrip("/") + "/rest/v1"
+        self.headers = {
+            "apikey": key,
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+        }
 
-def fetch_holdings(tk: yf.Ticker, symbol: str) -> list[dict]:
+    def upsert(self, table, data, on_conflict):
+        r = requests.post(
+            f"{self.base}/{table}?on_conflict={on_conflict}",
+            headers={**self.headers, "Prefer": "resolution=merge-duplicates,return=representation"},
+            json=data,
+        )
+        r.raise_for_status()
+        return r.json()
+
+    def delete(self, table, column, value):
+        r = requests.delete(
+            f"{self.base}/{table}?{column}=eq.{value}",
+            headers=self.headers,
+        )
+        r.raise_for_status()
+
+    def insert(self, table, data):
+        r = requests.post(
+            f"{self.base}/{table}",
+            headers=self.headers,
+            json=data,
+        )
+        r.raise_for_status()
+
+def fetch_holdings(tk, symbol):
     holdings = []
-
     try:
         top = tk.funds_data.top_holdings
         if top is not None and not top.empty:
@@ -102,11 +105,9 @@ def fetch_holdings(tk: yf.Ticker, symbol: str) -> list[dict]:
                 if rank >= 10:
                     break
             if holdings:
-                log.info(f"  [{symbol}] {len(holdings)} holdings via funds_data")
                 return holdings
     except Exception as e:
-        log.debug(f"  [{symbol}] funds_data unavailable: {e}")
-
+        log.debug(f"  [{symbol}] funds_data: {e}")
     try:
         info = tk.info
         for rank, h in enumerate(info.get("holdings", [])[:10], 1):
@@ -116,165 +117,80 @@ def fetch_holdings(tk: yf.Ticker, symbol: str) -> list[dict]:
                 "holding_name":   h.get("holdingName", ""),
                 "weight_pct":     round(float(h.get("holdingPercent", 0)) * 100, 3),
             })
-        if holdings:
-            log.info(f"  [{symbol}] {len(holdings)} holdings via info dict")
     except Exception as e:
-        log.warning(f"  [{symbol}] Holdings fallback also failed: {e}")
-
+        log.warning(f"  [{symbol}] holdings fallback: {e}")
     return holdings
 
-
-def fetch_stock_count(tk: yf.Ticker) -> int | None:
-    try:
-        info = tk.info
-        return info.get("totalHoldings") or info.get("numberOfHoldings") or None
-    except Exception:
-        return None
-
-
-# ── Sector update ─────────────────────────────────────────────────────────────
-
-def process_sector(sector: dict, supabase: Client) -> bool:
-    symbol = sector["etf_ticker"]
-    name   = sector["name"]
+def process_sector(sector, db):
+    symbol, name = sector["etf_ticker"], sector["name"]
     log.info(f"Sector: {name} ({symbol})")
-
     try:
         tk   = yf.Ticker(symbol)
         hist = tk.history(period="1y")
-
         if hist.empty:
-            log.error(f"  [{symbol}] Empty history — skipping")
-            return False
+            log.error(f"  [{symbol}] Empty history"); return False
 
-        week_pct    = pct_return(hist, 5)
-        month_pct   = pct_return(hist, 21)
-        quarter_pct = pct_return(hist, 63)
-        ytd_pct     = ytd_return(hist)
-        stock_count = fetch_stock_count(tk)
+        stock_count = None
+        try:
+            info = tk.info
+            stock_count = info.get("totalHoldings") or info.get("numberOfHoldings")
+        except: pass
 
-        log.info(f"  1W={week_pct}% 1M={month_pct}% 3M={quarter_pct}% YTD={ytd_pct}% n={stock_count}")
+        rows = db.upsert("sectors", {
+            "name": name, "etf_ticker": symbol,
+            "week_pct": pct_return(hist, 5), "month_pct": pct_return(hist, 21),
+            "quarter_pct": pct_return(hist, 63), "ytd_pct": ytd_return(hist),
+            "stock_count": stock_count,
+            "updated_at": datetime.utcnow().isoformat(),
+        }, on_conflict="etf_ticker")
 
-        result = (
-            supabase.table("sectors")
-            .upsert(
-                {
-                    "name":        name,
-                    "etf_ticker":  symbol,
-                    "week_pct":    week_pct,
-                    "month_pct":   month_pct,
-                    "quarter_pct": quarter_pct,
-                    "ytd_pct":     ytd_pct,
-                    "stock_count": stock_count,
-                    "updated_at":  datetime.utcnow().isoformat(),
-                },
-                on_conflict="etf_ticker",
-            )
-            .execute()
-        )
-        sector_id = result.data[0]["id"]
-
-        holdings = fetch_holdings(tk, symbol)
+        sector_id = rows[0]["id"]
+        holdings  = fetch_holdings(tk, symbol)
         if holdings:
-            supabase.table("sector_holdings").delete().eq("sector_id", sector_id).execute()
+            db.delete("sector_holdings", "sector_id", sector_id)
             for h in holdings:
                 h["sector_id"] = sector_id
-            supabase.table("sector_holdings").insert(holdings).execute()
-            log.info(f"  ✓ {len(holdings)} holdings saved")
-        else:
-            log.warning(f"  No holdings found")
-
+            db.insert("sector_holdings", holdings)
+            log.info(f"  ✓ {len(holdings)} holdings")
         return True
+    except Exception as e:
+        log.error(f"  [{symbol}] ✗ {e}"); return False
 
-    except Exception as exc:
-        log.error(f"  [{symbol}] ✗ Failed: {exc}")
-        return False
-
-
-# ── Benchmark update ─────────────────────────────────────────────────────────
-
-def process_benchmark(bm: dict, supabase: Client) -> bool:
-    ticker = bm["ticker"]
-    name   = bm["name"]
+def process_benchmark(bm, db):
+    ticker, name = bm["ticker"], bm["name"]
     log.info(f"Benchmark: {name} ({ticker})")
-
     try:
         hist = yf.Ticker(ticker).history(period="1y")
-
         if hist.empty:
-            log.error(f"  [{ticker}] Empty history — skipping")
-            return False
+            log.error(f"  [{ticker}] Empty history"); return False
+        db.upsert("benchmarks", {
+            "name": name, "ticker": ticker,
+            "week_pct": pct_return(hist, 5), "month_pct": pct_return(hist, 21),
+            "quarter_pct": pct_return(hist, 63), "ytd_pct": ytd_return(hist),
+            "updated_at": datetime.utcnow().isoformat(),
+        }, on_conflict="ticker")
+        log.info(f"  ✓ Saved"); return True
+    except Exception as e:
+        log.error(f"  [{ticker}] ✗ {e}"); return False
 
-        week_pct    = pct_return(hist, 5)
-        month_pct   = pct_return(hist, 21)
-        quarter_pct = pct_return(hist, 63)
-        ytd_pct     = ytd_return(hist)
+def main():
+    log.info("══ Eagleview Data Sync ══")
+    url = os.environ.get("SUPABASE_URL")
+    key = os.environ.get("SUPABASE_SERVICE_KEY")
+    if not url or not key:
+        log.error("SUPABASE_URL and SUPABASE_SERVICE_KEY must be set"); sys.exit(1)
 
-        log.info(f"  1W={week_pct}% 1M={month_pct}% 3M={quarter_pct}% YTD={ytd_pct}%")
+    db = SupabaseClient(url, key)
 
-        supabase.table("benchmarks").upsert(
-            {
-                "name":        name,
-                "ticker":      ticker,
-                "week_pct":    week_pct,
-                "month_pct":   month_pct,
-                "quarter_pct": quarter_pct,
-                "ytd_pct":     ytd_pct,
-                "updated_at":  datetime.utcnow().isoformat(),
-            },
-            on_conflict="ticker",
-        ).execute()
+    log.info("── Benchmarks ──")
+    bm_ok = sum(process_benchmark(b, db) for b in BENCHMARKS)
 
-        log.info(f"  ✓ Saved")
-        return True
+    log.info("── Sectors ──")
+    ok = sum(process_sector(s, db) for s in SECTORS)
 
-    except Exception as exc:
-        log.error(f"  [{ticker}] ✗ Failed: {exc}")
-        return False
-
-
-# ── Main ──────────────────────────────────────────────────────────────────────
-
-def main() -> None:
-    log.info("══════════════════════════════════════════")
-    log.info("  Eagleview — Data Sync Start")
-    log.info("══════════════════════════════════════════")
-
-    supabase_url = os.environ.get("SUPABASE_URL")
-    supabase_key = os.environ.get("SUPABASE_SERVICE_KEY")
-
-    if not supabase_url or not supabase_key:
-        log.error("SUPABASE_URL and SUPABASE_SERVICE_KEY must be set")
+    log.info(f"Benchmarks: {bm_ok}/{len(BENCHMARKS)}  Sectors: {ok}/{len(SECTORS)}")
+    if bm_ok + ok < len(BENCHMARKS) + len(SECTORS):
         sys.exit(1)
-
-    supabase = create_client(supabase_url, supabase_key)
-
-    # ── Benchmarks first (fast, no holdings) ─────────────────────────────
-    log.info("── Benchmarks ────────────────────────────")
-    bm_ok, bm_failed = 0, []
-    for bm in BENCHMARKS:
-        if process_benchmark(bm, supabase):
-            bm_ok += 1
-        else:
-            bm_failed.append(bm["ticker"])
-
-    # ── Sectors ──────────────────────────────────────────────────────────
-    log.info("── Sectors ───────────────────────────────")
-    ok, failed = 0, []
-    for sector in SECTORS:
-        if process_sector(sector, supabase):
-            ok += 1
-        else:
-            failed.append(sector["etf_ticker"])
-
-    log.info("══════════════════════════════════════════")
-    log.info(f"  Benchmarks: {bm_ok}/{len(BENCHMARKS)}")
-    log.info(f"  Sectors:    {ok}/{len(SECTORS)}")
-    if failed or bm_failed:
-        log.warning(f"  Failed: {bm_failed + failed}")
-        sys.exit(1)
-    log.info("══════════════════════════════════════════")
-
 
 if __name__ == "__main__":
     main()
