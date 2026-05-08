@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── Card state colours ───────────────────────────────────── */
+:root {
+  --pos-bg:     #f0fdf4;
+  --pos-text:   #15803d;
+  --pos-border: #86efac;
+  --neg-bg:     #fff1f2;
+  --neg-text:   #be123c;
+  --neg-border: #fda4af;
+}
+
+/* ── Stagger fade-in ──────────────────────────────────────── */
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+.card-appear {
+  animation: fadeSlide 0.35s ease forwards;
+  opacity: 0;
+}
+
+/* ── Card hover lift ──────────────────────────────────────── */
+.sector-card {
+  transition: transform 0.18s ease, box-shadow 0.18s ease;
+}
+.sector-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 24px -4px rgba(0,0,0,0.10);
+}
+
+/* ── HOT badge pulse ──────────────────────────────────────── */
+@keyframes hotPulse {
+  0%, 100% { opacity: 1;   }
+  50%       { opacity: 0.7; }
+}
+.hot-badge { animation: hotPulse 2s ease-in-out infinite; }
+
+/* ── Modal slide-in ───────────────────────────────────────── */
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);   }
+}
+.modal-panel { animation: modalIn 0.2s ease forwards; }
+
+/* ── Weight bar fill ──────────────────────────────────────── */
+@keyframes barFill {
+  from { width: 0; }
+}
+.weight-bar { animation: barFill 0.5s ease forwards; }
