@@ -1,7 +1,6 @@
 export interface Sector {
   id: number
   name: string
-  etf_ticker: string
   week_pct: number | null
   month_pct: number | null
   quarter_pct: number | null
@@ -10,13 +9,15 @@ export interface Sector {
   updated_at: string
 }
 
-export interface Holding {
+export interface SectorHolding {
   id: number
   sector_id: number
-  holding_rank: number
-  holding_name: string
-  holding_ticker: string | null
-  weight_pct: number | null
+  ticker: string
+  company_name: string
+  week_pct: number | null
+  month_pct: number | null
+  quarter_pct: number | null
+  ytd_pct: number | null
 }
 
 export interface Benchmark {
@@ -39,20 +40,11 @@ export const PERIOD_LABELS: Record<Period, string> = {
   'YTD': 'Year to Date',
 }
 
-export function getPeriodValue(sector: Sector, period: Period): number | null {
+export function getPeriodValue(s: Sector | SectorHolding | Benchmark, period: Period): number | null {
   switch (period) {
-    case '1W':  return sector.week_pct
-    case '1M':  return sector.month_pct
-    case '3M':  return sector.quarter_pct
-    case 'YTD': return sector.ytd_pct
-  }
-}
-
-export function getBenchmarkValue(b: Benchmark, period: Period): number | null {
-  switch (period) {
-    case '1W':  return b.week_pct
-    case '1M':  return b.month_pct
-    case '3M':  return b.quarter_pct
-    case 'YTD': return b.ytd_pct
+    case '1W':  return s.week_pct
+    case '1M':  return s.month_pct
+    case '3M':  return s.quarter_pct
+    case 'YTD': return s.ytd_pct
   }
 }

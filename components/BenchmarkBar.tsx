@@ -1,6 +1,6 @@
 'use client'
 
-import { Benchmark, Period, getBenchmarkValue } from '@/lib/types'
+import { Benchmark, Period, getPeriodValue } from '@/lib/types'
 
 interface Props {
   benchmarks: Benchmark[]
@@ -23,7 +23,7 @@ export default function BenchmarkBar({ benchmarks, period }: Props) {
       </p>
       <div className="flex flex-wrap gap-2">
         {benchmarks.map((b) => {
-          const val = getBenchmarkValue(b, period)
+          const val = getPeriodValue(b, period)
           const pos = val !== null && val >= 0
 
           return (

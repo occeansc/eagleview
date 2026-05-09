@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { Holding, Sector, Benchmark, Period, getPeriodValue, getBenchmarkValue } from '@/lib/types'
+import { SectorHolding, Sector, Benchmark, Period, getPeriodValue } from '@/lib/types'
 import { getSupabaseClient } from '@/lib/supabase'
 
 interface Props {
@@ -12,7 +12,7 @@ interface Props {
 }
 
 export default function HoldingsModal({ sector, period, benchmarks, onClose }: Props) {
-  const [holdings, setHoldings] = useState<Holding[]>([])
+  const [holdings, setHoldings] = useState<SectorHolding[]>([])
   const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
@@ -21,8 +21,6 @@ export default function HoldingsModal({ sector, period, benchmarks, onClose }: P
       .from('sector_holdings')
       .select('*')
       .eq('sector_id', sector.id)
-      .order('holding_rank', { ascending: true })
-      .limit(10)
       .then(({ data }) => {
         setHoldings(data ?? [])
         setLoading(false)
@@ -30,9 +28,9 @@ export default function HoldingsModal({ sector, period, benchmarks, onClose }: P
   }, [sector.id])
 
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
+    const h = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', h)
+    return () => window.removeEventListener('keydown', h)
   }, [onClose])
 
   useEffect(() => {
@@ -41,15 +39,22 @@ export default function HoldingsModal({ sector, period, benchmarks, onClose }: P
   }, [])
 
   const sectorVal = getPeriodValue(sector, period)
-  const positive  = sectorVal !== null && sectorVal >= 0
-  const pctClass  = positive ? 'text-emerald-600' : 'text-rose-600'
-  const barClass  = positive ? 'bg-emerald-400'   : 'bg-rose-400'
-  const maxW      = holdings.length ? Math.max(...holdings.map(h => h.weight_pct ?? 0), 1) : 1
+  const pos       = sectorVal !== null && sectorVal >= 0
+  const pctClass  = pos ? 'text-emerald-600' : 'text-rose-600'
+
+  // Sort holdings by selected period return, best first
+  const sorted = [...holdings].sort((a, b) => {
+    const av = getPeriodValue(a, period) ?? -Infinity
+    const bv = getPeriodValue(b, period) ?? -Infinity
+    return bv - av
+  })
+
+  const positiveCount = sorted.filter(h => (getPeriodValue(h, period) ?? 0) >= 0).length
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className="modal-panel bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
 
@@ -57,16 +62,15 @@ export default function HoldingsModal({ sector, period, benchmarks, onClose }: P
         <div className="px-6 pt-6 pb-4 border-b border-slate-100">
           <div className="flex items-start justify-between">
             <div>
-              <span className="text-xs font-mono font-medium text-slate-400">{sector.etf_ticker}</span>
-              <h2 className="text-xl font-bold text-slate-900 mt-0.5">{sector.name}</h2>
+              <h2 className="text-xl font-bold text-slate-900">{sector.name}</h2>
+              <p className="text-xs text-slate-400 mt-0.5">
+                {sector.stock_count ?? holdings.length} stocks · equal-weighted
+              </p>
             </div>
             <button
               onClick={onClose}
-              className="text-slate-400 hover:text-slate-700 text-3xl leading-none -mt-1 -mr-1 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors"
-              aria-label="Close"
-            >
-              ×
-            </button>
+              className="text-slate-400 hover:text-slate-700 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-slate-100 transition-colors text-2xl -mt-1 -mr-1"
+            >×</button>
           </div>
 
           <div className="flex items-baseline gap-2 mt-3">
@@ -74,8 +78,12 @@ export default function HoldingsModal({ sector, period, benchmarks, onClose }: P
               {sectorVal !== null ? `${sectorVal > 0 ? '+' : ''}${sectorVal.toFixed(2)}%` : '—'}
             </span>
             <span className="text-sm text-slate-400">{period}</span>
-            {sector.stock_count && (
-              <span className="ml-auto text-xs text-slate-400">{sector.stock_count} holdings</span>
+            {!loading && holdings.length > 0 && (
+              <span className="ml-auto text-xs font-medium">
+                <span className="text-emerald-600">{positiveCount}↑</span>
+                {' '}
+                <span className="text-rose-500">{holdings.length - positiveCount}↓</span>
+              </span>
             )}
           </div>
         </div>
@@ -85,54 +93,63 @@ export default function HoldingsModal({ sector, period, benchmarks, onClose }: P
 
           {/* ── vs Benchmarks ─────────────────── */}
           <div className="px-6 pt-5 pb-4 border-b border-slate-100">
-            <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-4">
+            <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-3">
               vs Market
             </p>
-
             <BenchmarkComparison
-              sectorName={sector.name}
               sectorVal={sectorVal}
+              sectorName={sector.name}
               benchmarks={benchmarks}
               period={period}
             />
           </div>
 
-          {/* ── Holdings ────────────────────────── */}
+          {/* ── Stock list ────────────────────── */}
           <div className="px-6 pt-5 pb-6">
             <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-4">
-              Top 10 Holdings
+              Stocks · ranked by {period}
             </p>
 
             {loading ? (
               <LoadingSkeleton />
-            ) : holdings.length === 0 ? (
-              <EmptyHoldings />
+            ) : sorted.length === 0 ? (
+              <EmptyStocks />
             ) : (
-              <div className="space-y-4">
-                {holdings.map((h, i) => (
-                  <div key={h.id} style={{ animationDelay: `${i * 40}ms` }}>
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <span className="text-xs text-slate-300 w-4 text-right shrink-0">{h.holding_rank}</span>
-                      <div className="flex-1 flex items-center justify-between min-w-0">
-                        <div className="min-w-0">
-                          <span className="text-sm font-medium text-slate-800 truncate block">{h.holding_name}</span>
-                          {h.holding_ticker && (
-                            <span className="text-[10px] font-mono text-slate-400">{h.holding_ticker}</span>
-                          )}
-                        </div>
-                        <span className="font-mono text-xs text-slate-600 ml-3 shrink-0">
-                          {h.weight_pct !== null ? `${h.weight_pct.toFixed(1)}%` : '—'}
-                        </span>
-                      </div>
+              <div className="space-y-1">
+                {sorted.map((h, i) => {
+                  const val = getPeriodValue(h, period)
+                  const isPos = val !== null && val >= 0
+                  return (
+                    <div
+                      key={h.id}
+                      className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-slate-50 transition-colors"
+                    >
+                      {/* Rank */}
+                      <span className="text-xs text-slate-300 w-5 text-right shrink-0">{i + 1}</span>
+
+                      {/* Ticker chip */}
+                      <span className={`font-mono text-xs font-semibold px-1.5 py-0.5 rounded shrink-0 ${
+                        isPos ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                      }`}>
+                        {h.ticker}
+                      </span>
+
+                      {/* Company name */}
+                      <span className="text-sm text-slate-600 flex-1 truncate min-w-0">
+                        {h.company_name}
+                      </span>
+
+                      {/* Return */}
+                      <span className={`font-mono text-sm font-semibold shrink-0 ${
+                        val === null ? 'text-slate-300'
+                          : isPos ? 'text-emerald-600'
+                          : 'text-rose-600'
+                      }`}>
+                        {val !== null ? `${isPos ? '+' : ''}${val.toFixed(1)}%` : '—'}
+                      </span>
                     </div>
-                    <div className="ml-6 h-1 bg-slate-100 rounded-full overflow-hidden">
-                      <div
-                        className={`weight-bar h-full rounded-full ${barClass}`}
-                        style={{ width: `${((h.weight_pct ?? 0) / maxW) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             )}
           </div>
@@ -140,144 +157,81 @@ export default function HoldingsModal({ sector, period, benchmarks, onClose }: P
 
         {/* ── Footer ──────────────────────────── */}
         <div className="px-6 py-3 border-t border-slate-100 flex items-center justify-between shrink-0">
-          <span className="text-xs text-slate-400">
-            Eagleview · Yahoo Finance · {sector.etf_ticker}
-          </span>
-          <a
-            href={`https://finance.yahoo.com/quote/${sector.etf_ticker}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-xs font-semibold text-emerald-600 hover:text-emerald-700 hover:underline transition-colors"
-          >
-            View ETF ↗
-          </a>
+          <span className="text-xs text-slate-400">Eagleview · Yahoo Finance · equal-weighted</span>
         </div>
       </div>
     </div>
   )
 }
 
-/* ── Benchmark vs Sector comparison ───────────────────────────────────── */
-
-interface BenchmarkComparisonProps {
-  sectorName: string
+/* ── Benchmark comparison ─────────────────────────────────────────────────── */
+function BenchmarkComparison({ sectorVal, sectorName, benchmarks, period }: {
   sectorVal: number | null
+  sectorName: string
   benchmarks: Benchmark[]
   period: Period
-}
+}) {
+  if (!benchmarks.length) return null
 
-function BenchmarkComparison({ sectorName, sectorVal, benchmarks, period }: BenchmarkComparisonProps) {
-  if (!benchmarks.length) {
-    return <p className="text-xs text-slate-400 italic">No benchmark data available.</p>
-  }
-
-  // All values for the bar scale: sector + all benchmarks
-  const allVals = [
-    sectorVal ?? 0,
-    ...benchmarks.map(b => getBenchmarkValue(b, period) ?? 0),
-  ]
+  const allVals = [sectorVal ?? 0, ...benchmarks.map(b => getPeriodValue(b, period) ?? 0)]
   const absMax  = Math.max(...allVals.map(Math.abs), 0.1)
-  const midX    = 50 // centre % for the axis line
+  const mid     = 50
 
-  const barWidth = (val: number) =>
-    `${Math.min((Math.abs(val) / absMax) * 45, 45)}%`
-
-  const Row = ({
-    label,
-    val,
-    isSector = false,
-    alpha,
-  }: {
-    label: string
-    val: number | null
-    isSector?: boolean
-    alpha?: number | null
+  const Row = ({ label, val, bold, alpha }: {
+    label: string; val: number | null; bold?: boolean; alpha?: number | null
   }) => {
-    const pos = val !== null && val >= 0
-    const displayVal = val !== null ? `${val > 0 ? '+' : ''}${val.toFixed(2)}%` : '—'
+    const isPos = val !== null && val >= 0
+    const w = `${Math.min((Math.abs(val ?? 0) / absMax) * 45, 45)}%`
 
     return (
-      <div className={`flex items-center gap-2 py-2 ${isSector ? 'font-semibold' : ''}`}>
-        {/* Label */}
-        <span className={`text-xs w-24 shrink-0 truncate ${isSector ? 'text-slate-700' : 'text-slate-500'}`}>
-          {label}
-        </span>
+      <div className={`flex items-center gap-2 py-1.5 ${bold ? 'font-semibold' : ''}`}>
+        <span className={`text-xs w-24 shrink-0 truncate ${bold ? 'text-slate-700' : 'text-slate-500'}`}>{label}</span>
 
-        {/* Diverging bar */}
-        <div className="flex-1 flex items-center h-5">
-          <div className="w-full relative h-5 flex items-center">
-            {/* Centre axis */}
-            <div className="absolute inset-y-0 left-1/2 w-px bg-slate-200" />
-
-            {/* Bar */}
-            {val !== null && (
-              <div
-                className={`absolute h-3 rounded-sm transition-all duration-500
-                  ${isSector
-                    ? pos ? 'bg-emerald-500' : 'bg-rose-500'
-                    : pos ? 'bg-emerald-200' : 'bg-rose-200'
-                  }`}
-                style={{
-                  width: barWidth(val),
-                  left:  pos ? midX + '%'   : undefined,
-                  right: pos ? undefined     : midX + '%',
-                }}
-              />
-            )}
-          </div>
+        <div className="flex-1 relative h-4 flex items-center">
+          <div className="absolute inset-y-0 left-1/2 w-px bg-slate-200" />
+          {val !== null && (
+            <div
+              className={`absolute h-2.5 rounded-sm ${bold
+                ? isPos ? 'bg-emerald-500' : 'bg-rose-500'
+                : isPos ? 'bg-emerald-200' : 'bg-rose-200'}`}
+              style={{ width: w, left: isPos ? `${mid}%` : undefined, right: isPos ? undefined : `${mid}%` }}
+            />
+          )}
         </div>
 
-        {/* Value */}
-        <span className={`font-mono text-xs w-14 text-right shrink-0
-          ${val === null ? 'text-slate-300'
-            : pos ? 'text-emerald-700' : 'text-rose-700'}`}
-        >
-          {displayVal}
+        <span className={`font-mono text-xs w-14 text-right shrink-0 ${
+          val === null ? 'text-slate-300' : isPos ? 'text-emerald-700' : 'text-rose-600'}`}>
+          {val !== null ? `${val > 0 ? '+' : ''}${val.toFixed(2)}%` : '—'}
         </span>
 
-        {/* Alpha badge (benchmarks only) */}
-        {alpha !== undefined && alpha !== null && (
-          <span className={`text-[10px] font-semibold w-14 text-right shrink-0
-            ${alpha >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}
-          >
-            {alpha >= 0 ? '+' : ''}{alpha.toFixed(1)}%
-          </span>
-        )}
-        {alpha === undefined && (
-          <span className="w-14" /> /* spacer to keep grid aligned */
-        )}
+        <span className={`text-[10px] font-semibold w-14 text-right shrink-0 ${
+          alpha == null ? 'text-transparent' : alpha >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+          {alpha != null ? `${alpha >= 0 ? '+' : ''}${alpha.toFixed(1)}%` : '·'}
+        </span>
       </div>
     )
   }
 
   return (
     <div>
-      {/* Column header */}
       <div className="flex items-center gap-2 mb-1">
-        <span className="text-[10px] text-slate-300 w-24 shrink-0" />
+        <span className="w-24 shrink-0" />
         <span className="flex-1" />
         <span className="text-[10px] text-slate-300 w-14 text-right">Return</span>
         <span className="text-[10px] text-slate-300 w-14 text-right">Alpha</span>
       </div>
 
-      {/* Sector row */}
-      <Row label={`▸ ${sectorName}`} val={sectorVal} isSector />
-
-      {/* Divider */}
+      <Row label={`▸ ${sectorName}`} val={sectorVal} bold />
       <div className="my-1 border-t border-slate-100" />
 
-      {/* Benchmark rows */}
-      {benchmarks.map((b) => {
-        const bVal  = getBenchmarkValue(b, period)
-        const alpha = sectorVal !== null && bVal !== null ? sectorVal - bVal : null
-        return (
-          <Row key={b.ticker} label={b.name} val={bVal} alpha={alpha} />
-        )
+      {benchmarks.map(b => {
+        const bVal  = getPeriodValue(b, period)
+        const alpha = sectorVal != null && bVal != null ? sectorVal - bVal : null
+        return <Row key={b.ticker} label={b.name} val={bVal} alpha={alpha} />
       })}
 
-      {/* Alpha legend */}
-      <p className="text-[10px] text-slate-300 mt-3 italic">
-        Alpha = sector return minus benchmark return for {period}
+      <p className="text-[10px] text-slate-300 mt-2 italic">
+        Alpha = sector minus benchmark for {period}
       </p>
     </div>
   )
@@ -285,26 +239,25 @@ function BenchmarkComparison({ sectorName, sectorVal, benchmarks, period }: Benc
 
 function LoadingSkeleton() {
   return (
-    <div className="space-y-4">
-      {Array.from({ length: 7 }).map((_, i) => (
-        <div key={i} className="animate-pulse">
-          <div className="flex justify-between mb-1.5">
-            <div className="h-3 bg-slate-100 rounded w-32" />
-            <div className="h-3 bg-slate-100 rounded w-10" />
-          </div>
-          <div className="h-1.5 bg-slate-100 rounded-full" />
+    <div className="space-y-2">
+      {Array.from({ length: 10 }).map((_, i) => (
+        <div key={i} className="animate-pulse flex items-center gap-3 py-2 px-3">
+          <div className="h-3 w-4 bg-slate-100 rounded" />
+          <div className="h-5 w-12 bg-slate-100 rounded" />
+          <div className="h-3 flex-1 bg-slate-100 rounded" />
+          <div className="h-3 w-12 bg-slate-100 rounded" />
         </div>
       ))}
     </div>
   )
 }
 
-function EmptyHoldings() {
+function EmptyStocks() {
   return (
-    <div className="text-center py-8">
+    <div className="text-center py-10">
       <p className="text-3xl mb-2">📡</p>
-      <p className="text-slate-500 font-medium text-sm">No holdings data yet</p>
-      <p className="text-slate-400 text-xs mt-1">Run the data sync to populate holdings.</p>
+      <p className="text-slate-500 font-medium text-sm">No stock data yet</p>
+      <p className="text-slate-400 text-xs mt-1">Run the data sync to populate stocks.</p>
     </div>
   )
 }
