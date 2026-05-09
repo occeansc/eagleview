@@ -1,7 +1,10 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { SectorHolding, Sector, Benchmark, Period, getPeriodValue } from '@/lib/types'
+import {
+  SectorHolding, Sector, Benchmark, Period,
+  getPeriodValue, getMomentumDelta, getBreadth,
+} from '@/lib/types'
 import { getSupabaseClient } from '@/lib/supabase'
 
 interface Props {
@@ -16,15 +19,11 @@ export default function HoldingsModal({ sector, period, benchmarks, onClose }: P
   const [loading, setLoading]   = useState(true)
 
   useEffect(() => {
-    const supabase = getSupabaseClient()
-    supabase
+    getSupabaseClient()
       .from('sector_holdings')
       .select('*')
       .eq('sector_id', sector.id)
-      .then(({ data }) => {
-        setHoldings(data ?? [])
-        setLoading(false)
-      })
+      .then(({ data }) => { setHoldings(data ?? []); setLoading(false) })
   }, [sector.id])
 
   useEffect(() => {
@@ -38,18 +37,20 @@ export default function HoldingsModal({ sector, period, benchmarks, onClose }: P
     return () => { document.body.style.overflow = '' }
   }, [])
 
-  const sectorVal = getPeriodValue(sector, period)
-  const pos       = sectorVal !== null && sectorVal >= 0
-  const pctClass  = pos ? 'text-emerald-600' : 'text-rose-600'
+  const sectorVal    = getPeriodValue(sector, period)
+  const momentumDelta = getMomentumDelta(sector, period)
+  const breadth      = getBreadth(sector, period)
+  const pos          = sectorVal !== null && sectorVal >= 0
+  const pctClass     = pos ? 'text-emerald-600' : 'text-rose-600'
+  const streak       = sector.streak ?? 0
 
-  // Sort holdings by selected period return, best first
   const sorted = [...holdings].sort((a, b) => {
     const av = getPeriodValue(a, period) ?? -Infinity
     const bv = getPeriodValue(b, period) ?? -Infinity
     return bv - av
   })
 
-  const positiveCount = sorted.filter(h => (getPeriodValue(h, period) ?? 0) >= 0).length
+  const posCount = sorted.filter(h => (getPeriodValue(h, period) ?? 0) >= 0).length
 
   return (
     <div
@@ -58,7 +59,7 @@ export default function HoldingsModal({ sector, period, benchmarks, onClose }: P
     >
       <div className="modal-panel bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] flex flex-col overflow-hidden">
 
-        {/* ── Header ─────────────────────────── */}
+        {/* ── Header ─────────────────────────────────── */}
         <div className="px-6 pt-6 pb-4 border-b border-slate-100">
           <div className="flex items-start justify-between">
             <div>
@@ -73,25 +74,51 @@ export default function HoldingsModal({ sector, period, benchmarks, onClose }: P
             >×</button>
           </div>
 
-          <div className="flex items-baseline gap-2 mt-3">
+          {/* Return + momentum delta */}
+          <div className="flex items-baseline gap-2 mt-3 flex-wrap">
             <span className={`font-mono text-2xl font-semibold ${pctClass}`}>
               {sectorVal !== null ? `${sectorVal > 0 ? '+' : ''}${sectorVal.toFixed(2)}%` : '—'}
             </span>
             <span className="text-sm text-slate-400">{period}</span>
+
+            {/* Momentum delta badge */}
+            {momentumDelta !== null && (
+              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ml-1 ${
+                momentumDelta > 0
+                  ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                  : momentumDelta < 0
+                  ? 'bg-rose-50 text-rose-600 border border-rose-200'
+                  : 'bg-slate-50 text-slate-500 border border-slate-200'
+              }`}>
+                {momentumDelta > 0 ? '↑' : momentumDelta < 0 ? '↓' : '='} momentum {momentumDelta > 0 ? '+' : ''}{momentumDelta.toFixed(1)}%
+              </span>
+            )}
+
+            {/* Streak */}
+            {streak >= 3 && (
+              <span className="text-xs text-orange-500 font-semibold ml-auto">
+                🔥 {streak} sync streak
+              </span>
+            )}
+
+            {/* Breadth */}
             {!loading && holdings.length > 0 && (
-              <span className="ml-auto text-xs font-medium">
-                <span className="text-emerald-600">{positiveCount}↑</span>
+              <span className="text-xs font-medium ml-auto">
+                <span className="text-emerald-600">{posCount}↑</span>
                 {' '}
-                <span className="text-rose-500">{holdings.length - positiveCount}↓</span>
+                <span className="text-rose-500">{holdings.length - posCount}↓</span>
+                {breadth !== null && (
+                  <span className="text-slate-400 ml-1">· {breadth}% breadth</span>
+                )}
               </span>
             )}
           </div>
         </div>
 
-        {/* ── Scrollable body ─────────────────── */}
+        {/* ── Scrollable body ─────────────────────────── */}
         <div className="overflow-y-auto flex-1">
 
-          {/* ── vs Benchmarks ─────────────────── */}
+          {/* ── vs Market ──────────────────────────────── */}
           <div className="px-6 pt-5 pb-4 border-b border-slate-100">
             <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-3">
               vs Market
@@ -104,67 +131,58 @@ export default function HoldingsModal({ sector, period, benchmarks, onClose }: P
             />
           </div>
 
-          {/* ── Stock list ────────────────────── */}
+          {/* ── Stocks ─────────────────────────────────── */}
           <div className="px-6 pt-5 pb-6">
             <p className="text-[10px] font-bold tracking-widest text-slate-400 uppercase mb-4">
               Stocks · ranked by {period}
             </p>
 
-            {loading ? (
-              <LoadingSkeleton />
-            ) : sorted.length === 0 ? (
-              <EmptyStocks />
-            ) : (
-              <div className="space-y-1">
-                {sorted.map((h, i) => {
-                  const val = getPeriodValue(h, period)
-                  const isPos = val !== null && val >= 0
-                  return (
-                    <div
-                      key={h.id}
-                      className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-slate-50 transition-colors"
-                    >
-                      {/* Rank */}
-                      <span className="text-xs text-slate-300 w-5 text-right shrink-0">{i + 1}</span>
-
-                      {/* Ticker chip */}
-                      <span className={`font-mono text-xs font-semibold px-1.5 py-0.5 rounded shrink-0 ${
-                        isPos ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
-                      }`}>
-                        {h.ticker}
-                      </span>
-
-                      {/* Company name */}
-                      <span className="text-sm text-slate-600 flex-1 truncate min-w-0">
-                        {h.company_name}
-                      </span>
-
-                      {/* Return */}
-                      <span className={`font-mono text-sm font-semibold shrink-0 ${
-                        val === null ? 'text-slate-300'
-                          : isPos ? 'text-emerald-600'
-                          : 'text-rose-600'
-                      }`}>
-                        {val !== null ? `${isPos ? '+' : ''}${val.toFixed(1)}%` : '—'}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
-            )}
+            {loading ? <LoadingSkeleton /> : sorted.length === 0
+              ? <EmptyStocks />
+              : (
+                <div className="space-y-0.5">
+                  {sorted.map((h, i) => {
+                    const val   = getPeriodValue(h, period)
+                    const isPos = val !== null && val >= 0
+                    return (
+                      <div
+                        key={h.id}
+                        className="flex items-center gap-3 py-2 px-3 rounded-lg hover:bg-slate-50 transition-colors"
+                      >
+                        <span className="text-xs text-slate-300 w-5 text-right shrink-0">{i + 1}</span>
+                        <span className={`font-mono text-xs font-semibold px-1.5 py-0.5 rounded shrink-0 ${
+                          isPos ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                        }`}>
+                          {h.ticker}
+                        </span>
+                        <span className="text-sm text-slate-600 flex-1 truncate min-w-0">
+                          {h.company_name}
+                        </span>
+                        <span className={`font-mono text-sm font-semibold shrink-0 ${
+                          val === null ? 'text-slate-300'
+                            : isPos ? 'text-emerald-600' : 'text-rose-600'
+                        }`}>
+                          {val !== null ? `${isPos ? '+' : ''}${val.toFixed(1)}%` : '—'}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              )
+            }
           </div>
         </div>
 
-        {/* ── Footer ──────────────────────────── */}
+        {/* ── Footer ──────────────────────────────────── */}
         <div className="px-6 py-3 border-t border-slate-100 flex items-center justify-between shrink-0">
-          <span className="text-xs text-slate-400">Eagleview · Yahoo Finance · equal-weighted</span>
+          <span className="text-xs text-slate-400">Eagleview v3.0 · Yahoo Finance · equal-weighted</span>
         </div>
       </div>
     </div>
   )
 }
 
-/* ── Benchmark comparison ─────────────────────────────────────────────────── */
+/* ── Benchmark comparison ──────────────────────────────────────────────────── */
 function BenchmarkComparison({ sectorVal, sectorName, benchmarks, period }: {
   sectorVal: number | null
   sectorName: string
@@ -182,11 +200,9 @@ function BenchmarkComparison({ sectorVal, sectorName, benchmarks, period }: {
   }) => {
     const isPos = val !== null && val >= 0
     const w = `${Math.min((Math.abs(val ?? 0) / absMax) * 45, 45)}%`
-
     return (
       <div className={`flex items-center gap-2 py-1.5 ${bold ? 'font-semibold' : ''}`}>
         <span className={`text-xs w-24 shrink-0 truncate ${bold ? 'text-slate-700' : 'text-slate-500'}`}>{label}</span>
-
         <div className="flex-1 relative h-4 flex items-center">
           <div className="absolute inset-y-0 left-1/2 w-px bg-slate-200" />
           {val !== null && (
@@ -198,12 +214,10 @@ function BenchmarkComparison({ sectorVal, sectorName, benchmarks, period }: {
             />
           )}
         </div>
-
         <span className={`font-mono text-xs w-14 text-right shrink-0 ${
           val === null ? 'text-slate-300' : isPos ? 'text-emerald-700' : 'text-rose-600'}`}>
           {val !== null ? `${val > 0 ? '+' : ''}${val.toFixed(2)}%` : '—'}
         </span>
-
         <span className={`text-[10px] font-semibold w-14 text-right shrink-0 ${
           alpha == null ? 'text-transparent' : alpha >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
           {alpha != null ? `${alpha >= 0 ? '+' : ''}${alpha.toFixed(1)}%` : '·'}
@@ -215,21 +229,17 @@ function BenchmarkComparison({ sectorVal, sectorName, benchmarks, period }: {
   return (
     <div>
       <div className="flex items-center gap-2 mb-1">
-        <span className="w-24 shrink-0" />
-        <span className="flex-1" />
+        <span className="w-24 shrink-0" /><span className="flex-1" />
         <span className="text-[10px] text-slate-300 w-14 text-right">Return</span>
         <span className="text-[10px] text-slate-300 w-14 text-right">Alpha</span>
       </div>
-
       <Row label={`▸ ${sectorName}`} val={sectorVal} bold />
       <div className="my-1 border-t border-slate-100" />
-
       {benchmarks.map(b => {
         const bVal  = getPeriodValue(b, period)
         const alpha = sectorVal != null && bVal != null ? sectorVal - bVal : null
         return <Row key={b.ticker} label={b.name} val={bVal} alpha={alpha} />
       })}
-
       <p className="text-[10px] text-slate-300 mt-2 italic">
         Alpha = sector minus benchmark for {period}
       </p>

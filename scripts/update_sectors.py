@@ -1,20 +1,14 @@
 #!/usr/bin/env python3
 """
-Eagleview v3b — Data Updater
-==============================
-Fixes:
-  - Sector aggregate returns now use explicit PATCH (not upsert) so
-    week_pct / month_pct / quarter_pct / ytd_pct are reliably written
-  - Added verify step: logs what was actually saved to DB
-  - Better per-step error logging
-
-Curation changes vs v3:
-  - Semiconductors: +AMKR, +WDC  (removed MCHP, ON — lower AI relevance)
-  - AI & Machine Learning: +TEM (Tempus AI) — removed ABSI
-  - Robotics & Automation: +SERV (Serve Robotics) — removed NNDM
-  - Biotech & Genomics: +TXG (10x Genomics), +PACB — removed RCUS, DNLI
-  - EV, Battery & Autonomy: -CHPT, -BLNK (charging oversaturated); +SLDP, +PCRFY
-  - Digital Assets: trimmed to 16 (removed ARBK, MIGI, PYPL, SQ — keep crypto-pure)
+Eagleview v3.0 — Data Updater
+================================
+New in v3.0:
+  Phase 1 — Read current DB state (for rank deltas + prev values)
+  Phase 2 — Batch download all tickers
+  Phase 3 — Compute sector returns + breadth (needs all stocks)
+  Phase 4 — Compute ranks across ALL sectors (needs everyone's return)
+  Phase 5 — Compute deltas, streaks vs old state
+  Phase 6 — Save snapshots of old state, then write new state
 
 Env vars:
   SUPABASE_URL          project URL — NO trailing /rest/v1
@@ -34,7 +28,7 @@ logging.basicConfig(
 )
 log = logging.getLogger(__name__)
 
-# ─────────────────────────────────────────────────────────────────────────────
+# ── Sector baskets ────────────────────────────────────────────────────────────
 SECTOR_STOCKS = [
     ("Semiconductors", [
         ("NVDA","NVIDIA"), ("AMD","Advanced Micro Devices"), ("AVGO","Broadcom"),
@@ -232,25 +226,36 @@ BENCHMARKS = [
     {"name": "S&P 500", "ticker": "^GSPC"},
     {"name": "Nasdaq",  "ticker": "^IXIC"},
     {"name": "Dow",     "ticker": "^DJI"},
+    {"name": "Intl Developed", "ticker": "EFA"},
 ]
 
 
-# ── Supabase client ───────────────────────────────────────────────────────────
+# ── Supabase HTTP client ──────────────────────────────────────────────────────
 class DB:
-    def __init__(self, url, key):
+    def __init__(self, url: str, key: str):
         self.base = url.rstrip("/") + "/rest/v1"
-        self.rh = {          # return=representation
+        self.key  = key
+        self.rh   = {   # return=representation
             "apikey": key, "Authorization": f"Bearer {key}",
             "Content-Type": "application/json",
             "Prefer": "resolution=merge-duplicates,return=representation",
         }
-        self.mh = {          # return=minimal (inserts, deletes)
+        self.mh   = {   # return=minimal
             "apikey": key, "Authorization": f"Bearer {key}",
             "Content-Type": "application/json",
             "Prefer": "return=minimal",
         }
 
-    def upsert(self, table, data, on_conflict):
+    def get(self, table: str, params: str = "") -> list:
+        r = requests.get(
+            f"{self.base}/{table}{'?' + params if params else ''}",
+            headers={"apikey": self.key, "Authorization": f"Bearer {self.key}"},
+            timeout=15,
+        )
+        r.raise_for_status()
+        return r.json()
+
+    def upsert(self, table: str, data: dict, on_conflict: str) -> list:
         r = requests.post(
             f"{self.base}/{table}?on_conflict={on_conflict}",
             headers=self.rh, json=data, timeout=30,
@@ -258,37 +263,34 @@ class DB:
         r.raise_for_status()
         result = r.json()
         if not result:
-            raise ValueError(f"Upsert to {table} returned empty — on_conflict={on_conflict}")
+            raise ValueError(f"Upsert {table} returned empty")
         return result
 
-    def patch(self, table, filters: dict, data: dict):
-        """Update rows matching filters."""
+    def patch(self, table: str, filters: dict, data: dict) -> list:
         qs = "&".join(f"{k}=eq.{v}" for k, v in filters.items())
-        r = requests.patch(
+        r  = requests.patch(
             f"{self.base}/{table}?{qs}",
             headers=self.rh, json=data, timeout=30,
         )
         r.raise_for_status()
         return r.json()
 
-    def delete_where(self, table, col, val):
-        r = requests.delete(
+    def delete_where(self, table: str, col: str, val) -> None:
+        requests.delete(
             f"{self.base}/{table}?{col}=eq.{val}",
             headers=self.mh, timeout=30,
-        )
-        r.raise_for_status()
+        ).raise_for_status()
 
-    def insert(self, table, rows):
+    def insert(self, table: str, rows: list) -> None:
         if not rows:
             return
-        r = requests.post(
+        requests.post(
             f"{self.base}/{table}",
             headers=self.mh, json=rows, timeout=30,
-        )
-        r.raise_for_status()
+        ).raise_for_status()
 
 
-# ── Return calculations ───────────────────────────────────────────────────────
+# ── Return helpers ────────────────────────────────────────────────────────────
 def calc_returns(series: pd.Series) -> dict:
     if series is None or series.empty:
         return {}
@@ -301,17 +303,14 @@ def calc_returns(series: pd.Series) -> dict:
         if len(series) <= days:
             return None
         past = float(series.iloc[-(days + 1)])
-        if not past:
-            return None
-        return round((current - past) / past * 100, 2)
+        return round((current - past) / past * 100, 2) if past else None
 
-    year = datetime.now().year
+    year  = datetime.now().year
     ytd_s = series[series.index.year == year]
-    ytd = None
+    ytd   = None
     if not ytd_s.empty:
         start = float(ytd_s.iloc[0])
-        if start:
-            ytd = round((current - start) / start * 100, 2)
+        ytd   = round((current - start) / start * 100, 2) if start else None
 
     result = {
         "week_pct":    pct(5),
@@ -319,20 +318,35 @@ def calc_returns(series: pd.Series) -> dict:
         "quarter_pct": pct(63),
         "ytd_pct":     ytd,
     }
-    # Only return dict if at least one period has data
-    if any(v is not None for v in result.values()):
-        return result
-    return {}
+    return result if any(v is not None for v in result.values()) else {}
 
 
-def safe_avg(values):
-    vals = [v for v in values if v is not None]
-    return round(sum(vals) / len(vals), 2) if vals else None
+def safe_avg(vals: list) -> float | None:
+    clean = [v for v in vals if v is not None]
+    return round(sum(clean) / len(clean), 2) if clean else None
+
+
+def breadth(rows: list, key: str) -> int | None:
+    total = len([r for r in rows if r.get(key) is not None])
+    if total == 0:
+        return None
+    pos = sum(1 for r in rows if (r.get(key) or 0) >= 0)
+    return round(pos / total * 100)
+
+
+def rank_by(sectors_map: dict, key: str) -> dict:
+    """Return {sector_id: rank} sorted by key descending. Null values rank last."""
+    ordered = sorted(
+        sectors_map.keys(),
+        key=lambda sid: sectors_map[sid].get(key) if sectors_map[sid].get(key) is not None else -9999,
+        reverse=True,
+    )
+    return {sid: i + 1 for i, sid in enumerate(ordered)}
 
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v3b Data Sync ══")
+    log.info("══ Eagleview v3.0 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -340,50 +354,235 @@ def main():
         log.error("Missing SUPABASE_URL or SUPABASE_SERVICE_KEY")
         sys.exit(1)
 
-    # Quick connectivity check
+    db = DB(url, key)
+
+    # ── Connectivity check ────────────────────────────────────────────────────
     try:
-        r = requests.get(f"{url}/rest/v1/sectors?limit=1",
-                         headers={"apikey": key, "Authorization": f"Bearer {key}"}, timeout=10)
-        r.raise_for_status()
-        log.info(f"DB connection OK — {r.status_code}")
+        db.get("sectors", "limit=1")
+        log.info("DB connection OK")
     except Exception as e:
         log.error(f"DB connection FAILED: {e}")
         sys.exit(1)
 
-    db = DB(url, key)
+    # ══════════════════════════════════════════════════════════════════════════
+    # PHASE 1 — Read current DB state (for rank deltas + previous values)
+    # ══════════════════════════════════════════════════════════════════════════
+    log.info("── Phase 1: Reading current DB state ──")
+    try:
+        old_rows = db.get(
+            "sectors",
+            "select=id,name,week_pct,month_pct,quarter_pct,ytd_pct,"
+            "week_rank,month_rank,quarter_rank,ytd_rank,streak",
+        )
+        old_state = {row["id"]: row for row in old_rows}
+        log.info(f"  Read {len(old_state)} existing sector rows")
+    except Exception as e:
+        log.warning(f"  Could not read old state (first run?): {e}")
+        old_state = {}
 
-    # ── Batch download ────────────────────────────────────────────────────────
+    # Pre-compute old ranks (needed for delta calculation later)
+    old_ytd_ranks     = rank_by(old_state, "ytd_pct")
+    old_week_ranks    = rank_by(old_state, "week_pct")
+    old_month_ranks   = rank_by(old_state, "month_pct")
+    old_quarter_ranks = rank_by(old_state, "quarter_pct")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # PHASE 2 — Batch download all tickers
+    # ══════════════════════════════════════════════════════════════════════════
+    log.info("── Phase 2: Downloading market data ──")
     all_tickers = list(
         {t for _, stocks in SECTOR_STOCKS for t, _ in stocks}
         | {b["ticker"] for b in BENCHMARKS}
     )
-    log.info(f"Downloading {len(all_tickers)} tickers in one batch …")
+    log.info(f"  {len(all_tickers)} unique tickers")
 
     try:
-        raw = yf.download(all_tickers, period="1y", progress=False, auto_adjust=True)
-        if isinstance(raw.columns, pd.MultiIndex):
-            closes = raw["Close"]
-        else:
-            # Single ticker fallback (shouldn't happen with multiple tickers)
-            closes = raw[["Close"]].rename(columns={"Close": all_tickers[0]})
-        log.info(f"Download returned {closes.shape[0]} rows × {closes.shape[1]} tickers")
+        raw    = yf.download(all_tickers, period="1y", progress=False, auto_adjust=True)
+        closes = (
+            raw["Close"]
+            if isinstance(raw.columns, pd.MultiIndex)
+            else raw[["Close"]].rename(columns={"Close": all_tickers[0]})
+        )
+        log.info(f"  Downloaded {closes.shape[0]} days × {closes.shape[1]} tickers")
     except Exception as e:
-        log.error(f"Batch download failed: {e}")
+        log.error(f"  Download failed: {e}")
         sys.exit(1)
 
-    ticker_returns: dict[str, dict] = {}
-    for ticker in all_tickers:
-        if ticker in closes.columns:
-            ticker_returns[ticker] = calc_returns(closes[ticker])
-        else:
-            ticker_returns[ticker] = {}
+    ticker_returns: dict[str, dict] = {
+        t: (calc_returns(closes[t]) if t in closes.columns else {})
+        for t in all_tickers
+    }
+    missing = [t for t, r in ticker_returns.items() if not r]
+    if missing:
+        log.warning(f"  No data for: {missing}")
 
-    with_data    = sum(1 for r in ticker_returns.values() if r)
-    without_data = len(all_tickers) - with_data
-    log.info(f"Returns calculated: {with_data} tickers have data, {without_data} missing")
-    if without_data:
-        missing = [t for t, r in ticker_returns.items() if not r]
-        log.warning(f"Missing tickers: {missing}")
+    # ══════════════════════════════════════════════════════════════════════════
+    # PHASE 3 — Ensure all sector rows exist + compute per-sector data
+    # ══════════════════════════════════════════════════════════════════════════
+    log.info("── Phase 3: Computing sector returns & breadth ──")
+
+    # Map: sector_name → computed data
+    sector_computed: dict[str, dict] = {}
+
+    for sector_name, stocks in SECTOR_STOCKS:
+        try:
+            # Ensure sector exists in DB, get id
+            rows      = db.upsert("sectors", {
+                "name":       sector_name,
+                "updated_at": datetime.utcnow().isoformat(),
+            }, "name")
+            sector_id = rows[0]["id"]
+
+            # Per-stock returns
+            stock_rows = []
+            for ticker, company in stocks:
+                ret = ticker_returns.get(ticker, {})
+                if ret:
+                    stock_rows.append({
+                        "sector_id":    sector_id,
+                        "ticker":       ticker,
+                        "company_name": company,
+                        **ret,
+                    })
+
+            # Equal-weighted sector averages
+            rets = {
+                "week_pct":    safe_avg([s.get("week_pct")    for s in stock_rows]),
+                "month_pct":   safe_avg([s.get("month_pct")   for s in stock_rows]),
+                "quarter_pct": safe_avg([s.get("quarter_pct") for s in stock_rows]),
+                "ytd_pct":     safe_avg([s.get("ytd_pct")     for s in stock_rows]),
+            }
+
+            # Breadth (% of stocks with positive return for each period)
+            sector_computed[sector_name] = {
+                "sector_id":   sector_id,
+                "stock_rows":  stock_rows,
+                "rets":        rets,
+                "stock_count": len(stock_rows),
+                "breadth_1w":  breadth(stock_rows, "week_pct"),
+                "breadth_1m":  breadth(stock_rows, "month_pct"),
+                "breadth_3m":  breadth(stock_rows, "quarter_pct"),
+                "breadth_ytd": breadth(stock_rows, "ytd_pct"),
+            }
+        except Exception as e:
+            log.error(f"  Phase 3 failed for {sector_name}: {e}")
+
+    log.info(f"  Computed {len(sector_computed)}/{len(SECTOR_STOCKS)} sectors")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # PHASE 4 — Compute ranks across ALL sectors simultaneously
+    # ══════════════════════════════════════════════════════════════════════════
+    log.info("── Phase 4: Computing cross-sector ranks ──")
+
+    # Build id→returns map for ranking
+    returns_by_id = {
+        sc["sector_id"]: sc["rets"]
+        for sc in sector_computed.values()
+    }
+    new_ytd_ranks     = rank_by(returns_by_id, "ytd_pct")
+    new_week_ranks    = rank_by(returns_by_id, "week_pct")
+    new_month_ranks   = rank_by(returns_by_id, "month_pct")
+    new_quarter_ranks = rank_by(returns_by_id, "quarter_pct")
+
+    # ══════════════════════════════════════════════════════════════════════════
+    # PHASE 5 & 6 — Compute deltas/streaks + write to DB
+    # ══════════════════════════════════════════════════════════════════════════
+    log.info("── Phase 5/6: Saving snapshots + writing new state ──")
+
+    sector_ok, sector_fail = 0, []
+
+    for sector_name, sc in sector_computed.items():
+        sector_id = sc["sector_id"]
+        rets      = sc["rets"]
+        old       = old_state.get(sector_id, {})
+
+        try:
+            # Save snapshot of OLD state (before overwriting) — skip on first run
+            if old.get("ytd_pct") is not None:
+                db.insert("sector_snapshots", [{
+                    "sector_id":    sector_id,
+                    "week_pct":     old.get("week_pct"),
+                    "month_pct":    old.get("month_pct"),
+                    "quarter_pct":  old.get("quarter_pct"),
+                    "ytd_pct":      old.get("ytd_pct"),
+                    "ytd_rank":     old.get("ytd_rank") or old_ytd_ranks.get(sector_id),
+                    "week_rank":    old.get("week_rank") or old_week_ranks.get(sector_id),
+                    "month_rank":   old.get("month_rank") or old_month_ranks.get(sector_id),
+                    "quarter_rank": old.get("quarter_rank") or old_quarter_ranks.get(sector_id),
+                    "streak":       old.get("streak", 0),
+                }])
+
+            # Rank deltas: positive = moved UP (improvement), negative = moved down
+            def rank_delta(old_ranks, new_ranks, sid):
+                old_r = old_ranks.get(sid)
+                new_r = new_ranks.get(sid, 0)
+                return (old_r - new_r) if old_r is not None else 0
+
+            # Streak: consecutive syncs where YTD is positive
+            ytd_positive = rets.get("ytd_pct") is not None and rets["ytd_pct"] >= 0
+            old_streak   = old.get("streak") or 0
+            new_streak   = (old_streak + 1) if ytd_positive else 0
+
+            # New ranks for this sector
+            new_ytd_rank     = new_ytd_ranks.get(sector_id)
+            new_week_rank    = new_week_ranks.get(sector_id)
+            new_month_rank   = new_month_ranks.get(sector_id)
+            new_quarter_rank = new_quarter_ranks.get(sector_id)
+
+            # Patch: write all new data in one call
+            patch_result = db.patch("sectors", {"id": sector_id}, {
+                # Returns
+                **rets,
+                "stock_count":    sc["stock_count"],
+                # Ranks
+                "ytd_rank":       new_ytd_rank,
+                "week_rank":      new_week_rank,
+                "month_rank":     new_month_rank,
+                "quarter_rank":   new_quarter_rank,
+                # Rank deltas
+                "ytd_rank_change":     rank_delta(old_ytd_ranks,     new_ytd_ranks,     sector_id),
+                "week_rank_change":    rank_delta(old_week_ranks,    new_week_ranks,    sector_id),
+                "month_rank_change":   rank_delta(old_month_ranks,   new_month_ranks,   sector_id),
+                "quarter_rank_change": rank_delta(old_quarter_ranks, new_quarter_ranks, sector_id),
+                # Streak
+                "streak": new_streak,
+                # Breadth
+                "breadth_1w":  sc["breadth_1w"],
+                "breadth_1m":  sc["breadth_1m"],
+                "breadth_3m":  sc["breadth_3m"],
+                "breadth_ytd": sc["breadth_ytd"],
+                # Previous values (for momentum delta in UI)
+                "prev_week_pct":    old.get("week_pct"),
+                "prev_month_pct":   old.get("month_pct"),
+                "prev_quarter_pct": old.get("quarter_pct"),
+                "prev_ytd_pct":     old.get("ytd_pct"),
+                "updated_at":       datetime.utcnow().isoformat(),
+            })
+
+            # Verify write
+            saved_ytd = patch_result[0].get("ytd_pct") if patch_result else None
+            ok_mark   = "✓" if saved_ytd is not None else "⚠ ytd_pct=NULL"
+
+            log.info(
+                f"  {sector_name[:28]:28s} | "
+                f"#{new_ytd_rank:2d} "
+                f"({'▲' if rank_delta(old_ytd_ranks, new_ytd_ranks, sector_id) > 0 else '▼' if rank_delta(old_ytd_ranks, new_ytd_ranks, sector_id) < 0 else '='}"
+                f"{abs(rank_delta(old_ytd_ranks, new_ytd_ranks, sector_id))}) | "
+                f"YTD={rets.get('ytd_pct')}% | "
+                f"breadth={sc['breadth_ytd']}% | "
+                f"streak={new_streak} | {ok_mark}"
+            )
+
+            # Refresh individual stock rows
+            db.delete_where("sector_holdings", "sector_id", sector_id)
+            if sc["stock_rows"]:
+                db.insert("sector_holdings", sc["stock_rows"])
+
+            sector_ok += 1
+
+        except Exception as e:
+            log.error(f"  ✗ {sector_name}: {e}")
+            sector_fail.append(sector_name)
 
     # ── Benchmarks ────────────────────────────────────────────────────────────
     log.info("── Benchmarks ──")
@@ -398,72 +597,9 @@ def main():
         except Exception as e:
             log.error(f"  ✗ {bm['name']}: {e}")
 
-    # ── Sectors ───────────────────────────────────────────────────────────────
-    log.info("── Sectors ──")
-    sector_ok, sector_fail = 0, []
-
-    for sector_name, stocks in SECTOR_STOCKS:
-        try:
-            # Step 1: ensure sector row exists, get id
-            rows = db.upsert("sectors", {
-                "name":       sector_name,
-                "updated_at": datetime.utcnow().isoformat(),
-            }, "name")
-            sector_id = rows[0]["id"]
-
-            # Step 2: build per-stock rows (only stocks with valid return data)
-            stock_rows = []
-            for ticker, company in stocks:
-                ret = ticker_returns.get(ticker, {})
-                if ret:  # skip tickers with no data
-                    stock_rows.append({
-                        "sector_id":    sector_id,
-                        "ticker":       ticker,
-                        "company_name": company,
-                        **ret,
-                    })
-
-            # Step 3: compute equal-weighted sector averages
-            sector_rets = {
-                "week_pct":    safe_avg([s.get("week_pct")    for s in stock_rows]),
-                "month_pct":   safe_avg([s.get("month_pct")   for s in stock_rows]),
-                "quarter_pct": safe_avg([s.get("quarter_pct") for s in stock_rows]),
-                "ytd_pct":     safe_avg([s.get("ytd_pct")     for s in stock_rows]),
-                "stock_count": len(stock_rows),
-            }
-
-            log.info(
-                f"  {sector_name}: {len(stock_rows)}/{len(stocks)} stocks | "
-                f"1W={sector_rets['week_pct']}%  "
-                f"1M={sector_rets['month_pct']}%  "
-                f"YTD={sector_rets['ytd_pct']}%"
-            )
-
-            # Step 4: PATCH sector row with computed returns (explicit update, not upsert)
-            # This avoids any conflict with the initial upsert and is guaranteed to write
-            patch_result = db.patch("sectors", {"id": sector_id}, {
-                **sector_rets,
-                "updated_at": datetime.utcnow().isoformat(),
-            })
-            if patch_result and patch_result[0].get("ytd_pct") is not None:
-                log.info(f"    DB verified: ytd_pct={patch_result[0]['ytd_pct']}%  ✓")
-            else:
-                log.warning(f"    DB verify: ytd_pct still NULL after patch — check schema")
-
-            # Step 5: refresh individual stock returns
-            db.delete_where("sector_holdings", "sector_id", sector_id)
-            if stock_rows:
-                db.insert("sector_holdings", stock_rows)
-
-            sector_ok += 1
-
-        except Exception as e:
-            log.error(f"  ✗ {sector_name}: {e}")
-            sector_fail.append(sector_name)
-
-    log.info(f"══ Done: {sector_ok}/{len(SECTOR_STOCKS)} sectors OK ══")
+    log.info(f"══ Done: {sector_ok}/{len(SECTOR_STOCKS)} sectors ══")
     if sector_fail:
-        log.warning(f"Failed sectors: {sector_fail}")
+        log.warning(f"Failed: {sector_fail}")
         sys.exit(1)
 
 

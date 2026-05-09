@@ -1,31 +1,32 @@
 import type { Metadata } from 'next'
-import { Inter, JetBrains_Mono } from 'next/font/google'
+import { Outfit, DM_Mono } from 'next/font/google'
 import './globals.css'
 
-const inter = Inter({
+const outfit = Outfit({
   subsets: ['latin'],
-  variable: '--font-inter',
+  variable: '--font-outfit',
   display: 'swap',
 })
 
-const jetbrainsMono = JetBrains_Mono({
+const dmMono = DM_Mono({
   subsets: ['latin'],
-  variable: '--font-mono',
+  weight: ['400', '500'],
+  variable: '--font-dm-mono',
   display: 'swap',
 })
 
 export const metadata: Metadata = {
   title: 'Eagleview',
-  description: 'Curated sector heat rankings with benchmark comparison — 1W · 1M · 3M · YTD',
+  description: 'Sector heat rankings with benchmark comparison — 1W · 1M · 3M · YTD',
   openGraph: {
     title: 'Eagleview',
-    description: 'Track curated thematic sector momentum vs S&P 500, Nasdaq & Dow',
+    description: 'Track sector momentum vs S&P 500, Nasdaq & Dow across 1W, 1M, 3M and YTD',
   },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
+    <html lang="en" className={`${outfit.variable} ${dmMono.variable}`}>
       <body className="bg-slate-100 antialiased font-sans">{children}</body>
     </html>
   )

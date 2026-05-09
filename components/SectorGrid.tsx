@@ -41,9 +41,7 @@ export default function SectorGrid({ sectors, benchmarks }: Props) {
         <div>
           <div className="flex items-center gap-2.5 mb-1">
             <span className="text-2xl select-none">🦅</span>
-            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">
-              Eagleview
-            </h1>
+            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Eagleview</h1>
           </div>
           <p className="text-sm text-slate-400 pl-9">
             {sorted.length} sectors · {PERIOD_LABELS[period]}
@@ -60,10 +58,10 @@ export default function SectorGrid({ sectors, benchmarks }: Props) {
         <PeriodToggle selected={period} onChange={setPeriod} />
       </div>
 
-      {/* ── Market Pulse (benchmarks) ───────────── */}
+      {/* ── Market Pulse ────────────────────────── */}
       <BenchmarkBar benchmarks={benchmarks} period={period} />
 
-      {/* ── Divider ────────────────────────────── */}
+      {/* ── Divider ─────────────────────────────── */}
       <div className="flex items-center gap-3 mb-5">
         <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase whitespace-nowrap">
           Sector Rankings
@@ -71,7 +69,7 @@ export default function SectorGrid({ sectors, benchmarks }: Props) {
         <div className="flex-1 h-px bg-slate-200" />
       </div>
 
-      {/* ── Grid ───────────────────────────────── */}
+      {/* ── Grid ────────────────────────────────── */}
       {sectors.length === 0 ? (
         <EmptyState />
       ) : (
@@ -90,7 +88,7 @@ export default function SectorGrid({ sectors, benchmarks }: Props) {
         </div>
       )}
 
-      {/* ── Holdings + benchmark modal ─────────── */}
+      {/* ── Modal ───────────────────────────────── */}
       {selected && (
         <HoldingsModal
           sector={selected}
@@ -109,7 +107,7 @@ function EmptyState() {
       <div className="text-5xl mb-4">🦅</div>
       <p className="font-semibold text-slate-600 text-lg">No data yet</p>
       <p className="text-sm mt-2 max-w-xs mx-auto">
-        Trigger the GitHub Action to run your first data sync — takes about 2 minutes.
+        Trigger the GitHub Action to run your first data sync.
       </p>
     </div>
   )
