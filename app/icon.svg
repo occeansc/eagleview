@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <!-- Background: dark navy rounded square -->
+  <rect width="32" height="32" rx="7" fill="#0f172a"/>
+
+  <!-- Eagle soaring — front-view silhouette, white on dark -->
+
+  <!-- Left wing: sweeps out wide, tapers to wingtip -->
+  <path d="M 15 15
+           C 13 13, 9 11, 4 13
+           C 6 14, 8 15, 9 17
+           C 11 16, 13 16, 15 17 Z"
+        fill="white"/>
+
+  <!-- Right wing: mirror -->
+  <path d="M 17 15
+           C 19 13, 23 11, 28 13
+           C 26 14, 24 15, 23 17
+           C 21 16, 19 16, 17 17 Z"
+        fill="white"/>
+
+  <!-- Body: slim vertical oval -->
+  <ellipse cx="16" cy="17" rx="2.2" ry="5.5" fill="white"/>
+
+  <!-- Head: bold circle -->
+  <circle cx="16" cy="10" r="3.2" fill="white"/>
+
+  <!-- Beak: small teal hook — gives it character and colour -->
+  <path d="M 17 10.5 L 20 12 L 17.5 12.5 Z" fill="#14b8a6"/>
+
+  <!-- Eye: dark dot -->
+  <circle cx="15.5" cy="9.5" r="1" fill="#0f172a"/>
+
+  <!-- Tail feathers: split V -->
+  <path d="M 14 22 L 13 27 L 16 24 L 19 27 L 18 22 Z" fill="white"/>
+</svg>
