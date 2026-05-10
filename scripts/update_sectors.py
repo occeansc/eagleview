@@ -108,10 +108,10 @@ SECTOR_STOCKS = [
         ("NIO","NIO"), ("LI","Li Auto"), ("XPEV","XPeng"),
         ("QS","QuantumScape"), ("EVGO","EVgo"),
         ("ALB","Albemarle"), ("SQM","SQM"),
-        ("LAC","Lithium Americas"), ("PLL","Piedmont Lithium"), ("LTHM","Livent"),
+        ("LAC","Lithium Americas"), ("PLL","Piedmont Lithium"), ("ALTM","Arcadium Lithium"),
         ("MP","MP Materials"), ("LEA","Lear Corp"), ("MGA","Magna International"),
         ("MBLY","Mobileye"), ("BYDDF","BYD Company"),
-        ("SLDP","Solid Power"), ("PCRFY","Panasonic Holdings"),
+        ("SLDP","Solid Power"), ("TOELY","Toyota Motor ADR"),
     ]),
     ("Space & Satellites", [
         ("RKLB","Rocket Lab"), ("ASTS","AST SpaceMobile"), ("LUNR","Intuitive Machines"),
@@ -132,7 +132,7 @@ SECTOR_STOCKS = [
         ("DRS","Leonardo DRS"), ("MRCY","Mercury Systems"),
     ]),
     ("Robotics & Automation", [
-        ("ABB","ABB Ltd"), ("TER","Teradyne"), ("BRKS","Brooks Automation"),
+        ("ABBNY","ABB Ltd ADR"), ("TER","Teradyne"), ("AZTA","Azenta"),
         ("NOVT","Novanta"), ("RRX","Rexnord"), ("EMR","Emerson Electric"),
         ("ROK","Rockwell Automation"), ("PH","Parker Hannifin"), ("HON","Honeywell"),
         ("IR","Ingersoll Rand"), ("FANUY","Fanuc"),
@@ -141,9 +141,9 @@ SECTOR_STOCKS = [
         ("ONTO","Onto Innovation"), ("ENTG","Entegris"), ("AEIS","Advanced Energy Industries"),
     ]),
     ("Photonics & Optical", [
-        ("COHR","Coherent Corp"), ("LITE","Lumentum"), ("VIAVI","Viavi Solutions"),
+        ("COHR","Coherent Corp"), ("LITE","Lumentum"), ("VIAV","Viavi Solutions"),
         ("LPTH","LightPath Technologies"), ("AAOI","Applied Optoelectronics"),
-        ("LAZR","Luminar Technologies"), ("INVZ","Innoviz Technologies"),
+        ("LSCC","Lattice Semiconductor"), ("INVZ","Innoviz Technologies"),
         ("OUST","Ouster"), ("AEVA","Aeva Technologies"), ("MVIS","MicroVision"),
         ("IPGP","IPG Photonics"), ("MTSI","MACOM Technology"), ("MKSI","MKS Instruments"),
         ("CRUS","Cirrus Logic"), ("HLIT","Harmonic"),
@@ -161,13 +161,13 @@ SECTOR_STOCKS = [
     ("Clean Energy & Solar", [
         ("ENPH","Enphase Energy"), ("SEDG","SolarEdge"), ("FSLR","First Solar"),
         ("RUN","Sunrun"), ("SPWR","SunPower"), ("ARRY","Array Technologies"),
-        ("NOVA","Sunnova Energy"), ("HASI","Hannon Armstrong"), ("NEE","NextEra Energy"),
+        ("ARRY","Array Technologies"), ("HASI","Hannon Armstrong"), ("NEE","NextEra Energy"),
         ("CWEN","Clearway Energy"), ("BEPC","Brookfield Renewable"), ("ORA","Ormat Technologies"),
         ("PLUG","Plug Power"), ("FCEL","FuelCell Energy"), ("BE","Bloom Energy"),
-        ("MAXN","Maxeon Solar"), ("SHLS","Shoals Technologies"), ("AMPS","Altus Power"),
+        ("MAXN","Maxeon Solar"), ("SHLS","Shoals Technologies"), ("NEP","NextEra Energy Partners"),
         ("FLNC","Fluence Energy"), ("BEP","Brookfield Renewable Partners"),
     ]),
-    ("Power & Data Center Infrastructure", [
+    ("Power & Data Centers", [
         ("VRT","Vertiv Holdings"), ("ETN","Eaton Corp"), ("HUBB","Hubbell"),
         ("GEV","GE Vernova"), ("PWR","Quanta Services"), ("FIX","Comfort Systems"),
         ("EQIX","Equinix"), ("DLR","Digital Realty"),
@@ -191,7 +191,7 @@ SECTOR_STOCKS = [
         ("JPM","JPMorgan Chase"), ("BAC","Bank of America"), ("WFC","Wells Fargo"),
         ("GS","Goldman Sachs"), ("MS","Morgan Stanley"), ("C","Citigroup"),
         ("BLK","BlackRock"), ("AXP","American Express"), ("V","Visa"),
-        ("MA","Mastercard"), ("COF","Capital One"), ("DFS","Discover Financial"),
+        ("MA","Mastercard"), ("COF","Capital One"), ("SCHW","Charles Schwab"),
         ("SYF","Synchrony Financial"), ("ALLY","Ally Financial"), ("FITB","Fifth Third"),
         ("KEY","KeyCorp"), ("RF","Regions Financial"), ("CFG","Citizens Financial"),
         ("HBAN","Huntington Bancshares"), ("PNC","PNC Financial"),
@@ -216,7 +216,7 @@ SECTOR_STOCKS = [
     ]),
     ("Quantum Computing", [
         ("IONQ","IonQ"), ("RGTI","Rigetti Computing"), ("QUBT","Quantum Computing Inc"),
-        ("ARQIT","Arqit Quantum"), ("QBTS","D-Wave Quantum"),
+        ("ARQQ","Arqit Quantum"), ("QBTS","D-Wave Quantum"),
         ("IBM","IBM"), ("GOOG","Alphabet"), ("HON","Honeywell"),
         ("MSFT","Microsoft"), ("INTC","Intel"), ("AMZN","Amazon"), ("NVDA","NVIDIA"),
     ]),
