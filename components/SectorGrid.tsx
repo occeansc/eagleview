@@ -1,7 +1,11 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { Sector, Benchmark, Period, getPeriodValue, PERIOD_LABELS } from '@/lib/types'
+import {
+  Sector, Benchmark, Period, SectorSnapshot,
+  getPeriodValue, PERIOD_LABELS, computeScorecard,
+} from '@/lib/types'
+import { useWatchlist } from '@/lib/watchlist'
 import SectorCard from './SectorCard'
 import PeriodToggle from './PeriodToggle'
 import BenchmarkBar from './BenchmarkBar'
@@ -10,11 +14,15 @@ import HoldingsModal from './HoldingsModal'
 interface Props {
   sectors: Sector[]
   benchmarks: Benchmark[]
+  snapshots: Record<number, SectorSnapshot[]>
 }
 
-export default function SectorGrid({ sectors, benchmarks }: Props) {
+export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
   const [period, setPeriod]     = useState<Period>('YTD')
   const [selected, setSelected] = useState<Sector | null>(null)
+  const { pinnedIds, toggle, isPinned, ready } = useWatchlist()
+
+  const spx = benchmarks.find(b => b.ticker === '^GSPC')
 
   const sorted = useMemo(() => {
     return [...sectors].sort((a, b) => {
@@ -33,11 +41,16 @@ export default function SectorGrid({ sectors, benchmarks }: Props) {
       ).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
     : null
 
+  // Pinned strip — only when watchlist has items and client is ready
+  const pinned = ready && pinnedIds.length > 0
+    ? sorted.filter(s => pinnedIds.includes(s.id))
+    : []
+
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="max-w-6xl mx-auto px-4 py-6">
 
       {/* ── Header ─────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
         <div>
           <div className="flex items-center gap-2.5 mb-1">
             <span className="text-2xl select-none">🦅</span>
@@ -61,6 +74,35 @@ export default function SectorGrid({ sectors, benchmarks }: Props) {
       {/* ── Market Pulse ────────────────────────── */}
       <BenchmarkBar benchmarks={benchmarks} period={period} />
 
+      {/* ── Watchlist strip ─────────────────────── */}
+      {pinned.length > 0 && (
+        <div className="mb-5">
+          <div className="flex items-center gap-3 mb-3">
+            <span className="text-[10px] font-bold tracking-widest text-amber-500 uppercase whitespace-nowrap">
+              ★ Watchlist
+            </span>
+            <div className="flex-1 h-px bg-amber-200" />
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            {pinned.map(sector => (
+              <SectorCard
+                key={`pin-${sector.id}`}
+                sector={sector}
+                rank={sorted.indexOf(sector) + 1}
+                period={period}
+                isHot={false}
+                delay={0}
+                isPinned={true}
+                scorecard={computeScorecard(sector, spx)}
+                snapshots={snapshots[sector.id] ?? []}
+                onClick={() => setSelected(sector)}
+                onTogglePin={e => { e.stopPropagation(); toggle(sector.id) }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* ── Divider ─────────────────────────────── */}
       <div className="flex items-center gap-3 mb-5">
         <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase whitespace-nowrap">
@@ -81,8 +123,12 @@ export default function SectorGrid({ sectors, benchmarks }: Props) {
               rank={i + 1}
               period={period}
               isHot={i < 2}
-              delay={i * 35}
+              delay={i * 30}
+              isPinned={isPinned(sector.id)}
+              scorecard={computeScorecard(sector, spx)}
+              snapshots={snapshots[sector.id] ?? []}
               onClick={() => setSelected(sector)}
+              onTogglePin={e => { e.stopPropagation(); toggle(sector.id) }}
             />
           ))}
         </div>

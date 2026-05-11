@@ -1,39 +1,40 @@
 import { createSupabaseClient } from '@/lib/supabase'
 import SectorGrid from '@/components/SectorGrid'
-import type { Sector, Benchmark } from '@/lib/types'
+import type { Sector, Benchmark, SectorSnapshot } from '@/lib/types'
 
 export const revalidate = 1800
 
-async function getSectors(): Promise<Sector[]> {
-  try {
-    const supabase = createSupabaseClient()
-    const { data, error } = await supabase.from('sectors').select('*')
-    if (error) throw error
-    return data ?? []
-  } catch (err) {
-    console.error('getSectors failed:', err)
-    return []
-  }
-}
-
-async function getBenchmarks(): Promise<Benchmark[]> {
-  try {
-    const supabase = createSupabaseClient()
-    const { data, error } = await supabase.from('benchmarks').select('*')
-    if (error) throw error
-    return data ?? []
-  } catch (err) {
-    console.error('getBenchmarks failed:', err)
-    return []
+async function getData() {
+  const supabase = createSupabaseClient()
+  const [sectorsRes, benchmarksRes, snapshotsRes] = await Promise.all([
+    supabase.from('sectors').select('*'),
+    supabase.from('benchmarks').select('*'),
+    supabase
+      .from('sector_snapshots')
+      .select('sector_id, ytd_pct, synced_at')
+      .order('synced_at', { ascending: true })
+      .limit(500),
+  ])
+  return {
+    sectors:    (sectorsRes.data    ?? []) as Sector[],
+    benchmarks: (benchmarksRes.data ?? []) as Benchmark[],
+    snapshots:  (snapshotsRes.data  ?? []) as SectorSnapshot[],
   }
 }
 
 export default async function Page() {
-  const [sectors, benchmarks] = await Promise.all([getSectors(), getBenchmarks()])
+  const { sectors, benchmarks, snapshots } = await getData()
+
+  // Group snapshots by sector_id for O(1) lookup in cards
+  const snapshotMap: Record<number, SectorSnapshot[]> = {}
+  for (const s of snapshots) {
+    if (!snapshotMap[s.sector_id]) snapshotMap[s.sector_id] = []
+    snapshotMap[s.sector_id].push(s)
+  }
 
   return (
     <main className="min-h-screen">
-      <SectorGrid sectors={sectors} benchmarks={benchmarks} />
+      <SectorGrid sectors={sectors} benchmarks={benchmarks} snapshots={snapshotMap} />
     </main>
   )
 }

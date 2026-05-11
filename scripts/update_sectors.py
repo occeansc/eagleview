@@ -38,7 +38,7 @@ SECTOR_STOCKS = [
         ("ADI","Analog Devices"), ("MCHP","Microchip Technology"), ("ON","ON Semiconductor"),
         ("NXPI","NXP Semiconductors"), ("MRVL","Marvell Technology"), ("MPWR","Monolithic Power"),
         ("ARM","ARM Holdings"), ("STX","Seagate Technology"),
-        ("WDC","Western Digital"), ("AMKR","Amkor Technology"),
+        ("WDC","Western Digital"), ("SNDK","SanDisk"),
     ]),
     ("Software & Cloud", [
         ("MSFT","Microsoft"), ("CRM","Salesforce"), ("NOW","ServiceNow"),
@@ -46,7 +46,7 @@ SECTOR_STOCKS = [
         ("HUBS","HubSpot"), ("WDAY","Workday"), ("VEEV","Veeva Systems"),
         ("TEAM","Atlassian"), ("GTLB","GitLab"), ("PATH","UiPath"),
         ("CFLT","Confluent"), ("BILL","Bill.com"), ("DOCN","DigitalOcean"),
-        ("ZI","ZoomInfo"), ("PCTY","Paylocity"), ("ESTC","Elastic"),
+        ("MSCI","MSCI Inc"), ("PCTY","Paylocity"), ("ESTC","Elastic"),
         ("ORCL","Oracle"), ("ADBE","Adobe"),
     ]),
     ("Cybersecurity", [
@@ -81,7 +81,7 @@ SECTOR_STOCKS = [
         ("RIOT","Riot Platforms"), ("CLSK","CleanSpark"), ("HUT","Hut 8"),
         ("BTBT","Bit Digital"), ("CIFR","Cipher Mining"), ("BITF","Bitfarms"),
         ("IREN","Iris Energy"), ("WULF","TeraWulf"), ("CORZ","Core Scientific"),
-        ("BTCS","BTCS"), ("SMLR","Semler Scientific"), ("BKKT","Bakkt"),
+        ("CRCL","Circle Internet Group"), ("SMLR","Semler Scientific"), ("BKKT","Bakkt"),
         ("HIVE","HIVE Digital"),
     ]),
     ("Biotech & Genomics", [
@@ -108,7 +108,7 @@ SECTOR_STOCKS = [
         ("NIO","NIO"), ("LI","Li Auto"), ("XPEV","XPeng"),
         ("QS","QuantumScape"), ("EVGO","EVgo"),
         ("ALB","Albemarle"), ("SQM","SQM"),
-        ("LAC","Lithium Americas"), ("PLL","Piedmont Lithium"), ("ALTM","Arcadium Lithium"),
+        ("LAC","Lithium Americas"), ("ACHR","Archer Aviation"), ("SLI","Standard Lithium"),
         ("MP","MP Materials"), ("LEA","Lear Corp"), ("MGA","Magna International"),
         ("MBLY","Mobileye"), ("BYDDF","BYD Company"),
         ("SLDP","Solid Power"), ("TOELY","Toyota Motor ADR"),
@@ -146,7 +146,7 @@ SECTOR_STOCKS = [
         ("LSCC","Lattice Semiconductor"), ("INVZ","Innoviz Technologies"),
         ("OUST","Ouster"), ("AEVA","Aeva Technologies"), ("MVIS","MicroVision"),
         ("IPGP","IPG Photonics"), ("MTSI","MACOM Technology"), ("MKSI","MKS Instruments"),
-        ("CRUS","Cirrus Logic"), ("HLIT","Harmonic"),
+        ("CRUS","Cirrus Logic"), ("CIEN","Ciena"),
         ("OSIS","OSI Systems"), ("HIMX","Himax Technologies"),
     ]),
     ("Nuclear & Uranium", [
@@ -161,10 +161,10 @@ SECTOR_STOCKS = [
     ("Clean Energy & Solar", [
         ("ENPH","Enphase Energy"), ("SEDG","SolarEdge"), ("FSLR","First Solar"),
         ("RUN","Sunrun"), ("SPWR","SunPower"), ("ARRY","Array Technologies"),
-        ("ARRY","Array Technologies"), ("HASI","Hannon Armstrong"), ("NEE","NextEra Energy"),
+        ("CSIQ","Canadian Solar"), ("HASI","Hannon Armstrong"), ("NEE","NextEra Energy"),
         ("CWEN","Clearway Energy"), ("BEPC","Brookfield Renewable"), ("ORA","Ormat Technologies"),
         ("PLUG","Plug Power"), ("FCEL","FuelCell Energy"), ("BE","Bloom Energy"),
-        ("MAXN","Maxeon Solar"), ("SHLS","Shoals Technologies"), ("NEP","NextEra Energy Partners"),
+        ("MAXN","Maxeon Solar"), ("SHLS","Shoals Technologies"), ("STEM","Stem Inc"),
         ("FLNC","Fluence Energy"), ("BEP","Brookfield Renewable Partners"),
     ]),
     ("Power & Data Centers", [
@@ -219,6 +219,32 @@ SECTOR_STOCKS = [
         ("ARQQ","Arqit Quantum"), ("QBTS","D-Wave Quantum"),
         ("IBM","IBM"), ("GOOG","Alphabet"), ("HON","Honeywell"),
         ("MSFT","Microsoft"), ("INTC","Intel"), ("AMZN","Amazon"), ("NVDA","NVIDIA"),
+    ]),
+
+    # NEW: Industrials & Materials
+    # Real-economy plays: construction, metals, chemicals, materials
+    # CENX, STRL, plus infrastructure/industrial names
+    ("Industrials & Materials", [
+        ("CENX","Century Aluminum"),     # aluminum, energy-intensive metals
+        ("STRL","Sterling Infrastructure"), # infrastructure construction
+        ("CAT","Caterpillar"),           # heavy machinery
+        ("DE","Deere & Company"),        # agriculture/construction equipment
+        ("GE","GE Aerospace"),           # industrial conglomerate
+        ("ETN","Eaton Corp"),            # power management (crossover)
+        ("EMR","Emerson Electric"),      # industrial automation
+        ("DOW","Dow Inc"),               # chemicals & materials
+        ("LYB","LyondellBasell"),        # chemicals
+        ("NUE","Nucor"),                 # steel
+        ("STLD","Steel Dynamics"),       # steel
+        ("AA","Alcoa"),                  # aluminum
+        ("FCX","Freeport-McMoRan"),      # copper mining
+        ("NEM","Newmont"),               # gold/mining
+        ("CF","CF Industries"),          # nitrogen fertilizers
+        ("MOS","Mosaic Company"),        # phosphate/potash
+        ("APD","Air Products"),          # industrial gases
+        ("PX","Praxair"),                # industrial gases (now Linde)
+        ("LIN","Linde"),                 # industrial gases
+        ("VMC","Vulcan Materials"),      # construction aggregates
     ]),
 ]
 

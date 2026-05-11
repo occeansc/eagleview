@@ -7,24 +7,19 @@ export interface Sector {
   ytd_pct: number | null
   stock_count: number | null
   updated_at: string
-  // v3.0 — ranks
   ytd_rank: number | null
   week_rank: number | null
   month_rank: number | null
   quarter_rank: number | null
-  // v3.0 — rank deltas (positive = moved up)
   ytd_rank_change: number | null
   week_rank_change: number | null
   month_rank_change: number | null
   quarter_rank_change: number | null
-  // v3.0 — streak (consecutive syncs YTD-positive)
   streak: number | null
-  // v3.0 — breadth (% of stocks positive)
   breadth_1w: number | null
   breadth_1m: number | null
   breadth_3m: number | null
   breadth_ytd: number | null
-  // v3.0 — previous values for momentum delta
   prev_week_pct: number | null
   prev_month_pct: number | null
   prev_quarter_pct: number | null
@@ -40,6 +35,8 @@ export interface SectorHolding {
   month_pct: number | null
   quarter_pct: number | null
   ytd_pct: number | null
+  // joined field (optional, available in screener)
+  sectors?: { name: string }
 }
 
 export interface Benchmark {
@@ -53,7 +50,15 @@ export interface Benchmark {
   updated_at: string
 }
 
+export interface SectorSnapshot {
+  sector_id: number
+  ytd_pct: number | null
+  week_pct: number | null
+  synced_at: string
+}
+
 export type Period = '1W' | '1M' | '3M' | 'YTD'
+export type ScorecardLevel = 'gold' | 'silver' | 'bronze' | null
 
 export const PERIOD_LABELS: Record<Period, string> = {
   '1W':  '1 Week',
@@ -61,6 +66,8 @@ export const PERIOD_LABELS: Record<Period, string> = {
   '3M':  '3 Months',
   'YTD': 'Year to Date',
 }
+
+export const PERIODS: Period[] = ['1W', '1M', '3M', 'YTD']
 
 export function getPeriodValue(
   s: Sector | SectorHolding | Benchmark,
@@ -102,4 +109,19 @@ export function getMomentumDelta(s: Sector, period: Period): number | null {
     case 'YTD': curr = s.ytd_pct;     prev = s.prev_ytd_pct;     break
   }
   return curr !== null && prev !== null ? Math.round((curr - prev) * 10) / 10 : null
+}
+
+/** Scorecard: how many periods does this sector beat the S&P 500? */
+export function computeScorecard(sector: Sector, spx: Benchmark | undefined): ScorecardLevel {
+  if (!spx) return null
+  const periods: Period[] = ['1W', '1M', '3M', 'YTD']
+  const beats = periods.filter(p => {
+    const sv = getPeriodValue(sector, p)
+    const bv = getPeriodValue(spx, p)
+    return sv !== null && bv !== null && sv > bv
+  }).length
+  if (beats === 4) return 'gold'
+  if (beats === 3) return 'silver'
+  if (beats === 2) return 'bronze'
+  return null
 }
