@@ -106,3 +106,27 @@
 .nav-item {
   transition: color 0.15s ease, background 0.15s ease;
 }
+
+/* ── Bottom sheet animation (mobile modal) ──── */
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@media (max-width: 640px) {
+  .modal-panel { animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
+}
+
+/* ── Tabular number alignment ──────────────── */
+.tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* ── Heatmap horizontal scroll hint ─────────── */
+.scroll-hint::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 32px;
+  background: linear-gradient(to left, white, transparent);
+  pointer-events: none;
+}

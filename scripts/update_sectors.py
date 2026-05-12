@@ -538,11 +538,16 @@ def main():
                     "streak":       old.get("streak", 0),
                 }])
 
-            # Rank deltas: positive = moved UP (improvement), negative = moved down
+            # Rank deltas: positive = moved UP, 0 for first sync (no previous data)
             def rank_delta(old_ranks, new_ranks, sid):
                 old_r = old_ranks.get(sid)
                 new_r = new_ranks.get(sid, 0)
-                return (old_r - new_r) if old_r is not None else 0
+                # If sector had no previous return data, it's a first-data sync
+                # Ranking from NULL to a real rank is not a meaningful movement
+                had_prev_data = old_state.get(sid, {}).get("ytd_pct") is not None
+                if old_r is None or not had_prev_data:
+                    return 0
+                return old_r - new_r
 
             # Streak: consecutive syncs where YTD is positive
             ytd_positive = rets.get("ytd_pct") is not None and rets["ytd_pct"] >= 0

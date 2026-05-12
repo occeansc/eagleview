@@ -1,7 +1,9 @@
+import type { Metadata } from 'next'
 import { createSupabaseClient } from '@/lib/supabase'
 import HeatmapClient from './HeatmapClient'
 import type { Sector, Benchmark } from '@/lib/types'
 
+export const metadata: Metadata = { title: 'Heatmap' }
 export const revalidate = 1800
 
 export default async function HeatmapPage() {
@@ -10,7 +12,6 @@ export default async function HeatmapPage() {
     supabase.from('sectors').select('*'),
     supabase.from('benchmarks').select('*'),
   ])
-
   return (
     <main className="min-h-screen">
       <HeatmapClient
