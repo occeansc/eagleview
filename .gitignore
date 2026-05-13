@@ -18,3 +18,6 @@ yarn-error.log*
 # TypeScript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local SQL files
+*.sql.bak

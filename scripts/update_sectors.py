@@ -106,7 +106,7 @@ SECTOR_STOCKS = [
     ("EV, Battery & Autonomy", [
         ("TSLA","Tesla"), ("RIVN","Rivian"), ("LCID","Lucid Motors"),
         ("NIO","NIO"), ("LI","Li Auto"), ("XPEV","XPeng"),
-        ("QS","QuantumScape"), ("EVGO","EVgo"),
+        ("QS","QuantumScape"), ("EVGO","EVgo"), ("BLNK","Blink Charging"),
         ("ALB","Albemarle"), ("SQM","SQM"),
         ("LAC","Lithium Americas"), ("ACHR","Archer Aviation"), ("SLI","Standard Lithium"),
         ("MP","MP Materials"), ("LEA","Lear Corp"), ("MGA","Magna International"),
@@ -242,7 +242,7 @@ SECTOR_STOCKS = [
         ("CF","CF Industries"),          # nitrogen fertilizers
         ("MOS","Mosaic Company"),        # phosphate/potash
         ("APD","Air Products"),          # industrial gases
-        ("PX","Praxair"),                # industrial gases (now Linde)
+                        # industrial gases (now Linde)
         ("LIN","Linde"),                 # industrial gases
         ("VMC","Vulcan Materials"),      # construction aggregates
     ]),

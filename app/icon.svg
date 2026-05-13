@@ -1,35 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
-  <!-- Background: dark navy rounded square -->
-  <rect width="32" height="32" rx="7" fill="#0f172a"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Dark navy rounded square -->
+  <rect width="64" height="64" rx="12" fill="#0f172a"/>
 
-  <!-- Eagle soaring — front-view silhouette, white on dark -->
+  <!-- Left wing -->
+  <polygon points="32,34 8,26 9,31 14,35 32,38" fill="white"/>
 
-  <!-- Left wing: sweeps out wide, tapers to wingtip -->
-  <path d="M 15 15
-           C 13 13, 9 11, 4 13
-           C 6 14, 8 15, 9 17
-           C 11 16, 13 16, 15 17 Z"
-        fill="white"/>
+  <!-- Right wing -->
+  <polygon points="32,34 56,26 55,31 50,35 32,38" fill="white"/>
 
-  <!-- Right wing: mirror -->
-  <path d="M 17 15
-           C 19 13, 23 11, 28 13
-           C 26 14, 24 15, 23 17
-           C 21 16, 19 16, 17 17 Z"
-        fill="white"/>
+  <!-- Body -->
+  <ellipse cx="32" cy="43" rx="4" ry="9" fill="white"/>
 
-  <!-- Body: slim vertical oval -->
-  <ellipse cx="16" cy="17" rx="2.2" ry="5.5" fill="white"/>
+  <!-- Head -->
+  <circle cx="32" cy="21" r="7" fill="white"/>
 
-  <!-- Head: bold circle -->
-  <circle cx="16" cy="10" r="3.2" fill="white"/>
+  <!-- Teal beak -->
+  <polygon points="38,19 46,22 38,25" fill="#14b8a6"/>
 
-  <!-- Beak: small teal hook — gives it character and colour -->
-  <path d="M 17 10.5 L 20 12 L 17.5 12.5 Z" fill="#14b8a6"/>
+  <!-- Eye -->
+  <circle cx="35.5" cy="19" r="1.5" fill="#0f172a"/>
 
-  <!-- Eye: dark dot -->
-  <circle cx="15.5" cy="9.5" r="1" fill="#0f172a"/>
-
-  <!-- Tail feathers: split V -->
-  <path d="M 14 22 L 13 27 L 16 24 L 19 27 L 18 22 Z" fill="white"/>
+  <!-- Tail -->
+  <polygon points="29,52 26,61 32,57 38,61 35,52" fill="white"/>
 </svg>

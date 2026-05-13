@@ -7,14 +7,23 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'sw
 const mono  = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' })
 
 export const metadata: Metadata = {
-  title: { default: 'Eagleview', template: '%s · Eagleview' },
+  title:       { default: 'Eagleview', template: '%s · Eagleview' },
   description: 'Curated thematic sector heat rankings — 1W · 1M · 3M · YTD',
+  icons: {
+    icon:  [{ url: '/icon.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/apple-icon.png', sizes: '180x180' }],
+  },
   viewport: 'width=device-width, initial-scale=1, viewport-fit=cover',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${mono.variable}`}>
+      <head>
+        {/* Explicit link tags so Safari picks up the apple-touch-icon */}
+        <link rel="apple-touch-icon" sizes="180x180" href="/apple-icon.png" />
+        <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+      </head>
       <body className="bg-slate-100 antialiased font-sans pb-20 sm:pb-0 min-h-screen">
         <Nav />
         {children}
