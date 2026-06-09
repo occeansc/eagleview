@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { SectorHolding, Sector, Period, PERIODS, PERIOD_LABELS, getPeriodValue } from '@/lib/types'
+import { SectorHolding, Sector, Period, PERIODS, PERIOD_LABELS, getPeriodValue, formatPrice } from '@/lib/types'
 import { SearchIcon, TrendingUpIcon, TrendingDownIcon } from '@/components/Icons'
 
 interface Props {
@@ -140,10 +140,11 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
           <div style={{ minWidth: '420px' }}>
 
             {/* Desktop header */}
-            <div className="hidden sm:grid sm:grid-cols-[40px_80px_1fr_80px_80px_80px_80px] text-[10px] font-bold tracking-widest text-slate-400 uppercase px-4 py-3 border-b border-slate-100 bg-slate-50/80">
+            <div className="hidden sm:grid sm:grid-cols-[40px_80px_1fr_72px_72px_72px_72px_72px] text-[10px] font-bold tracking-widest text-slate-400 uppercase px-4 py-3 border-b border-slate-100 bg-slate-50/80">
               <span>#</span>
               <span>Ticker</span>
               <span>Company</span>
+              <span className="text-right">Price</span>
               <span className="text-right">1W</span>
               <span className="text-right">1M</span>
               <span className="text-right">3M</span>
@@ -196,13 +197,16 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                   return (
                     <div key={`${h.ticker}-${h.sector_id}`}>
                       {/* Desktop row */}
-                      <div className="hidden sm:grid sm:grid-cols-[40px_80px_1fr_80px_80px_80px_80px] items-center px-4 py-2.5 hover:bg-slate-50 transition-colors">
+                      <div className="hidden sm:grid sm:grid-cols-[40px_80px_1fr_72px_72px_72px_72px_72px] items-center px-4 py-2.5 hover:bg-slate-50 transition-colors">
                         <span className="text-xs text-slate-300 tabular-nums">{i + 1}</span>
                         <TickerChip />
                         <div className="min-w-0 px-2">
                           <p className="text-sm font-medium text-slate-800 truncate">{h.company_name}</p>
                           <p className="text-[10px] text-slate-400 truncate">{sectorName}</p>
                         </div>
+                        <span className="font-mono text-xs text-slate-500 text-right tabular-nums">
+                          {formatPrice(h.price ?? null)}
+                        </span>
                         <ReturnCell p="1W" />
                         <ReturnCell p="1M" />
                         <ReturnCell p="3M" />

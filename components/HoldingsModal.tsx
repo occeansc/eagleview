@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import {
   SectorHolding, Sector, Benchmark, Period,
-  getPeriodValue, getMomentumDelta, getBreadth,
+  getPeriodValue, getMomentumDelta, getBreadth, formatPrice,
 } from '@/lib/types'
 import { getSupabaseClient } from '@/lib/supabase'
 import { CloseIcon, ZapIcon } from './Icons'
@@ -57,10 +57,9 @@ export default function HoldingsModal({ sector, period, benchmarks, onClose }: P
       className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4 bg-black/50 backdrop-blur-sm"
       onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
-      {/* Bottom sheet on mobile, centered modal on desktop */}
-      <div className="modal-panel bg-white w-full sm:max-w-md sm:rounded-2xl rounded-t-3xl shadow-2xl flex flex-col max-h-[90vh] sm:max-h-[88vh] overflow-hidden">
+      <div className="modal-panel bg-white w-full sm:max-w-lg sm:rounded-2xl rounded-t-3xl shadow-2xl flex flex-col max-h-[92vh] sm:max-h-[88vh] overflow-hidden">
 
-        {/* ── Drag handle (mobile only) ─────────────── */}
+        {/* Drag handle — mobile */}
         <div className="sm:hidden flex justify-center pt-3 pb-1 shrink-0">
           <div className="w-10 h-1 bg-slate-200 rounded-full" />
         </div>
@@ -82,32 +81,32 @@ export default function HoldingsModal({ sector, period, benchmarks, onClose }: P
             </button>
           </div>
 
-          {/* Return + badges row */}
+          {/* Return + badges */}
           <div className="flex items-center gap-2 mt-3 flex-wrap">
             <span className={`font-mono text-2xl font-bold ${pctClass}`}>
               {sectorVal !== null ? `${sectorVal > 0 ? '+' : ''}${sectorVal.toFixed(2)}%` : '—'}
             </span>
             <span className="text-sm text-slate-400 font-medium">{period}</span>
 
-            {/* Momentum delta */}
             {momentumDelta !== null && (
               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full border ${
-                momentumDelta > 0 ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                : momentumDelta < 0 ? 'bg-rose-50 text-rose-600 border-rose-200'
-                : 'bg-slate-50 text-slate-500 border-slate-200'
+                momentumDelta > 0
+                  ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                  : momentumDelta < 0
+                  ? 'bg-rose-50 text-rose-600 border-rose-200'
+                  : 'bg-slate-50 text-slate-500 border-slate-200'
               }`}>
-                {momentumDelta > 0 ? '↑' : momentumDelta < 0 ? '↓' : '='} {momentumDelta > 0 ? '+' : ''}{momentumDelta.toFixed(1)}%
+                {momentumDelta > 0 ? '↑' : momentumDelta < 0 ? '↓' : '='}{' '}
+                {momentumDelta > 0 ? '+' : ''}{momentumDelta.toFixed(1)}%
               </span>
             )}
 
-            {/* Streak */}
             {streak >= 5 && (
               <span className="flex items-center gap-1 text-xs text-orange-500 font-semibold ml-auto">
                 <ZapIcon size={11} stroke="currentColor" /> {streak} syncs
               </span>
             )}
 
-            {/* Breadth */}
             {!loading && holdings.length > 0 && (
               <span className="text-xs ml-auto">
                 <span className="text-emerald-600 font-semibold">{posCount}↑</span>
@@ -141,6 +140,17 @@ export default function HoldingsModal({ sector, period, benchmarks, onClose }: P
               Stocks · ranked by {period}
             </p>
 
+            {/* Column labels */}
+            {!loading && sorted.length > 0 && (
+              <div className="flex items-center gap-2 px-2 mb-1">
+                <span className="w-5 shrink-0" />
+                <span className="text-[9px] font-bold tracking-widest text-slate-300 uppercase w-12 shrink-0 text-center">Ticker</span>
+                <span className="flex-1 text-[9px] font-bold tracking-widest text-slate-300 uppercase">Company</span>
+                <span className="text-[9px] font-bold tracking-widest text-slate-300 uppercase w-16 text-right shrink-0">Price</span>
+                <span className="text-[9px] font-bold tracking-widest text-slate-300 uppercase w-14 text-right shrink-0">Return</span>
+              </div>
+            )}
+
             {loading ? <LoadingSkeleton /> : sorted.length === 0 ? <EmptyStocks /> : (
               <div className="space-y-0.5">
                 {sorted.map((h, i) => {
@@ -149,19 +159,32 @@ export default function HoldingsModal({ sector, period, benchmarks, onClose }: P
                   return (
                     <div
                       key={h.id}
-                      className="flex items-center gap-3 py-2 px-2 rounded-xl hover:bg-slate-50 transition-colors"
+                      className="flex items-center gap-2 py-2 px-2 rounded-xl hover:bg-slate-50 transition-colors"
                     >
+                      {/* Rank */}
                       <span className="text-xs text-slate-300 w-5 text-right shrink-0 tabular-nums">{i + 1}</span>
-                      <span className={`font-mono text-xs font-bold px-2 py-1 rounded-lg shrink-0 min-w-[48px] text-center ${
+
+                      {/* Ticker chip */}
+                      <span className={`font-mono text-xs font-bold px-1.5 py-1 rounded-lg shrink-0 w-12 text-center ${
                         isPos ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
                       }`}>
                         {h.ticker}
                       </span>
+
+                      {/* Company name */}
                       <span className="text-sm text-slate-600 flex-1 truncate min-w-0">
                         {h.company_name}
                       </span>
-                      <span className={`font-mono text-sm font-bold shrink-0 tabular-nums ${
-                        val === null ? 'text-slate-300' : isPos ? 'text-emerald-600' : 'text-rose-600'
+
+                      {/* Price */}
+                      <span className="font-mono text-xs text-slate-500 w-16 text-right shrink-0 tabular-nums">
+                        {formatPrice(h.price)}
+                      </span>
+
+                      {/* Return */}
+                      <span className={`font-mono text-sm font-bold w-14 text-right shrink-0 tabular-nums ${
+                        val === null ? 'text-slate-300'
+                          : isPos ? 'text-emerald-600' : 'text-rose-600'
                       }`}>
                         {val !== null ? `${isPos ? '+' : ''}${val.toFixed(1)}%` : '—'}
                       </span>
@@ -173,9 +196,14 @@ export default function HoldingsModal({ sector, period, benchmarks, onClose }: P
           </div>
         </div>
 
-        {/* ── Footer ──────────────────────────────── */}
-        <div className="px-5 py-3 border-t border-slate-100 shrink-0">
-          <p className="text-[10px] text-slate-400">Eagleview v3.1 · Yahoo Finance · equal-weighted</p>
+        {/* Footer */}
+        <div className="px-5 py-3 border-t border-slate-100 shrink-0 flex items-center justify-between">
+          <p className="text-[10px] text-slate-400">
+            Eagleview v3.1.2 · Yahoo Finance · equal-weighted
+          </p>
+          <p className="text-[10px] text-slate-300">
+            Prices as of last sync
+          </p>
         </div>
       </div>
     </div>
@@ -226,12 +254,11 @@ function BenchmarkComparison({ sectorVal, sectorName, benchmarks, period }: {
   return (
     <div>
       <div className="flex items-center gap-2 mb-1">
-        <span className="w-28 shrink-0 text-[10px] text-slate-300 uppercase tracking-wide"></span>
-        <span className="flex-1" />
+        <span className="w-28 shrink-0" /><span className="flex-1" />
         <span className="text-[10px] text-slate-300 w-14 text-right">Return</span>
         <span className="text-[10px] text-slate-300 w-12 text-right">Alpha</span>
       </div>
-      <Row label={`▸ ${sectorName.length > 16 ? sectorName.slice(0, 15) + '…' : sectorName}`} val={sectorVal} bold />
+      <Row label={`▸ ${sectorName.length > 16 ? sectorName.slice(0,15)+'…' : sectorName}`} val={sectorVal} bold />
       <div className="my-1 border-t border-slate-100" />
       {benchmarks.map(b => {
         const bVal  = getPeriodValue(b as unknown as Sector, period)
@@ -247,11 +274,12 @@ function LoadingSkeleton() {
   return (
     <div className="space-y-2">
       {Array.from({ length: 8 }).map((_, i) => (
-        <div key={i} className="animate-pulse flex items-center gap-3 py-2 px-2">
+        <div key={i} className="animate-pulse flex items-center gap-2 py-2 px-2">
           <div className="h-3 w-5 bg-slate-100 rounded" />
-          <div className="h-7 w-14 bg-slate-100 rounded-lg" />
+          <div className="h-7 w-12 bg-slate-100 rounded-lg" />
           <div className="h-3 flex-1 bg-slate-100 rounded" />
-          <div className="h-3 w-12 bg-slate-100 rounded" />
+          <div className="h-3 w-16 bg-slate-100 rounded" />
+          <div className="h-3 w-14 bg-slate-100 rounded" />
         </div>
       ))}
     </div>

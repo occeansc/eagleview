@@ -445,6 +445,15 @@ def main():
     # ══════════════════════════════════════════════════════════════════════════
     # PHASE 3 — Ensure all sector rows exist + compute per-sector data
     # ══════════════════════════════════════════════════════════════════════════
+    # Build latest closing price map — used in Phase 3 stock rows
+    price_map: dict[str, float] = {}
+    for t in all_tickers:
+        if t in closes.columns:
+            series = closes[t].dropna()
+            if not series.empty:
+                price_map[t] = round(float(series.iloc[-1]), 4)
+    log.info(f"  Prices collected: {len(price_map)} tickers")
+
     log.info("── Phase 3: Computing sector returns & breadth ──")
 
     # Map: sector_name → computed data
@@ -464,12 +473,16 @@ def main():
             for ticker, company in stocks:
                 ret = ticker_returns.get(ticker, {})
                 if ret:
-                    stock_rows.append({
+                    row = {
                         "sector_id":    sector_id,
                         "ticker":       ticker,
                         "company_name": company,
                         **ret,
-                    })
+                    }
+                    # Add latest closing price from pre-built price_map
+                    if ticker in price_map:
+                        row["price"] = price_map[ticker]
+                    stock_rows.append(row)
 
             # Equal-weighted sector averages
             rets = {

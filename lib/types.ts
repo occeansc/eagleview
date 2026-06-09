@@ -35,8 +35,18 @@ export interface SectorHolding {
   month_pct: number | null
   quarter_pct: number | null
   ytd_pct: number | null
+  price: number | null
   // joined field (optional, available in screener)
   sectors?: { name: string }
+}
+
+/** Format a price value with appropriate decimals and $ sign */
+export function formatPrice(price: number | null): string {
+  if (price === null) return '—'
+  if (price >= 1000) return `$${price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+  if (price >= 10)   return `$${price.toFixed(2)}`
+  if (price >= 1)    return `$${price.toFixed(3)}`
+  return `$${price.toFixed(4)}`  // sub-$1 stocks (penny stocks)
 }
 
 export interface Benchmark {
