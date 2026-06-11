@@ -11,6 +11,7 @@ import PeriodToggle from './PeriodToggle'
 import BenchmarkBar from './BenchmarkBar'
 import HoldingsModal from './HoldingsModal'
 import MarketRegime from './MarketRegime'
+import { BookmarkIcon } from './Icons'
 
 interface Props {
   sectors:    Sector[]
