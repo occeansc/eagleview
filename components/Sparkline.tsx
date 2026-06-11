@@ -1,4 +1,3 @@
---- START OF FILE eagleview-v40/components/Sparkline.tsx ---
 'use client'
 
 import { SectorSnapshot } from '@/lib/types'

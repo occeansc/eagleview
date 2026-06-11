@@ -1,4 +1,3 @@
---- START OF FILE eagleview-v40/components/PeriodToggle.tsx ---
 'use client'
 
 import { Period } from '@/lib/types'

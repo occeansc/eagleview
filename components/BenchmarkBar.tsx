@@ -1,4 +1,3 @@
---- START OF FILE eagleview-v40/components/BenchmarkBar.tsx ---
 'use client'
 
 import { Benchmark, Period, getPeriodValue } from '@/lib/types'

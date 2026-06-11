@@ -1,4 +1,3 @@
---- START OF FILE eagleview-v40/components/SectorCard.tsx ---
 'use client'
 
 import { Sector, Period, ScorecardLevel, SectorSnapshot, getPeriodValue, getRankChange, getBreadth } from '@/lib/types'

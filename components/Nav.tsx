@@ -1,4 +1,3 @@
---- START OF FILE eagleview-v40/components/Nav.tsx ---
 'use client'
 
 import Link from 'next/link'

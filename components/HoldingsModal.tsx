@@ -1,4 +1,3 @@
---- START OF FILE eagleview-v40/components/HoldingsModal.tsx ---
 'use client'
 
 import { useEffect, useState } from 'react'

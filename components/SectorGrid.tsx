@@ -1,4 +1,3 @@
---- START OF FILE eagleview-v40/components/SectorGrid.tsx ---
 'use client'
 
 import { useState, useMemo } from 'react'
