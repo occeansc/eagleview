@@ -1,132 +1,109 @@
+--- START OF FILE eagleview-v40/app/globals.css ---
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ── Card state colours ───────────────────────────────────── */
-:root {
-  --pos-bg:     #f0fdf4;
-  --neg-bg:     #fff1f2;
+@layer base {
+  body {
+    /* Upgrading typography smoothing and giving body background an incredibly soft off-white tone */
+    @apply bg-[#F8FAFC] text-slate-900 selection:bg-indigo-100 selection:text-indigo-900;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }
 
-/* ── Stagger fade-in ──────────────────────────────────────── */
+/* ── Refined Animations ──────────────────────────────────────── */
 @keyframes fadeSlide {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0);    }
 }
 .card-appear {
-  animation: fadeSlide 0.35s ease forwards;
+  animation: fadeSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   opacity: 0;
 }
 
-/* ── Card hover lift ──────────────────────────────────────── */
+/* ── Multi-Layer Interactive Elevate (Smooth Hover Engine) ───── */
 .sector-card {
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease;
+  will-change: transform, box-shadow;
 }
 .sector-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 8px 24px -4px rgba(0,0,0,0.10);
+  transform: translateY(-5px) scale(1.005);
+  box-shadow: 0 20px 40px -8px rgba(0,0,0,0.06), 0 6px 12px -4px rgba(0,0,0,0.03);
 }
 
-/* ── HOT / RISING badges ──────────────────────────────────── */
+/* ── Visual Tags and Blips ────────────────────────────────── */
 @keyframes hotPulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.7; }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.8; transform: scale(1.05); }
 }
-.hot-badge    { animation: hotPulse 2s ease-in-out infinite; }
+.hot-badge { animation: hotPulse 3s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
 
 @keyframes risingPulse {
   0%, 100% { opacity: 1; transform: translateY(0); }
-  50%       { opacity: 0.8; transform: translateY(-1px); }
+  50%      { opacity: 0.8; transform: translateY(-2px); }
 }
-.rising-badge { animation: risingPulse 1.8s ease-in-out infinite; }
+.rising-badge { animation: risingPulse 2s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
 
-/* ── Modal slide-in ───────────────────────────────────────── */
-@keyframes modalIn {
-  from { opacity: 0; transform: scale(0.95) translateY(8px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+/* SVG Blips used on Sparklines to bring focus */
+@keyframes pulseRing {
+  0%   { transform: scale(0.6); opacity: 0.8; }
+  100% { transform: scale(3.5); opacity: 0; }
 }
-.modal-panel { animation: modalIn 0.2s ease forwards; }
-
-/* ── Breadth bar fill ─────────────────────────────────────── */
-@keyframes breadthFill {
-  from { width: 0; }
-}
-.breadth-bar { animation: breadthFill 0.6s ease forwards 0.2s; }
-
-/* ── Rank change pop ──────────────────────────────────────── */
-@keyframes rankPop {
-  0%   { transform: scale(0.7); opacity: 0; }
-  60%  { transform: scale(1.15); }
-  100% { transform: scale(1); opacity: 1; }
-}
-.rank-change { animation: rankPop 0.4s ease forwards; }
-
-/* ── Heatmap cell hover ───────────────────────────────────── */
-.heat-cell {
-  transition: opacity 0.12s ease, transform 0.12s ease;
-}
-.heat-cell:hover {
-  opacity: 0.88;
-  transform: scale(1.04);
-  z-index: 10;
-  position: relative;
+.pulse-blip {
+  animation: pulseRing 2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+  transform-origin: center;
 }
 
-/* ── Sparkline animation ──────────────────────────────────── */
+/* ── High-Fidelity UI Draw Lines ───────────────────────────── */
 @keyframes drawLine {
   from { stroke-dashoffset: 200; }
   to   { stroke-dashoffset: 0; }
 }
 .spark-line {
   stroke-dasharray: 200;
-  animation: drawLine 0.8s ease forwards 0.3s;
+  animation: drawLine 1s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.2s;
+}
+@keyframes fadeAreaIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+.spark-area {
+  opacity: 0;
+  animation: fadeAreaIn 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.4s;
 }
 
-/* ── Scorecard shine ──────────────────────────────────────── */
+/* ── Scorecard Shine & Modal Dropins ────────────────────────── */
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(0.97) translateY(16px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.modal-panel { animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+
 @keyframes scorecardShine {
   0%   { background-position: -200% center; }
   100% { background-position: 200% center; }
 }
 .scorecard-gold {
-  background: linear-gradient(90deg, #f59e0b, #fcd34d, #f59e0b);
+  background: linear-gradient(90deg, #b45309, #fbbf24, #b45309);
   background-size: 200% auto;
-  animation: scorecardShine 2.5s linear infinite;
+  animation: scorecardShine 3s linear infinite;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
-.scorecard-silver {
-  color: #64748b;
-}
-.scorecard-bronze {
-  color: #b45309;
-}
+.scorecard-silver { color: #64748b; }
+.scorecard-bronze { color: #9a3412; }
 
-/* ── Nav transition ───────────────────────────────────────── */
-.nav-item {
-  transition: color 0.15s ease, background 0.15s ease;
-}
-
-/* ── Bottom sheet animation (mobile modal) ──── */
-@keyframes slideUp {
-  from { transform: translateY(100%); opacity: 0; }
-  to   { transform: translateY(0);    opacity: 1; }
-}
-@media (max-width: 640px) {
-  .modal-panel { animation: slideUp 0.28s cubic-bezier(0.32, 0.72, 0, 1) forwards; }
-}
-
-/* ── Tabular number alignment ──────────────── */
+/* ── UI Enhancers ─────────────────────────────────────────── */
+.nav-item { transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease; }
 .tabular-nums { font-variant-numeric: tabular-nums; }
 
-/* ── Heatmap horizontal scroll hint ─────────── */
-.scroll-hint::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  width: 32px;
-  background: linear-gradient(to left, white, transparent);
-  pointer-events: none;
+/* Ensure heatmap container scrolls smoothly with modern iOS bar interactions */
+@media (max-width: 640px) {
+  @keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+  }
+  .modal-panel { animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
 }
