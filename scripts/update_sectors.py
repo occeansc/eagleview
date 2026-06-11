@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Eagleview v3.0 — Data Updater
+Eagleview v4.0 — Data Updater
 ================================
-New in v3.0:
+New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
   Phase 2 — Batch download all tickers
   Phase 3 — Compute sector returns + breadth (needs all stocks)
@@ -16,7 +16,7 @@ Env vars:
 """
 
 import os, sys, logging
-from datetime import datetime
+from datetime import datetime, timezone
 import requests
 import pandas as pd
 import yfinance as yf
@@ -372,7 +372,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v3.0 Data Sync ══")
+    log.info("══ Eagleview v4.0 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -464,7 +464,7 @@ def main():
             # Ensure sector exists in DB, get id
             rows      = db.upsert("sectors", {
                 "name":       sector_name,
-                "updated_at": datetime.utcnow().isoformat(),
+                "updated_at": datetime.now(timezone.utc).isoformat(),
             }, "name")
             sector_id = rows[0]["id"]
 
@@ -600,7 +600,7 @@ def main():
                 "prev_month_pct":   old.get("month_pct"),
                 "prev_quarter_pct": old.get("quarter_pct"),
                 "prev_ytd_pct":     old.get("ytd_pct"),
-                "updated_at":       datetime.utcnow().isoformat(),
+                "updated_at":       datetime.now(timezone.utc).isoformat(),
             })
 
             # Verify write
@@ -635,7 +635,7 @@ def main():
         try:
             db.upsert("benchmarks", {
                 "name": bm["name"], "ticker": bm["ticker"],
-                **r, "updated_at": datetime.utcnow().isoformat(),
+                **r, "updated_at": datetime.now(timezone.utc).isoformat(),
             }, "ticker")
             log.info(f"  ✓ {bm['name']}  1W={r.get('week_pct')}%  YTD={r.get('ytd_pct')}%")
         except Exception as e:

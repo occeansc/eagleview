@@ -2,7 +2,7 @@ import { createSupabaseClient } from '@/lib/supabase'
 import SectorGrid from '@/components/SectorGrid'
 import type { Sector, Benchmark, SectorSnapshot } from '@/lib/types'
 
-export const revalidate = 1800
+export const revalidate = 900 // 15 min — refreshes within one sync cycle
 
 async function getData() {
   const supabase = createSupabaseClient()
@@ -13,7 +13,7 @@ async function getData() {
       .from('sector_snapshots')
       .select('sector_id, ytd_pct, synced_at')
       .order('synced_at', { ascending: true })
-      .limit(500),
+      .limit(1000),
   ])
   return {
     sectors:    (sectorsRes.data    ?? []) as Sector[],
@@ -25,7 +25,6 @@ async function getData() {
 export default async function Page() {
   const { sectors, benchmarks, snapshots } = await getData()
 
-  // Group snapshots by sector_id for O(1) lookup in cards
   const snapshotMap: Record<number, SectorSnapshot[]> = {}
   for (const s of snapshots) {
     if (!snapshotMap[s.sector_id]) snapshotMap[s.sector_id] = []
@@ -34,7 +33,11 @@ export default async function Page() {
 
   return (
     <main className="min-h-screen">
-      <SectorGrid sectors={sectors} benchmarks={benchmarks} snapshots={snapshotMap} />
+      <SectorGrid
+        sectors={sectors}
+        benchmarks={benchmarks}
+        snapshots={snapshotMap}
+      />
     </main>
   )
 }

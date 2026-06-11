@@ -2,37 +2,25 @@ name: Update Sector Data
 
 on:
   schedule:
-    # 1 hour after US market OPEN  — 10:30 AM ET = 14:30 UTC
-    - cron: '30 14 * * 1-5'
-    # 4 hours after US market OPEN — 1:30 PM ET  = 17:30 UTC
-    - cron: '30 17 * * 1-5'
-    # 1 hour after US market CLOSE — 5:00 PM ET  = 21:00 UTC
-    - cron: '0 21 * * 1-5'
+    - cron: '30 14 * * 1-5'   # 10:30 AM ET — 1hr after open
+    - cron: '30 17 * * 1-5'   # 1:30 PM ET  — 4hrs after open
+    - cron: '0 21 * * 1-5'    # 5:00 PM ET  — 1hr after close
   workflow_dispatch:
 
 jobs:
   update-sectors:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
-
-      - name: Set up Python 3.12
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-
-      - name: Cache pip
-        uses: actions/cache@v4
+      - uses: actions/cache@v4
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-eagleview
-
-      - name: Install dependencies
-        run: pip install yfinance pandas requests
-
+      - run: pip install yfinance pandas requests
       - name: Run sector update
         env:
           SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}

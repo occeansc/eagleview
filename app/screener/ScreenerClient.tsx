@@ -252,7 +252,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       )}
 
       <p className="text-center text-[10px] text-slate-300 mt-5">
-        Eagleview v3.1 · Equal-weighted baskets · Yahoo Finance
+        Eagleview v4.0 · Equal-weighted baskets · Yahoo Finance
       </p>
     </div>
   )

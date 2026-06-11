@@ -131,7 +131,7 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
                   <span className="text-xs font-medium text-slate-500 truncate">{bm.name}</span>
                 </div>
                 {PERIODS.map(p => {
-                  const val = getPeriodValue(bm as unknown as Sector, p)
+                  const val = getPeriodValue(bm, p)
                   return (
                     <div key={p} className={`heat-cell py-2 text-center ${heatColour(val, absMaxPerPeriod[p])}`}>
                       <span className="font-mono text-xs font-semibold">{pctStr(val)}</span>
@@ -149,7 +149,7 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
               const beats = spx
                 ? PERIODS.filter(p => {
                     const sv = getPeriodValue(sector, p)
-                    const bv = getPeriodValue(spx as unknown as Sector, p)
+                    const bv = getPeriodValue(spx, p)
                     return sv !== null && bv !== null && sv > bv
                   }).length
                 : 0

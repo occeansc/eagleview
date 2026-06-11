@@ -3,26 +3,40 @@ import { Inter, JetBrains_Mono } from 'next/font/google'
 import Nav from '@/components/Nav'
 import './globals.css'
 
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' })
-const mono  = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono', display: 'swap' })
+const inter = Inter({
+  subsets:  ['latin'],
+  variable: '--font-inter',
+  display:  'swap',
+})
+const mono = JetBrains_Mono({
+  subsets:  ['latin'],
+  variable: '--font-mono',
+  display:  'swap',
+})
 
 export const metadata: Metadata = {
   title:       { default: 'Eagleview', template: '%s · Eagleview' },
   description: 'Curated thematic sector heat rankings — 1W · 1M · 3M · YTD',
   icons: {
     icon:  [{ url: '/icon.svg', type: 'image/svg+xml' }],
-    apple: [{ url: '/apple-icon.png', sizes: '180x180' }],
+    apple: [{ url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }],
   },
-  viewport: 'width=device-width, initial-scale=1, viewport-fit=cover',
+  manifest: '/manifest.webmanifest',
+  themeColor: '#0f172a',
+  appleWebApp: {
+    capable:    true,
+    title:      'Eagleview',
+    statusBarStyle: 'black-translucent',
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${mono.variable}`}>
       <head>
-        {/* Explicit link tags so Safari picks up the apple-touch-icon */}
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-icon.png" />
         <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+        <meta name="mobile-web-app-capable" content="yes" />
       </head>
       <body className="bg-slate-100 antialiased font-sans pb-20 sm:pb-0 min-h-screen">
         <Nav />

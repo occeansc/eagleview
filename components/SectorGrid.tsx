@@ -11,11 +11,12 @@ import SectorCard from './SectorCard'
 import PeriodToggle from './PeriodToggle'
 import BenchmarkBar from './BenchmarkBar'
 import HoldingsModal from './HoldingsModal'
+import MarketRegime from './MarketRegime'
 
 interface Props {
-  sectors: Sector[]
+  sectors:    Sector[]
   benchmarks: Benchmark[]
-  snapshots: Record<number, SectorSnapshot[]>
+  snapshots:  Record<number, SectorSnapshot[]>
 }
 
 export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
@@ -52,19 +53,26 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
       {/* ── Header ─────────────────────────────── */}
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
         <div>
-          <div className="flex items-center gap-2.5 mb-1">
+          <div className="flex items-center gap-2.5 mb-1.5">
             <EagleIcon size={22} className="text-slate-800 shrink-0" />
             <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Eagleview</h1>
           </div>
-          <p className="text-xs text-slate-400 pl-8">
-            {sorted.length} sectors · {PERIOD_LABELS[period]}
-            {positiveCount > 0 && (
-              <> · <span className="text-emerald-600 font-semibold">{positiveCount}↑</span>
-                {' '}<span className="text-rose-600 font-semibold">{negativeCount}↓</span>
-              </>
-            )}
-            {lastUpdated && <> · {lastUpdated}</>}
-          </p>
+          <div className="flex flex-wrap items-center gap-2 pl-8">
+            <p className="text-xs text-slate-400">
+              {sorted.length} sectors · {PERIOD_LABELS[period]}
+              {positiveCount > 0 && (
+                <>
+                  {' · '}
+                  <span className="text-emerald-600 font-semibold">{positiveCount}↑</span>
+                  {' '}
+                  <span className="text-rose-600 font-semibold">{negativeCount}↓</span>
+                </>
+              )}
+              {lastUpdated && <> · {lastUpdated}</>}
+            </p>
+            {/* Market Regime inline with subtitle */}
+            <MarketRegime sectors={sectors} />
+          </div>
         </div>
         <PeriodToggle selected={period} onChange={setPeriod} />
       </div>
@@ -90,7 +98,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
                 period={period}
                 isHot={false}
                 delay={0}
-                isPinned={true}
+                isPinned
                 scorecard={computeScorecard(sector, spx)}
                 snapshots={snapshots[sector.id] ?? []}
                 onClick={() => setSelected(sector)}
@@ -101,7 +109,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
         </div>
       )}
 
-      {/* ── Sector rankings divider ──────────────── */}
+      {/* ── Rankings divider ─────────────────────── */}
       <div className="flex items-center gap-3 mb-4">
         <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase whitespace-nowrap">
           Sector Rankings
@@ -111,10 +119,10 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
 
       {/* ── Grid ────────────────────────────────── */}
       {sectors.length === 0 ? (
-        <div className="text-center py-20 text-slate-400">
+        <div className="text-center py-20">
           <EagleIcon size={48} className="mx-auto mb-4 text-slate-200" />
           <p className="font-semibold text-slate-600 text-lg">No data yet</p>
-          <p className="text-sm mt-2 max-w-xs mx-auto text-slate-400">
+          <p className="text-sm mt-2 text-slate-400 max-w-xs mx-auto">
             Trigger the GitHub Action to run the first data sync.
           </p>
         </div>
