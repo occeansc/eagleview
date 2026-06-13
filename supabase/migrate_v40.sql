@@ -1,43 +1,29 @@
 -- ═══════════════════════════════════════════════════════
---  Eagleview v4.0 Migration (With Deduplication Fix)
+--  Eagleview v4.0 Migration
 --  Run in Supabase → SQL Editor
+--  Safe to re-run (IF NOT EXISTS / DO NOTHING guards)
 -- ═══════════════════════════════════════════════════════
 
--- 1. Automatic Housecleaning: Delete historical duplicates
---    This looks at any day with multiple entries and keeps only the LATEST sync row.
-DELETE FROM sector_snapshots
-WHERE ctid IN (
-  SELECT ctid
-  FROM (
-    SELECT ctid,
-           ROW_NUMBER() OVER (
-             PARTITION BY sector_id, ((synced_at AT TIME ZONE 'UTC')::date)
-             ORDER BY synced_at DESC
-           ) as rn
-    FROM sector_snapshots
-  ) t
-  WHERE t.rn > 1
-);
-
--- 2. Now create the unique index safely!
+-- 1. Prevent duplicate snapshots for same sector on same day.
+--    Keeps the DB clean when 3x daily syncs run.
 CREATE UNIQUE INDEX IF NOT EXISTS idx_snapshots_sector_day
-  ON sector_snapshots (sector_id, ((synced_at AT TIME ZONE 'UTC')::date));
+  ON sector_snapshots (sector_id, DATE(synced_at));
 
--- 3. Performance indexes for common query patterns
+-- 2. Performance indexes for common query patterns
 CREATE INDEX IF NOT EXISTS idx_holdings_sector
   ON sector_holdings (sector_id);
 
 CREATE INDEX IF NOT EXISTS idx_sectors_ytd_rank
   ON sectors (ytd_rank);
 
--- 4. Ensure price column exists (from v3.1.2 migration)
+-- 3. Ensure price column exists (from v3.1.2 migration)
 ALTER TABLE sector_holdings
   ADD COLUMN IF NOT EXISTS price DECIMAL(12,4);
 
 ALTER TABLE sector_snapshots
   ADD COLUMN IF NOT EXISTS avg_price DECIMAL(12,4);
 
--- 5. Verify final schema
+-- 4. Verify final schema
 SELECT
   column_name,
   data_type,

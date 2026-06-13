@@ -2,107 +2,255 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ═══════════════════════════════════════════════════════════
+   EAGLEVIEW v4.1 — UNIFIED GLASS DESIGN SYSTEM
+   Merges glassmorphism surfaces with designer's card/modal intentions
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Layer: base ─────────────────────────────────────────── */
 @layer base {
   body {
-    /* Upgrading typography smoothing and giving body background an incredibly soft off-white tone */
-    @apply bg-[#F8FAFC] text-slate-900 selection:bg-indigo-100 selection:text-indigo-900;
+    @apply text-slate-900;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    /* Warm off-white with subtle tinted gradients */
+    background-color: #F0F4FF;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 15% 5%,  rgba(199,210,254,0.38) 0%, transparent 55%),
+      radial-gradient(ellipse 60% 45% at 85% 95%, rgba(167,243,208,0.25) 0%, transparent 55%),
+      linear-gradient(165deg, #EEF2FF 0%, #F8FAFC 40%, #EFF6FF 100%);
+    min-height: 100vh;
   }
+  ::selection { @apply bg-indigo-100 text-indigo-900; }
 }
 
-/* ── Refined Animations ──────────────────────────────────────── */
-@keyframes fadeSlide {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0);    }
-}
-.card-appear {
-  animation: fadeSlide 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  opacity: 0;
+/* ── CSS Custom Properties ───────────────────────────────── */
+:root {
+  --glass-bg:        rgba(255,255,255,0.68);
+  --glass-bg-modal:  rgba(250,250,250,0.95);
+  --glass-border:    rgba(255,255,255,0.52);
+  --glass-blur:      blur(18px) saturate(160%);
+  --glass-blur-nav:  blur(24px) saturate(180%);
+  --shadow-glass:    0 1px 0 rgba(255,255,255,0.85) inset, 0 1px 3px rgba(0,0,0,0.04), 0 2px 8px rgba(0,0,0,0.03);
+  --shadow-lift:     0 1px 0 rgba(255,255,255,0.9) inset, 0 8px 24px rgba(0,0,0,0.08), 0 16px 48px rgba(0,0,0,0.05);
+  --ease-spring:     cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-back:       cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* ── Multi-Layer Interactive Elevate (Smooth Hover Engine) ───── */
+/* ── Sector Cards ────────────────────────────────────────── */
 .sector-card {
-  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease;
+  background:   #ffffff;
+  border:       1px solid rgba(226,232,240,0.60);
+  box-shadow:   0 1px 0 rgba(255,255,255,1) inset,
+                0 1px 3px rgba(0,0,0,0.04),
+                0 2px 8px rgba(0,0,0,0.025);
+  transition:
+    transform  0.38s var(--ease-spring),
+    box-shadow 0.38s cubic-bezier(0.4,0,0.2,1),
+    border-color 0.25s ease;
   will-change: transform, box-shadow;
 }
 .sector-card:hover {
-  transform: translateY(-5px) scale(1.005);
-  box-shadow: 0 20px 40px -8px rgba(0,0,0,0.06), 0 6px 12px -4px rgba(0,0,0,0.03);
+  transform:    translateY(-5px) scale(1.008);
+  border-color: rgba(255,255,255,0.75);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,1) inset,
+    0 12px 32px rgba(0,0,0,0.07),
+    0 4px 12px rgba(0,0,0,0.04);
+}
+.sector-card.positive:hover {
+  box-shadow:
+    0 1px 0 rgba(255,255,255,1) inset,
+    0 12px 32px rgba(0,0,0,0.07),
+    0 4px 12px rgba(0,0,0,0.04),
+    0 0 0 1.5px rgba(16,185,129,0.18),
+    0 8px 28px rgba(16,185,129,0.12);
+}
+.sector-card.negative:hover {
+  box-shadow:
+    0 1px 0 rgba(255,255,255,1) inset,
+    0 12px 32px rgba(0,0,0,0.07),
+    0 4px 12px rgba(0,0,0,0.04),
+    0 0 0 1.5px rgba(244,63,94,0.15),
+    0 8px 28px rgba(244,63,94,0.08);
 }
 
-/* ── Visual Tags and Blips ────────────────────────────────── */
-@keyframes hotPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%      { opacity: 0.8; transform: scale(1.05); }
+/* ── Card appear ─────────────────────────────────────────── */
+@keyframes cardAppear {
+  from { opacity: 0; transform: translateY(14px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    }
 }
-.hot-badge { animation: hotPulse 3s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
-
-@keyframes risingPulse {
-  0%, 100% { opacity: 1; transform: translateY(0); }
-  50%      { opacity: 0.8; transform: translateY(-2px); }
-}
-.rising-badge { animation: risingPulse 2s cubic-bezier(0.25, 1, 0.5, 1) infinite; }
-
-/* SVG Blips used on Sparklines to bring focus */
-@keyframes pulseRing {
-  0%   { transform: scale(0.6); opacity: 0.8; }
-  100% { transform: scale(3.5); opacity: 0; }
-}
-.pulse-blip {
-  animation: pulseRing 2s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
-  transform-origin: center;
-}
-
-/* ── High-Fidelity UI Draw Lines ───────────────────────────── */
-@keyframes drawLine {
-  from { stroke-dashoffset: 200; }
-  to   { stroke-dashoffset: 0; }
-}
-.spark-line {
-  stroke-dasharray: 200;
-  animation: drawLine 1s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.2s;
-}
-@keyframes fadeAreaIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-.spark-area {
+.card-appear {
+  animation: cardAppear 0.44s var(--ease-spring) forwards;
   opacity: 0;
-  animation: fadeAreaIn 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.4s;
 }
 
-/* ── Scorecard Shine & Modal Dropins ────────────────────────── */
-@keyframes modalIn {
-  from { opacity: 0; transform: scale(0.97) translateY(16px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+/* ── iOS Period control ──────────────────────────────────── */
+.period-control {
+  background: rgba(15,23,42,0.07);
+  border-radius: 14px;
+  padding: 4px;
+  display: flex;
+  gap: 2px;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.10), inset 0 0 0 1px rgba(0,0,0,0.04);
 }
-.modal-panel { animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
+.period-pill {
+  padding: 7px 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: 0.015em;
+  color: rgba(15,23,42,0.42);
+  transition:
+    background 0.2s var(--ease-spring),
+    box-shadow 0.2s ease,
+    color      0.15s ease,
+    transform  0.15s var(--ease-back);
+}
+.period-pill:hover:not(.period-pill-active) {
+  color:      rgba(15,23,42,0.65);
+  background: rgba(255,255,255,0.40);
+}
+.period-pill-active {
+  background: #ffffff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.08);
+  color: #0f172a;
+  transform: scale(1.03);
+}
 
-@keyframes scorecardShine {
+/* ── Floating nav ────────────────────────────────────────── */
+.nav-glass {
+  background: var(--glass-bg);
+  backdrop-filter: var(--glass-blur-nav);
+  -webkit-backdrop-filter: var(--glass-blur-nav);
+  border-bottom: 1px solid rgba(255,255,255,0.45);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.80) inset, 0 2px 16px rgba(0,0,0,0.055);
+}
+.nav-glass-mobile {
+  background: rgba(255,255,255,0.85);
+  backdrop-filter: var(--glass-blur-nav);
+  -webkit-backdrop-filter: var(--glass-blur-nav);
+  border-top: 1px solid rgba(255,255,255,0.55);
+  box-shadow: 0 -1px 0 rgba(255,255,255,0.9) inset, 0 -4px 24px rgba(0,0,0,0.055);
+}
+
+/* ── Modal ───────────────────────────────────────────────── */
+@keyframes sheetUp {
+  from { transform: translateY(100%); opacity: 0.3; }
+  to   { transform: translateY(0);    opacity: 1;   }
+}
+@keyframes modalPop {
+  from { opacity: 0; transform: scale(0.96) translateY(10px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+}
+.modal-sheet {
+  background: var(--glass-bg-modal);
+  border: 1px solid rgba(255,255,255,0.30);
+  box-shadow:
+    0 -4px 40px rgba(0,0,0,0.12),
+    0 -1px 0 rgba(255,255,255,0.90) inset;
+}
+@media (max-width: 640px) {
+  .modal-sheet { animation: sheetUp  0.35s cubic-bezier(0.32,0.72,0,1) forwards; }
+}
+@media (min-width: 641px) {
+  .modal-sheet { animation: modalPop 0.25s var(--ease-spring) forwards; }
+}
+
+/* ── Benchmark tiles ─────────────────────────────────────── */
+.bench-tile {
+  background: #ffffff;
+  border:     1px solid rgba(226,232,240,0.55);
+  box-shadow: 0 1px 0 rgba(255,255,255,1) inset,
+              0 1px 3px rgba(0,0,0,0.035),
+              0 2px 8px rgba(0,0,0,0.025);
+  transition: transform 0.22s var(--ease-spring), box-shadow 0.22s ease;
+  overflow: hidden;
+}
+.bench-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 1px 0 rgba(255,255,255,1) inset,
+              0 6px 20px rgba(0,0,0,0.065),
+              0 2px 8px rgba(0,0,0,0.04);
+}
+
+/* ── Breadth bar ─────────────────────────────────────────── */
+@keyframes breadthFill {
+  from { width: 0; opacity: 0.5; }
+  to   { opacity: 1; }
+}
+.breadth-bar {
+  animation: breadthFill 0.75s var(--ease-spring) forwards 0.1s;
+}
+.breadth-track {
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.07);
+}
+
+/* ── Badges ──────────────────────────────────────────────── */
+@keyframes hotGlow {
+  0%, 100% { box-shadow: 0 2px 8px rgba(239,68,68,0.30); }
+  50%       { box-shadow: 0 2px 18px rgba(239,68,68,0.55); }
+}
+@keyframes risingFloat {
+  0%, 100% { transform: translateY(0);    }
+  50%       { transform: translateY(-2px); }
+}
+@keyframes rankPop {
+  0%   { transform: scale(0.55); opacity: 0; }
+  70%  { transform: scale(1.15); }
+  100% { transform: scale(1);   opacity: 1; }
+}
+.hot-badge    { animation: hotGlow    2.5s ease-in-out infinite; }
+.rising-badge { animation: risingFloat 2.2s ease-in-out infinite; }
+.rank-change  { animation: rankPop    0.38s var(--ease-back) forwards; }
+
+/* ── Scorecard gold shine ────────────────────────────────── */
+@keyframes goldShine {
   0%   { background-position: -200% center; }
-  100% { background-position: 200% center; }
+  100% { background-position:  200% center; }
 }
 .scorecard-gold {
-  background: linear-gradient(90deg, #b45309, #fbbf24, #b45309);
+  background: linear-gradient(90deg, #b45309, #fbbf24, #f59e0b, #b45309);
   background-size: 200% auto;
-  animation: scorecardShine 3s linear infinite;
+  animation: goldShine 2.8s linear infinite;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 .scorecard-silver { color: #64748b; }
-.scorecard-bronze { color: #9a3412; }
 
-/* ── UI Enhancers ─────────────────────────────────────────── */
-.nav-item { transition: color 0.2s ease, background-color 0.2s ease, transform 0.2s ease; }
-.tabular-nums { font-variant-numeric: tabular-nums; }
-
-/* Ensure heatmap container scrolls smoothly with modern iOS bar interactions */
-@media (max-width: 640px) {
-  @keyframes slideUp {
-    from { transform: translateY(100%); opacity: 0; }
-    to   { transform: translateY(0);    opacity: 1; }
-  }
-  .modal-panel { animation: slideUp 0.3s cubic-bezier(0.2, 0.8, 0.2, 1) forwards; }
+/* ── Sparklines ──────────────────────────────────────────── */
+@keyframes drawLine {
+  from { stroke-dashoffset: 300; }
+  to   { stroke-dashoffset: 0;   }
 }
+@keyframes fadeArea {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+@keyframes pulseRing {
+  0%   { transform: scale(0.6); opacity: 0.8; }
+  100% { transform: scale(3.2); opacity: 0;   }
+}
+.spark-line {
+  stroke-dasharray: 300;
+  animation: drawLine   0.95s var(--ease-spring) forwards 0.15s;
+}
+.spark-area  { animation: fadeArea   1.1s ease forwards 0.35s; opacity: 0; }
+.pulse-blip  { animation: pulseRing  2.2s cubic-bezier(0.2,0.8,0.2,1) infinite; transform-origin: center; }
+
+/* ── Heatmap ─────────────────────────────────────────────── */
+.heat-cell {
+  transition: opacity 0.14s ease, transform 0.16s var(--ease-back);
+}
+.heat-cell:hover {
+  opacity: 0.88;
+  transform: scale(1.07);
+  z-index: 10;
+  position: relative;
+  border-radius: 6px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.13);
+}
+
+/* ── Misc ────────────────────────────────────────────────── */
+.tabular-nums { font-variant-numeric: tabular-nums; }

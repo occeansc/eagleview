@@ -1,80 +1,83 @@
 'use client'
 
 import { SectorSnapshot } from '@/lib/types'
-import { useId } from 'react'
 
 interface Props {
   snapshots: SectorSnapshot[]
-  positive: boolean
-  width?: number
-  height?: number
+  positive:  boolean
+  width?:    number
+  height?:   number
 }
 
-export default function Sparkline({ snapshots, positive, width = 80, height = 24 }: Props) {
-  const gradId = useId()
-
+export default function Sparkline({ snapshots, positive, width = 80, height = 26 }: Props) {
   const points = snapshots
     .filter(s => s.ytd_pct !== null)
     .map(s => s.ytd_pct as number)
 
   if (points.length < 2) return null
 
-  const min = Math.min(...points)
-  const max = Math.max(...points)
+  const min   = Math.min(...points)
+  const max   = Math.max(...points)
   const range = max - min || 1
+  const pad   = 2
 
-  const xs = points.map((_, i) => (i / (points.length - 1)) * width)
-  const ys = points.map(v => height - ((v - min) / range) * height)
+  const xs = points.map((_, i) => pad + (i / (points.length - 1)) * (width - pad * 2))
+  const ys = points.map(v => pad + height - pad * 2 - ((v - min) / range) * (height - pad * 2))
 
-  const d = xs.map((x, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${ys[i].toFixed(1)}`).join(' ')
-  const dArea = `${d} L${width},${height} L0,${height} Z`
+  // Line path
+  const linePath = xs
+    .map((x, i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(2)},${ys[i].toFixed(2)}`)
+    .join(' ')
 
-  // Subtle beautiful aesthetic color grades overriding solid standard
-  const colorCode = positive ? '#10B981' : '#F43F5E'
+  // Area path — close down to bottom
+  const areaPath =
+    linePath +
+    ` L${xs[xs.length - 1].toFixed(2)},${height - pad}` +
+    ` L${xs[0].toFixed(2)},${height - pad} Z`
+
+  const color     = positive ? '#10b981' : '#f43f5e'
+  const gradId    = `sg-${positive ? 'p' : 'n'}-${width}`
 
   return (
-    <svg width={width} height={height} className="overflow-visible z-0 pointer-events-none drop-shadow-[0_2px_4px_rgba(0,0,0,0.04)]">
+    <svg
+      width={width}
+      height={height}
+      viewBox={`0 0 ${width} ${height}`}
+      className="overflow-visible"
+    >
       <defs>
-        <linearGradient id={`spark-${gradId}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={colorCode} stopOpacity="0.25" />
-          <stop offset="60%" stopColor={colorCode} stopOpacity="0.05" />
-          <stop offset="100%" stopColor={colorCode} stopOpacity="0" />
+        <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%"   stopColor={color} stopOpacity="0.28" />
+          <stop offset="75%"  stopColor={color} stopOpacity="0.06" />
+          <stop offset="100%" stopColor={color} stopOpacity="0"    />
         </linearGradient>
       </defs>
 
-      {/* Path Under-Fill (Smooth Glow) */}
+      {/* Area fill */}
       <path
-        d={dArea}
-        fill={`url(#spark-${gradId})`}
+        d={areaPath}
+        fill={`url(#${gradId})`}
         className="spark-area"
       />
-      {/* Strict path line */}
+
+      {/* Line */}
       <path
-        d={d}
+        d={linePath}
         fill="none"
-        stroke={colorCode}
-        strokeWidth="1.5"
+        stroke={color}
+        strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="spark-line z-10"
+        className="spark-line"
       />
-      
-      {/* Latest blip ping ring + solid cap styling element */}
+
+      {/* Terminal dot */}
       <circle
         cx={xs[xs.length - 1]}
         cy={ys[ys.length - 1]}
-        r="3"
-        fill={colorCode}
-        opacity="0.3"
-        className="pulse-blip"
-      />
-      <circle
-        cx={xs[xs.length - 1]}
-        cy={ys[ys.length - 1]}
-        r="1.5"
-        fill="white"
-        stroke={colorCode}
-        strokeWidth="1"
+        r="2.2"
+        fill={color}
+        className="spark-area"
       />
     </svg>
   )

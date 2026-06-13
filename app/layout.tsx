@@ -4,14 +4,10 @@ import Nav from '@/components/Nav'
 import './globals.css'
 
 const inter = Inter({
-  subsets:  ['latin'],
-  variable: '--font-inter',
-  display:  'swap',
+  subsets: ['latin'], variable: '--font-inter', display: 'swap',
 })
 const mono = JetBrains_Mono({
-  subsets:  ['latin'],
-  variable: '--font-mono',
-  display:  'swap',
+  subsets: ['latin'], variable: '--font-mono', display: 'swap',
 })
 
 export const metadata: Metadata = {
@@ -24,8 +20,8 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
   themeColor: '#0f172a',
   appleWebApp: {
-    capable:    true,
-    title:      'Eagleview',
+    capable: true,
+    title:   'Eagleview',
     statusBarStyle: 'black-translucent',
   },
 }
@@ -37,8 +33,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-icon.png" />
         <link rel="icon" type="image/svg+xml" href="/icon.svg" />
         <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body className="bg-slate-100 antialiased font-sans pb-20 sm:pb-0 min-h-screen">
+      <body className="antialiased font-sans pb-20 sm:pb-0 min-h-screen">
         <Nav />
         {children}
       </body>

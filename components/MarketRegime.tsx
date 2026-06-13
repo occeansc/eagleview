@@ -3,69 +3,74 @@
 import { Sector, RegimeType, computeRegime } from '@/lib/types'
 import { TrendingUpIcon, TrendingDownIcon } from './Icons'
 
-interface Props {
-  sectors: Sector[]
-}
-
 const CONFIG: Record<RegimeType, {
-  label: string
-  sub: string
-  bg: string
-  border: string
-  text: string
+  label:  string
+  sub:    string
+  dot:    string
+  pill:   string
+  text:   string
   accent: string
 }> = {
   'risk-on': {
     label:  'Risk-ON',
     sub:    'Growth sectors leading',
-    bg:     'bg-emerald-50',
-    border: 'border-emerald-200',
+    dot:    'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]',
+    pill:   'bg-emerald-50/90 border-emerald-200/60',
     text:   'text-emerald-800',
-    accent: 'text-emerald-600',
+    accent: 'text-emerald-500',
   },
   'risk-off': {
     label:  'Risk-OFF',
-    sub:    'Defensive rotation underway',
-    bg:     'bg-rose-50',
-    border: 'border-rose-200',
+    sub:    'Defensive rotation',
+    dot:    'bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.7)]',
+    pill:   'bg-rose-50/90 border-rose-200/60',
     text:   'text-rose-800',
     accent: 'text-rose-500',
   },
   'mixed': {
     label:  'Mixed',
-    sub:    'No clear sector leadership',
-    bg:     'bg-slate-50',
-    border: 'border-slate-200',
-    text:   'text-slate-700',
-    accent: 'text-slate-500',
+    sub:    'No clear leadership',
+    dot:    'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]',
+    pill:   'bg-amber-50/90 border-amber-200/60',
+    text:   'text-amber-800',
+    accent: 'text-amber-500',
   },
   'loading': {
     label:  '—',
     sub:    '',
-    bg:     'bg-slate-50',
-    border: 'border-slate-100',
+    dot:    'bg-slate-300',
+    pill:   'bg-slate-50/60 border-slate-200/40',
     text:   'text-slate-400',
     accent: 'text-slate-300',
   },
 }
 
-export default function MarketRegime({ sectors }: Props) {
+export default function MarketRegime({ sectors }: { sectors: Sector[] }) {
   const regime = computeRegime(sectors)
   const cfg    = CONFIG[regime]
 
   return (
-    <div className={`inline-flex items-center gap-2.5 px-3.5 py-2 rounded-xl border ${cfg.bg} ${cfg.border} select-none`}>
-      {regime === 'risk-on'  && <TrendingUpIcon   size={14} className={cfg.accent} />}
-      {regime === 'risk-off' && <TrendingDownIcon  size={14} className={cfg.accent} />}
-      {regime === 'mixed'    && (
-        <span className={`w-3.5 h-0.5 rounded-full bg-current ${cfg.accent}`} />
+    <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border backdrop-blur-sm ${cfg.pill}`}
+      style={{ boxShadow: '0 1px 0 rgba(255,255,255,0.7) inset, 0 1px 4px rgba(0,0,0,0.04)' }}
+    >
+      {/* Pulsing dot */}
+      <span className="relative flex items-center justify-center w-2 h-2">
+        <span className={`absolute inline-flex w-full h-full rounded-full pulse-blip ${cfg.dot} opacity-60`} />
+        <span className={`relative w-2 h-2 rounded-full ${cfg.dot}`} />
+      </span>
+
+      {/* Label + sub */}
+      <span className={`text-[10px] font-extrabold tracking-wide ${cfg.text}`}>
+        {cfg.label}
+      </span>
+      {cfg.sub && regime !== 'loading' && (
+        <span className={`text-[9px] ${cfg.accent} hidden sm:inline`}>
+          · {cfg.sub}
+        </span>
       )}
-      <div>
-        <span className={`text-xs font-bold tracking-wide ${cfg.text}`}>{cfg.label}</span>
-        {cfg.sub && (
-          <span className={`text-[10px] ml-1.5 ${cfg.accent}`}>{cfg.sub}</span>
-        )}
-      </div>
+
+      {regime === 'risk-on'  && <TrendingUpIcon   size={11} className={cfg.accent} />}
+      {regime === 'risk-off' && <TrendingDownIcon  size={11} className={cfg.accent} />}
     </div>
   )
 }
