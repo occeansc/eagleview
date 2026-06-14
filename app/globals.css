@@ -9,6 +9,9 @@
 
 /* ── Layer: base ─────────────────────────────────────────── */
 @layer base {
+  html, body {
+    overflow-x: hidden;
+  }
   body {
     @apply text-slate-900;
     -webkit-font-smoothing: antialiased;
