@@ -4,7 +4,7 @@ import {
   Sector, Period, ScorecardLevel, SectorSnapshot,
   getPeriodValue, getRankChange, getBreadth,
 } from '@/lib/types'
-import { ZapIcon, BookmarkIcon, AwardIcon } from './Icons'
+import { ZapIcon, BookmarkIcon, AwardIcon, FlameIcon, TrendingUpIcon } from './Icons'
 import Sparkline from './Sparkline'
 
 interface Props {
@@ -47,17 +47,19 @@ export default function SectorCard({
         className={`absolute bottom-[-20%] right-[-12%] w-28 h-28 rounded-full blur-[40px] pointer-events-none opacity-0 group-hover:opacity-[0.18] group-hover:scale-[2] transition-all duration-700 ${bloomColor}`}
       />
 
-      {/* ── HOT / RISING inline top banner — never buried ── */}
+      {/* ── HOT / RISING inline top banner — never buried, more prominent ── */}
       {(isHot || isRising) && (
-        <div className={`w-full px-3 py-1.5 rounded-t-[22px] border-b flex items-center gap-1.5 relative z-10 ${
+        <div className={`w-full px-3.5 py-2 rounded-t-[22px] border-b flex items-center gap-2 relative z-10 ${
           isHot
-            ? 'bg-gradient-to-r from-orange-50 to-rose-50 border-orange-100/60'
-            : 'bg-gradient-to-r from-sky-50 to-indigo-50 border-sky-100/60'
+            ? 'bg-gradient-to-r from-orange-100 via-orange-50 to-rose-50 border-orange-200/70'
+            : 'bg-gradient-to-r from-sky-100 via-sky-50 to-indigo-50 border-sky-200/70'
         }`}>
-          <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isHot ? 'bg-orange-500' : 'bg-sky-500'}`}
-            style={{ boxShadow: isHot ? '0 0 6px rgba(249,115,22,0.7)' : '0 0 6px rgba(14,165,233,0.7)' }}
-          />
-          <span className={`text-[9px] font-black uppercase tracking-[0.18em] ${isHot ? 'text-orange-600' : 'text-sky-600'}`}>
+          {isHot ? (
+            <FlameIcon size={12} className="hot-badge shrink-0 text-orange-500" />
+          ) : (
+            <TrendingUpIcon size={12} className="rising-badge shrink-0 text-sky-500" />
+          )}
+          <span className={`text-[10px] font-black uppercase tracking-[0.22em] ${isHot ? 'text-orange-700' : 'text-sky-700'}`}>
             {isHot ? 'Hot' : 'Rising'}
           </span>
         </div>

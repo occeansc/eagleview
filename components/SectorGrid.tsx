@@ -3,12 +3,11 @@
 import { useState, useMemo } from 'react'
 import {
   Sector, Benchmark, Period, SectorSnapshot,
-  getPeriodValue, PERIOD_LABELS, computeScorecard,
+  getPeriodValue, getRankChange, PERIOD_LABELS, computeScorecard,
 } from '@/lib/types'
 import { useWatchlist } from '@/lib/watchlist'
-import { EagleIcon } from './Icons'
+import { EagleIcon, FlameIcon, TrendingUpIcon } from './Icons'
 import SectorCard from './SectorCard'
-import PeriodToggle from './PeriodToggle'
 import BenchmarkBar from './BenchmarkBar'
 import HoldingsModal from './HoldingsModal'
 import MarketRegime from './MarketRegime'
@@ -19,9 +18,15 @@ interface Props {
   snapshots:  Record<number, SectorSnapshot[]>
 }
 
+type FilterMode = 'all' | 'hot' | 'rising'
+
+const PERIODS_LOCAL: Period[] = ['1W', '1M', '3M', 'YTD']
+const RISING_THRESHOLD = 5
+
 export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
-  const [period, setPeriod]     = useState<Period>('YTD')
-  const [selected, setSelected] = useState<Sector | null>(null)
+  const [period, setPeriod]         = useState<Period>('YTD')
+  const [filterMode, setFilterMode] = useState<FilterMode>('all')
+  const [selected, setSelected]     = useState<Sector | null>(null)
   const { toggle, isPinned, ready, pinnedIds } = useWatchlist()
 
   const spx = benchmarks.find(b => b.ticker === '^GSPC')
@@ -47,6 +52,22 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
     ? sorted.filter(s => pinnedIds.includes(s.id))
     : []
 
+  // ── Filtered display set ──────────────────────────────────────
+  const displayed = useMemo(() => {
+    if (filterMode === 'hot')    return sorted.slice(0, 2)
+    if (filterMode === 'rising') return sorted.filter(s => (getRankChange(s, period) ?? 0) >= RISING_THRESHOLD)
+    return sorted
+  }, [sorted, filterMode, period])
+
+  const sectionTitle =
+    filterMode === 'hot'    ? 'Hot Sectors' :
+    filterMode === 'rising' ? 'Rising Sectors' :
+    'Sector Rankings'
+
+  const toggleFilter = (mode: FilterMode) => {
+    setFilterMode(prev => (prev === mode ? 'all' : mode))
+  }
+
   return (
     <div className="max-w-6xl mx-auto px-3 sm:px-6 py-6">
 
@@ -70,18 +91,54 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
               )}
               {lastUpdated && <> · {lastUpdated}</>}
             </p>
-            {/* Market Regime inline with subtitle */}
             <MarketRegime sectors={sectors} />
           </div>
         </div>
-        <PeriodToggle selected={period} onChange={setPeriod} />
+
+        {/* ── Combined Period + Filter control ─────── */}
+        <div className="period-control shrink-0">
+          {PERIODS_LOCAL.map(p => (
+            <button
+              key={p}
+              onClick={() => setPeriod(p)}
+              className={`period-pill ${period === p ? 'period-pill-active' : ''}`}
+            >
+              {p}
+            </button>
+          ))}
+
+          {/* Divider */}
+          <div className="w-px my-1.5 bg-slate-300/50 self-stretch" />
+
+          {/* HOT filter */}
+          <button
+            onClick={() => toggleFilter('hot')}
+            className={`period-pill period-pill-icon flex items-center gap-1 ${filterMode === 'hot' ? 'period-pill-active' : ''}`}
+            aria-pressed={filterMode === 'hot'}
+            title="Show top 2 hot sectors"
+          >
+            <FlameIcon size={11} className={filterMode === 'hot' ? 'text-orange-500' : ''} />
+            <span className="hidden sm:inline">Hot</span>
+          </button>
+
+          {/* RISING filter */}
+          <button
+            onClick={() => toggleFilter('rising')}
+            className={`period-pill period-pill-icon flex items-center gap-1 ${filterMode === 'rising' ? 'period-pill-active' : ''}`}
+            aria-pressed={filterMode === 'rising'}
+            title="Show sectors rising 5+ ranks"
+          >
+            <TrendingUpIcon size={11} className={filterMode === 'rising' ? 'text-sky-500' : ''} />
+            <span className="hidden sm:inline">Rising</span>
+          </button>
+        </div>
       </div>
 
       {/* ── Market Pulse ────────────────────────── */}
       <BenchmarkBar benchmarks={benchmarks} period={period} />
 
       {/* ── Pinned watchlist strip ───────────────── */}
-      {pinned.length > 0 && (
+      {pinned.length > 0 && filterMode === 'all' && (
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-3">
             <span className="text-[10px] font-bold tracking-widest text-amber-500 uppercase whitespace-nowrap">
@@ -96,7 +153,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
                 sector={sector}
                 rank={sorted.indexOf(sector) + 1}
                 period={period}
-                isHot={false}
+                isHot={sorted.indexOf(sector) < 2}
                 delay={0}
                 isPinned
                 scorecard={computeScorecard(sector, spx)}
@@ -111,10 +168,23 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
 
       {/* ── Rankings divider ─────────────────────── */}
       <div className="flex items-center gap-3 mb-4">
-        <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase whitespace-nowrap">
-          Sector Rankings
+        <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase whitespace-nowrap flex items-center gap-1.5">
+          {filterMode === 'hot'    && <FlameIcon size={11} className="text-orange-500" />}
+          {filterMode === 'rising' && <TrendingUpIcon size={11} className="text-sky-500" />}
+          {sectionTitle}
+          {filterMode !== 'all' && (
+            <span className="text-slate-300 font-normal">· {displayed.length}</span>
+          )}
         </span>
         <div className="flex-1 h-px bg-slate-200" />
+        {filterMode !== 'all' && (
+          <button
+            onClick={() => setFilterMode('all')}
+            className="text-[10px] font-bold text-slate-400 hover:text-slate-700 uppercase tracking-widest transition-colors whitespace-nowrap"
+          >
+            Clear ✕
+          </button>
+        )}
       </div>
 
       {/* ── Grid ────────────────────────────────── */}
@@ -126,23 +196,42 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
             Trigger the GitHub Action to run the first data sync.
           </p>
         </div>
+      ) : displayed.length === 0 ? (
+        <div className="text-center py-16">
+          <TrendingUpIcon size={36} className="mx-auto mb-3 text-slate-200" />
+          <p className="font-semibold text-slate-600 text-base">
+            No sectors rose {RISING_THRESHOLD}+ ranks this sync
+          </p>
+          <p className="text-sm mt-1.5 text-slate-400">
+            Check back after the next sync, or view all sectors.
+          </p>
+          <button
+            onClick={() => setFilterMode('all')}
+            className="mt-4 px-4 py-2 rounded-xl bg-slate-900 text-white text-xs font-bold hover:bg-slate-700 transition-colors"
+          >
+            Show all sectors
+          </button>
+        </div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-          {sorted.map((sector, i) => (
-            <SectorCard
-              key={sector.id}
-              sector={sector}
-              rank={i + 1}
-              period={period}
-              isHot={i < 2}
-              delay={i * 30}
-              isPinned={isPinned(sector.id)}
-              scorecard={computeScorecard(sector, spx)}
-              snapshots={snapshots[sector.id] ?? []}
-              onClick={() => setSelected(sector)}
-              onTogglePin={e => { e.stopPropagation(); toggle(sector.id) }}
-            />
-          ))}
+          {displayed.map((sector, i) => {
+            const overallRank = sorted.indexOf(sector) + 1
+            return (
+              <SectorCard
+                key={sector.id}
+                sector={sector}
+                rank={overallRank}
+                period={period}
+                isHot={overallRank <= 2}
+                delay={i * 30}
+                isPinned={isPinned(sector.id)}
+                scorecard={computeScorecard(sector, spx)}
+                snapshots={snapshots[sector.id] ?? []}
+                onClick={() => setSelected(sector)}
+                onTogglePin={e => { e.stopPropagation(); toggle(sector.id) }}
+              />
+            )
+          })}
         </div>
       )}
 

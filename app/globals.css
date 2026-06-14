@@ -120,6 +120,10 @@
   color: #0f172a;
   transform: scale(1.03);
 }
+/* Tighter padding variant — for icon(+label) filter pills (Hot/Rising) */
+.period-pill-icon {
+  padding: 7px 11px;
+}
 
 /* ── Floating nav ────────────────────────────────────────── */
 .nav-glass {
