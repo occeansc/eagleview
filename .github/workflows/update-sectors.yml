@@ -2,9 +2,9 @@ name: Update Sector Data
 
 on:
   schedule:
-    - cron: '30 14 * * 1-5'   # 10:30 AM ET — 1hr after open
-    - cron: '30 17 * * 1-5'   # 1:30 PM ET  — 4hrs after open
-    - cron: '0 21 * * 1-5'    # 5:00 PM ET  — 1hr after close
+    - cron: '30 14 * * 1-5'
+    - cron: '30 17 * * 1-5'
+    - cron: '0 21 * * 1-5'
   workflow_dispatch:
 
 jobs:

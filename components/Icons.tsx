@@ -11,17 +11,19 @@ export function EagleIcon({ size = 24, className, style, ...p }: IconProps) {
     <svg
       width={size}
       height={size}
-      viewBox="0 0 64 64"
+      viewBox="0 0 24 24"
       fill="currentColor"
       className={className}
       style={style}
       {...p}
     >
-      <polygon points="32,34 8,26 9,31 14,35 32,38"   />
-      <polygon points="32,34 56,26 55,31 50,35 32,38"  />
-      <ellipse cx="32" cy="43" rx="4" ry="9"           />
-      <circle  cx="32" cy="21" r="7"                   />
-      <polygon points="29,52 26,61 32,57 38,61 35,52"  />
+      {/* Bold wing chevrons — read clearly at 16-24px */}
+      <path d="M11.2 9.8 L1 2.5 L2.3 9 L6 11.8 L11.2 11.8 Z" />
+      <path d="M12.8 9.8 L23 2.5 L21.7 9 L18 11.8 L12.8 11.8 Z" />
+      {/* Tail */}
+      <path d="M10.5 11.3 L9 18.5 L12 16.3 L15 18.5 L13.5 11.3 Z" />
+      {/* Head */}
+      <circle cx="12" cy="5.3" r="3.1" />
     </svg>
   )
 }
@@ -153,8 +155,19 @@ export function BuildingIcon({ size = 24, className, ...p }: IconProps) {
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
       stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
       className={className} {...p}>
-      <rect x="2" y="7" width="20" height="14" rx="2"/>
-      <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+      {/* Building outline */}
+      <rect x="4" y="3" width="16" height="18" rx="1"/>
+      {/* Windows — 2x3 grid */}
+      <line x1="8"  y1="7"  x2="8"  y2="7.01"/>
+      <line x1="12" y1="7"  x2="12" y2="7.01"/>
+      <line x1="16" y1="7"  x2="16" y2="7.01"/>
+      <line x1="8"  y1="11" x2="8"  y2="11.01"/>
+      <line x1="12" y1="11" x2="12" y2="11.01"/>
+      <line x1="16" y1="11" x2="16" y2="11.01"/>
+      <line x1="8"  y1="15" x2="8"  y2="15.01"/>
+      <line x1="16" y1="15" x2="16" y2="15.01"/>
+      {/* Door */}
+      <path d="M10 21v-4a2 2 0 0 1 2-2h0a2 2 0 0 1 2 2v4"/>
     </svg>
   )
 }

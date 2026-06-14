@@ -106,9 +106,9 @@ export default function WatchlistPage() {
                             <span className="text-[8px] font-black tracking-widest bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full uppercase">Silver</span>
                           )}
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-0.5">
+                        <p className="text-[10px] text-slate-400 mt-0.5 truncate">
                           {sector.stock_count} assets
-                          {sector.breadth_ytd != null && ` · ${sector.breadth_ytd}% breadth YTD`}
+                          {sector.breadth_ytd != null && ` · ${sector.breadth_ytd}% br. YTD`}
                         </p>
                       </div>
 
