@@ -16,6 +16,14 @@ interface Props {
   onClose:    () => void
 }
 
+/** Format an ISO timestamp as "12 Jun, 14:30" in the user's local timezone */
+function formatSyncTime(iso: string): string {
+  const d = new Date(iso)
+  const datePart = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  const timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+  return `${datePart}, ${timePart}`
+}
+
 export default function HoldingsModal(props: Props) {
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
@@ -228,9 +236,11 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
         {/* Footer */}
         <div className="px-6 py-3 border-t border-slate-100 bg-white shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400">
-            Eagleview v4.1.2 · Yahoo Finance · equal-weighted
+            Eagleview v4.1.3 · Yahoo Finance · equal-weighted
           </p>
-          <p className="text-[10px] text-slate-300">Prices: last sync</p>
+          <p className="text-[10px] text-slate-300 tabular-nums">
+            Last sync: {formatSyncTime(sector.updated_at)}
+          </p>
         </div>
       </div>
     </div>
