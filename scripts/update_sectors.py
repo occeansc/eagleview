@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.0 — Data Updater
+Eagleview v4.1.7 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -39,6 +39,7 @@ SECTOR_STOCKS = [
         ("NXPI","NXP Semiconductors"), ("MRVL","Marvell Technology"), ("MPWR","Monolithic Power"),
         ("ARM","ARM Holdings"), ("STX","Seagate Technology"),
         ("WDC","Western Digital"), ("SNDK","SanDisk"),
+        ("ALAB","Astera Labs"), ("AXTI","AXT Inc"),
     ]),
     ("Software & Cloud", [
         ("MSFT","Microsoft"), ("CRM","Salesforce"), ("NOW","ServiceNow"),
@@ -66,6 +67,7 @@ SECTOR_STOCKS = [
         ("RXRX","Recursion Pharma"), ("TEM","Tempus AI"), ("APP","AppLovin"),
         ("AEVA","Aeva Technologies"), ("ORCL","Oracle"),
         ("ASAN","Asana"), ("BRZE","Braze"), ("UPST","Upstart"),
+        ("NBIS","Nebius Group"), ("CRWV","CoreWeave"),
     ]),
     ("Fintech & Insurtech", [
         ("SQ","Block"), ("PYPL","PayPal"), ("HOOD","Robinhood"),
@@ -120,7 +122,7 @@ SECTOR_STOCKS = [
         ("BKSY","BlackSky"), ("SPIR","Spire Global"), ("PL","Planet Labs"),
         ("HEI","HEICO"), ("TDY","Teledyne"), ("ATRO","Astronics"),
         ("SATL","Satellogic"), ("MNTS","Momentus"), ("LHX","L3Harris"),
-        ("NOC","Northrop Grumman"), ("BA","Boeing"),
+        ("NOC","Northrop Grumman"), ("BA","Boeing"), ("SPCX","SpaceX"),
     ]),
     ("Defense & Aerospace", [
         ("LMT","Lockheed Martin"), ("NOC","Northrop Grumman"), ("RTX","RTX Corp"),
@@ -148,6 +150,7 @@ SECTOR_STOCKS = [
         ("IPGP","IPG Photonics"), ("MTSI","MACOM Technology"), ("MKSI","MKS Instruments"),
         ("CRUS","Cirrus Logic"), ("CIEN","Ciena"),
         ("OSIS","OSI Systems"), ("HIMX","Himax Technologies"),
+        ("AXTI","AXT Inc"),
     ]),
     ("Nuclear & Uranium", [
         ("CCJ","Cameco"), ("NXE","NexGen Energy"), ("DNN","Denison Mines"),
@@ -271,6 +274,11 @@ class DB:
             "Content-Type": "application/json",
             "Prefer": "return=minimal",
         }
+        self.ih   = {   # insert, ignore unique-constraint conflicts
+            "apikey": key, "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+            "Prefer": "resolution=ignore-duplicates,return=minimal",
+        }
 
     def get(self, table: str, params: str = "") -> list:
         r = requests.get(
@@ -313,6 +321,17 @@ class DB:
         requests.post(
             f"{self.base}/{table}",
             headers=self.mh, json=rows, timeout=30,
+        ).raise_for_status()
+
+    def insert_ignore(self, table: str, rows: list) -> None:
+        """Insert, silently skipping rows that violate a unique
+        constraint (ON CONFLICT DO NOTHING — works even for
+        expression-based unique indexes like DATE(synced_at))."""
+        if not rows:
+            return
+        requests.post(
+            f"{self.base}/{table}",
+            headers=self.ih, json=rows, timeout=30,
         ).raise_for_status()
 
 
@@ -372,7 +391,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.0 Data Sync ══")
+    log.info("══ Eagleview v4.1.7 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -535,10 +554,14 @@ def main():
         rets      = sc["rets"]
         old       = old_state.get(sector_id, {})
 
-        try:
-            # Save snapshot of OLD state (before overwriting) — skip on first run
-            if old.get("ytd_pct") is not None:
-                db.insert("sector_snapshots", [{
+        # ── Save snapshot of OLD state (before overwriting) ──────────────────
+        # Isolated from the critical write below: a snapshot failure (e.g. a
+        # same-day duplicate) must NEVER prevent sectors.updated_at from
+        # refreshing. insert_ignore() also makes same-day re-attempts no-ops
+        # (ON CONFLICT DO NOTHING) instead of raising 409s.
+        if old.get("ytd_pct") is not None:
+            try:
+                db.insert_ignore("sector_snapshots", [{
                     "sector_id":    sector_id,
                     "week_pct":     old.get("week_pct"),
                     "month_pct":    old.get("month_pct"),
@@ -550,7 +573,10 @@ def main():
                     "quarter_rank": old.get("quarter_rank") or old_quarter_ranks.get(sector_id),
                     "streak":       old.get("streak", 0),
                 }])
+            except Exception as e:
+                log.warning(f"  ⚠ {sector_name}: snapshot save skipped — {e}")
 
+        try:
             # Rank deltas: positive = moved UP, 0 for first sync (no previous data)
             def rank_delta(old_ranks, new_ranks, sid):
                 old_r = old_ranks.get(sid)
