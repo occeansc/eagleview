@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.1.7 — Data Updater
+Eagleview v4.1.8 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -46,14 +46,14 @@ SECTOR_STOCKS = [
         ("SNOW","Snowflake"), ("DDOG","Datadog"), ("MDB","MongoDB"),
         ("HUBS","HubSpot"), ("WDAY","Workday"), ("VEEV","Veeva Systems"),
         ("TEAM","Atlassian"), ("GTLB","GitLab"), ("PATH","UiPath"),
-        ("CFLT","Confluent"), ("BILL","Bill.com"), ("DOCN","DigitalOcean"),
+        ("TWLO","Twilio"), ("BILL","Bill.com"), ("DOCN","DigitalOcean"),
         ("MSCI","MSCI Inc"), ("PCTY","Paylocity"), ("ESTC","Elastic"),
         ("ORCL","Oracle"), ("ADBE","Adobe"),
     ]),
     ("Cybersecurity", [
         ("CRWD","CrowdStrike"), ("PANW","Palo Alto Networks"), ("ZS","Zscaler"),
         ("FTNT","Fortinet"), ("S","SentinelOne"), ("OKTA","Okta"),
-        ("CYBR","CyberArk Software"), ("TENB","Tenable"), ("RPD","Rapid7"),
+        ("RBRK","Rubrik"), ("TENB","Tenable"), ("RPD","Rapid7"),
         ("QLYS","Qualys"), ("NET","Cloudflare"), ("CHKP","Check Point"),
         ("BAH","Booz Allen Hamilton"), ("CACI","CACI International"), ("LDOS","Leidos"),
         ("SAIC","SAIC"), ("CSCO","Cisco Systems"), ("DXC","DXC Technology"),
@@ -63,14 +63,14 @@ SECTOR_STOCKS = [
         ("PLTR","Palantir"), ("AI","C3.ai"), ("BBAI","BigBear.ai"),
         ("SOUN","SoundHound AI"), ("GOOG","Alphabet"), ("META","Meta Platforms"),
         ("IBM","IBM"), ("AMBA","Ambarella"), ("PEGA","Pegasystems"),
-        ("NICE","NICE Systems"), ("VRNT","Verint Systems"), ("SDGR","Schrodinger"),
+        ("NICE","NICE Systems"), ("SDGR","Schrodinger"),
         ("RXRX","Recursion Pharma"), ("TEM","Tempus AI"), ("APP","AppLovin"),
         ("AEVA","Aeva Technologies"), ("ORCL","Oracle"),
         ("ASAN","Asana"), ("BRZE","Braze"), ("UPST","Upstart"),
         ("NBIS","Nebius Group"), ("CRWV","CoreWeave"),
     ]),
     ("Fintech & Insurtech", [
-        ("SQ","Block"), ("PYPL","PayPal"), ("HOOD","Robinhood"),
+        ("XYZ","Block"), ("PYPL","PayPal"), ("HOOD","Robinhood"),
         ("SOFI","SoFi Technologies"), ("AFRM","Affirm"), ("NU","Nu Holdings"),
         ("LMND","Lemonade"), ("ROOT","Root Insurance"), ("MQ","Marqeta"),
         ("RELY","Remitly"), ("TOST","Toast"), ("FLYW","Flywire"),
@@ -81,14 +81,14 @@ SECTOR_STOCKS = [
     ("Digital Assets & Crypto", [
         ("COIN","Coinbase"), ("MSTR","MicroStrategy"), ("MARA","Marathon Digital"),
         ("RIOT","Riot Platforms"), ("CLSK","CleanSpark"), ("HUT","Hut 8"),
-        ("BTBT","Bit Digital"), ("CIFR","Cipher Mining"), ("BITF","Bitfarms"),
+        ("BTBT","Bit Digital"), ("CIFR","Cipher Mining"),
         ("IREN","Iris Energy"), ("WULF","TeraWulf"), ("CORZ","Core Scientific"),
-        ("CRCL","Circle Internet Group"), ("SMLR","Semler Scientific"), ("BKKT","Bakkt"),
-        ("HIVE","HIVE Digital"),
+        ("CRCL","Circle Internet Group"), ("ASST","Strive"), ("BKKT","Bakkt"),
+        ("HIVE","HIVE Digital"), ("KEEL","Keel Infrastructure"),
     ]),
     ("Biotech & Genomics", [
         ("CRSP","CRISPR Therapeutics"), ("EDIT","Editas Medicine"), ("BEAM","Beam Therapeutics"),
-        ("NTLA","Intellia Therapeutics"), ("VERV","Verve Therapeutics"),
+        ("NTLA","Intellia Therapeutics"), ("PRME","Prime Medicine"),
         ("IONS","Ionis Pharmaceuticals"), ("ALNY","Alnylam Pharmaceuticals"), ("REGN","Regeneron"),
         ("MRNA","Moderna"), ("BNTX","BioNTech"), ("VRTX","Vertex Pharmaceuticals"),
         ("HALO","Halozyme Therapeutics"), ("ARWR","Arrowhead Pharma"),
@@ -102,7 +102,7 @@ SECTOR_STOCKS = [
         ("NVO","Novo Nordisk"), ("AZN","AstraZeneca"), ("ISRG","Intuitive Surgical"),
         ("MDT","Medtronic"), ("EW","Edwards Lifesciences"), ("SYK","Stryker"),
         ("BSX","Boston Scientific"), ("DXCM","Dexcom"), ("PODD","Insulet"),
-        ("HOLX","Hologic"), ("ZBH","Zimmer Biomet"), ("INMD","InMode"),
+        ("BDX","Becton Dickinson"), ("ZBH","Zimmer Biomet"), ("INMD","InMode"),
         ("AMGN","Amgen"), ("GILD","Gilead Sciences"),
     ]),
     ("EV, Battery & Autonomy", [
@@ -150,7 +150,7 @@ SECTOR_STOCKS = [
         ("IPGP","IPG Photonics"), ("MTSI","MACOM Technology"), ("MKSI","MKS Instruments"),
         ("CRUS","Cirrus Logic"), ("CIEN","Ciena"),
         ("OSIS","OSI Systems"), ("HIMX","Himax Technologies"),
-        ("AXTI","AXT Inc"),
+        ("AXTI","AXT Inc"), ("POET","POET Technologies"),
     ]),
     ("Nuclear & Uranium", [
         ("CCJ","Cameco"), ("NXE","NexGen Energy"), ("DNN","Denison Mines"),
@@ -179,7 +179,7 @@ SECTOR_STOCKS = [
         ("TT","Trane Technologies"), ("CARR","Carrier Global"),
         ("POWL","Powell Industries"), ("VST","Vistra"),
         ("CEG","Constellation Energy"), ("ANET","Arista Networks"),
-        ("POWI","Power Integrations"), ("MYR","MYR Group"),
+        ("POWI","Power Integrations"), ("MYRG","MYR Group"),
     ]),
     ("Consumer & E-commerce", [
         ("AMZN","Amazon"), ("EBAY","eBay"), ("ETSY","Etsy"),
@@ -358,6 +358,7 @@ def calc_returns(series: pd.Series) -> dict:
         ytd   = round((current - start) / start * 100, 2) if start else None
 
     result = {
+        "day_pct":     pct(1),
         "week_pct":    pct(5),
         "month_pct":   pct(21),
         "quarter_pct": pct(63),
@@ -391,7 +392,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.1.7 Data Sync ══")
+    log.info("══ Eagleview v4.1.8 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -416,8 +417,8 @@ def main():
     try:
         old_rows = db.get(
             "sectors",
-            "select=id,name,week_pct,month_pct,quarter_pct,ytd_pct,"
-            "week_rank,month_rank,quarter_rank,ytd_rank,streak",
+            "select=id,name,day_pct,week_pct,month_pct,quarter_pct,ytd_pct,"
+            "day_rank,week_rank,month_rank,quarter_rank,ytd_rank,streak",
         )
         old_state = {row["id"]: row for row in old_rows}
         log.info(f"  Read {len(old_state)} existing sector rows")
@@ -426,6 +427,7 @@ def main():
         old_state = {}
 
     # Pre-compute old ranks (needed for delta calculation later)
+    old_day_ranks     = rank_by(old_state, "day_pct")
     old_ytd_ranks     = rank_by(old_state, "ytd_pct")
     old_week_ranks    = rank_by(old_state, "week_pct")
     old_month_ranks   = rank_by(old_state, "month_pct")
@@ -505,6 +507,7 @@ def main():
 
             # Equal-weighted sector averages
             rets = {
+                "day_pct":     safe_avg([s.get("day_pct")     for s in stock_rows]),
                 "week_pct":    safe_avg([s.get("week_pct")    for s in stock_rows]),
                 "month_pct":   safe_avg([s.get("month_pct")   for s in stock_rows]),
                 "quarter_pct": safe_avg([s.get("quarter_pct") for s in stock_rows]),
@@ -517,6 +520,7 @@ def main():
                 "stock_rows":  stock_rows,
                 "rets":        rets,
                 "stock_count": len(stock_rows),
+                "breadth_1d":  breadth(stock_rows, "day_pct"),
                 "breadth_1w":  breadth(stock_rows, "week_pct"),
                 "breadth_1m":  breadth(stock_rows, "month_pct"),
                 "breadth_3m":  breadth(stock_rows, "quarter_pct"),
@@ -537,6 +541,7 @@ def main():
         sc["sector_id"]: sc["rets"]
         for sc in sector_computed.values()
     }
+    new_day_ranks     = rank_by(returns_by_id, "day_pct")
     new_ytd_ranks     = rank_by(returns_by_id, "ytd_pct")
     new_week_ranks    = rank_by(returns_by_id, "week_pct")
     new_month_ranks   = rank_by(returns_by_id, "month_pct")
@@ -563,10 +568,12 @@ def main():
             try:
                 db.insert_ignore("sector_snapshots", [{
                     "sector_id":    sector_id,
+                    "day_pct":      old.get("day_pct"),
                     "week_pct":     old.get("week_pct"),
                     "month_pct":    old.get("month_pct"),
                     "quarter_pct":  old.get("quarter_pct"),
                     "ytd_pct":      old.get("ytd_pct"),
+                    "day_rank":     old.get("day_rank") or old_day_ranks.get(sector_id),
                     "ytd_rank":     old.get("ytd_rank") or old_ytd_ranks.get(sector_id),
                     "week_rank":    old.get("week_rank") or old_week_ranks.get(sector_id),
                     "month_rank":   old.get("month_rank") or old_month_ranks.get(sector_id),
@@ -594,6 +601,7 @@ def main():
             new_streak   = (old_streak + 1) if ytd_positive else 0
 
             # New ranks for this sector
+            new_day_rank     = new_day_ranks.get(sector_id)
             new_ytd_rank     = new_ytd_ranks.get(sector_id)
             new_week_rank    = new_week_ranks.get(sector_id)
             new_month_rank   = new_month_ranks.get(sector_id)
@@ -605,11 +613,13 @@ def main():
                 **rets,
                 "stock_count":    sc["stock_count"],
                 # Ranks
+                "day_rank":       new_day_rank,
                 "ytd_rank":       new_ytd_rank,
                 "week_rank":      new_week_rank,
                 "month_rank":     new_month_rank,
                 "quarter_rank":   new_quarter_rank,
                 # Rank deltas
+                "day_rank_change":     rank_delta(old_day_ranks,     new_day_ranks,     sector_id),
                 "ytd_rank_change":     rank_delta(old_ytd_ranks,     new_ytd_ranks,     sector_id),
                 "week_rank_change":    rank_delta(old_week_ranks,    new_week_ranks,    sector_id),
                 "month_rank_change":   rank_delta(old_month_ranks,   new_month_ranks,   sector_id),
@@ -617,11 +627,13 @@ def main():
                 # Streak
                 "streak": new_streak,
                 # Breadth
+                "breadth_1d":  sc["breadth_1d"],
                 "breadth_1w":  sc["breadth_1w"],
                 "breadth_1m":  sc["breadth_1m"],
                 "breadth_3m":  sc["breadth_3m"],
                 "breadth_ytd": sc["breadth_ytd"],
                 # Previous values (for momentum delta in UI)
+                "prev_day_pct":     old.get("day_pct"),
                 "prev_week_pct":    old.get("week_pct"),
                 "prev_month_pct":   old.get("month_pct"),
                 "prev_quarter_pct": old.get("quarter_pct"),

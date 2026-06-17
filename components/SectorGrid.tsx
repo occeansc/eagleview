@@ -20,7 +20,7 @@ interface Props {
 
 type FilterMode = 'all' | 'hot' | 'rising'
 
-const PERIODS_LOCAL: Period[] = ['1W', '1M', '3M', 'YTD']
+const PERIODS_LOCAL: Period[] = ['1D', '1W', '1M', '3M', 'YTD']
 const RISING_THRESHOLD = 5
 
 export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {

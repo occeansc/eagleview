@@ -137,7 +137,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
         }}
       >
         <div className="overflow-x-auto">
-          <div style={{ minWidth: '420px' }}>
+          <div style={{ minWidth: '460px' }}>
 
             {/* Desktop header */}
             <div className="hidden sm:grid sm:grid-cols-[40px_80px_1fr_72px_72px_72px_72px_72px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-4 py-3 bg-slate-50/70 border-b border-slate-100">
@@ -152,10 +152,11 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
             </div>
 
             {/* Mobile header */}
-            <div className="sm:hidden grid grid-cols-[32px_60px_1fr_72px_60px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-3 py-2.5 bg-slate-50/70 border-b border-slate-100">
+            <div className="sm:hidden grid grid-cols-[28px_60px_1fr_64px_72px_60px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-3 py-2.5 bg-slate-50/70 border-b border-slate-100">
               <span>#</span>
               <span>Ticker</span>
               <span>Company · Sector</span>
+              <span className="text-right">Price</span>
               <span className="text-right text-slate-600">{period}</span>
               <span className="text-right">1W</span>
             </div>
@@ -214,13 +215,16 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                       </div>
 
                       {/* Mobile */}
-                      <div className="sm:hidden grid grid-cols-[32px_60px_1fr_72px_60px] items-center px-3 py-2.5 hover:bg-slate-50 transition-colors">
+                      <div className="sm:hidden grid grid-cols-[28px_60px_1fr_64px_72px_60px] items-center px-3 py-2.5 hover:bg-slate-50 transition-colors">
                         <span className="text-[11px] text-slate-300 tabular-nums font-mono">{i + 1}</span>
                         <Chip />
                         <div className="min-w-0 px-2">
                           <p className="text-[12px] font-semibold text-slate-800 truncate leading-tight">{h.company_name}</p>
                           <p className="text-[10px] text-slate-400 truncate">{sectorName}</p>
                         </div>
+                        <span className="font-mono text-[11px] text-slate-400 text-right tabular-nums">
+                          {formatPrice(h.price ?? null)}
+                        </span>
                         <span className={`font-mono text-[14px] font-extrabold text-right tabular-nums ${isPos ? 'text-emerald-600' : 'text-rose-600'}`}>
                           {val !== null ? `${isPos ? '+' : ''}${val.toFixed(1)}%` : '—'}
                         </span>
@@ -248,7 +252,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       )}
 
       <p className="text-center text-[10px] text-slate-300 mt-5 tracking-widest">
-        EAGLEVIEW V4.1.7 · EQUAL-WEIGHTED BASKETS · YAHOO FINANCE
+        EAGLEVIEW V4.1.8 · EQUAL-WEIGHTED BASKETS · YAHOO FINANCE
       </p>
     </div>
   )

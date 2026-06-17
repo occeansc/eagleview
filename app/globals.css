@@ -164,6 +164,14 @@
   .modal-sheet { animation: modalPop 0.25s var(--ease-spring) forwards; }
 }
 
+/* ── Install prompt banner ───────────────────────────────── */
+@media (max-width: 640px) {
+  .install-banner { animation: sheetUp  0.35s cubic-bezier(0.32,0.72,0,1) forwards; }
+}
+@media (min-width: 641px) {
+  .install-banner { animation: modalPop 0.25s var(--ease-spring) forwards; }
+}
+
 /* ── Benchmark tiles ─────────────────────────────────────── */
 .bench-tile {
   background: #ffffff;

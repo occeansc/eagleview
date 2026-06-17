@@ -38,12 +38,12 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
     ), [sectors, sortBy])
 
   const absMax = useMemo(() => {
-    const r: Record<Period, number> = { '1W': 0, '1M': 0, '3M': 0, 'YTD': 0 }
+    const r: Partial<Record<Period, number>> = { '1W': 0, '1M': 0, '3M': 0, 'YTD': 0 }
     for (const p of PERIODS) {
       const vals = [...sectors, ...benchmarks].map(s => Math.abs(getPeriodValue(s, p) ?? 0))
       r[p] = Math.max(...vals, 1)
     }
-    return r
+    return r as Record<Period, number>
   }, [sectors, benchmarks])
 
   const spx = benchmarks.find(b => b.ticker === '^GSPC')

@@ -8,6 +8,7 @@
  * without requiring dirty casts.
  */
 export interface HasPeriodValues {
+  day_pct:     number | null
   week_pct:    number | null
   month_pct:   number | null
   quarter_pct: number | null
@@ -20,21 +21,25 @@ export interface Sector extends HasPeriodValues {
   stock_count:  number | null
   updated_at:   string
   // v3.0 ranks
+  day_rank:         number | null
   ytd_rank:         number | null
   week_rank:        number | null
   month_rank:       number | null
   quarter_rank:     number | null
+  day_rank_change:     number | null
   ytd_rank_change:     number | null
   week_rank_change:    number | null
   month_rank_change:   number | null
   quarter_rank_change: number | null
   // v3.0 streak + breadth
   streak:       number | null
+  breadth_1d:   number | null
   breadth_1w:   number | null
   breadth_1m:   number | null
   breadth_3m:   number | null
   breadth_ytd:  number | null
   // v3.0 previous values for momentum delta
+  prev_day_pct:     number | null
   prev_week_pct:    number | null
   prev_month_pct:   number | null
   prev_quarter_pct: number | null
@@ -65,13 +70,14 @@ export interface SectorSnapshot {
   synced_at: string
 }
 
-export type Period         = '1W' | '1M' | '3M' | 'YTD'
+export type Period         = '1D' | '1W' | '1M' | '3M' | 'YTD'
 export type ScorecardLevel = 'gold' | 'silver' | 'bronze' | null
 export type RegimeType     = 'risk-on' | 'risk-off' | 'mixed' | 'loading'
 
 export const PERIODS: Period[] = ['1W', '1M', '3M', 'YTD']
 
 export const PERIOD_LABELS: Record<Period, string> = {
+  '1D':  '1 Day',
   '1W':  '1 Week',
   '1M':  '1 Month',
   '3M':  '3 Months',
@@ -82,6 +88,7 @@ export const PERIOD_LABELS: Record<Period, string> = {
 
 export function getPeriodValue(s: HasPeriodValues, period: Period): number | null {
   switch (period) {
+    case '1D':  return s.day_pct
     case '1W':  return s.week_pct
     case '1M':  return s.month_pct
     case '3M':  return s.quarter_pct
@@ -91,6 +98,7 @@ export function getPeriodValue(s: HasPeriodValues, period: Period): number | nul
 
 export function getRankChange(s: Sector, period: Period): number | null {
   switch (period) {
+    case '1D':  return s.day_rank_change
     case '1W':  return s.week_rank_change
     case '1M':  return s.month_rank_change
     case '3M':  return s.quarter_rank_change
@@ -100,6 +108,7 @@ export function getRankChange(s: Sector, period: Period): number | null {
 
 export function getBreadth(s: Sector, period: Period): number | null {
   switch (period) {
+    case '1D':  return s.breadth_1d
     case '1W':  return s.breadth_1w
     case '1M':  return s.breadth_1m
     case '3M':  return s.breadth_3m
@@ -111,6 +120,7 @@ export function getMomentumDelta(s: Sector, period: Period): number | null {
   let curr: number | null = null
   let prev: number | null = null
   switch (period) {
+    case '1D':  curr = s.day_pct;     prev = s.prev_day_pct;     break
     case '1W':  curr = s.week_pct;    prev = s.prev_week_pct;    break
     case '1M':  curr = s.month_pct;   prev = s.prev_month_pct;   break
     case '3M':  curr = s.quarter_pct; prev = s.prev_quarter_pct; break
