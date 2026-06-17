@@ -36,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body className="antialiased font-sans pb-20 sm:pb-0 min-h-screen">
+      <body className="antialiased font-sans pb-20 sm:pb-0 min-h-dvh">
         <Nav />
         {children}
         <InstallPrompt />

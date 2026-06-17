@@ -13,7 +13,7 @@ export default async function ScreenerPage() {
     supabase.from('sectors').select('id, name').order('name'),
   ])
   return (
-    <main className="min-h-screen">
+    <main className="min-h-dvh">
       <ScreenerClient
         holdings={(holdingsRes.data ?? []) as (SectorHolding & { sectors: { name: string } })[]}
         sectors={(sectorsRes.data ?? []) as Pick<Sector, 'id' | 'name'>[]}

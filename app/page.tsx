@@ -32,7 +32,7 @@ export default async function Page() {
   }
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-dvh">
       <SectorGrid
         sectors={sectors}
         benchmarks={benchmarks}

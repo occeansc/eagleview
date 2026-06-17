@@ -13,7 +13,7 @@ export default async function HeatmapPage() {
     supabase.from('benchmarks').select('*'),
   ])
   return (
-    <main className="min-h-screen">
+    <main className="min-h-dvh">
       <HeatmapClient
         sectors={(sectors ?? []) as Sector[]}
         benchmarks={(benchmarks ?? []) as Benchmark[]}
