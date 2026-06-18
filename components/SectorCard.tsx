@@ -42,10 +42,15 @@ export default function SectorCard({
       className={`sector-card ${positive ? 'positive' : negative ? 'negative' : ''} card-appear group relative rounded-[22px] text-left w-full flex flex-col outline-none overflow-hidden focus-visible:ring-2 focus-visible:ring-indigo-400 ${borderHover}`}
       style={{ animationDelay: `${delay}ms` }}
     >
-      {/* Bloom — INVISIBLE at rest, only shows on hover via group-hover */}
-      <div
-        className={`absolute bottom-[-20%] right-[-12%] w-28 h-28 rounded-full blur-[40px] pointer-events-none opacity-0 group-hover:opacity-[0.18] group-hover:scale-[2] transition-all duration-700 ${bloomColor}`}
-      />
+      {/* Bloom — INVISIBLE at rest, only shows on hover via group-hover.
+          Isolated in its own clipping layer (same fix as BenchmarkBar) so the
+          border + radius + overflow + blur combination can never bleed past
+          the card's rounded corner. */}
+      <div className="absolute inset-0 rounded-[22px] overflow-hidden pointer-events-none">
+        <div
+          className={`absolute bottom-[-20%] right-[-12%] w-28 h-28 rounded-full blur-[40px] opacity-0 group-hover:opacity-[0.18] group-hover:scale-[2] transition-all duration-700 ${bloomColor}`}
+        />
+      </div>
 
       {/* ── HOT / RISING inline top banner — never buried, more prominent ── */}
       {(isHot || isRising) && (

@@ -90,29 +90,33 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
         {/* Period + direction */}
         <div className="flex flex-wrap gap-2 items-center">
           <div className="period-control">
-            {PERIODS.map(p => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`period-pill ${period === p ? 'period-pill-active' : ''}`}
-              >
-                {p}
-              </button>
-            ))}
+            <div className="period-control-inner">
+              {PERIODS.map(p => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={`period-pill ${period === p ? 'period-pill-active' : ''}`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="period-control">
-            {(['all', 'positive', 'negative'] as const).map(d => (
-              <button
-                key={d}
-                onClick={() => setDirection(d)}
-                className={`period-pill flex items-center gap-1 ${direction === d ? 'period-pill-active' : ''}`}
-              >
-                {d === 'positive' && <TrendingUpIcon size={10} />}
-                {d === 'negative' && <TrendingDownIcon size={10} />}
-                {d === 'all' ? 'All' : d.charAt(0).toUpperCase() + d.slice(1)}
-              </button>
-            ))}
+            <div className="period-control-inner">
+              {(['all', 'positive', 'negative'] as const).map(d => (
+                <button
+                  key={d}
+                  onClick={() => setDirection(d)}
+                  className={`period-pill flex items-center gap-1 ${direction === d ? 'period-pill-active' : ''}`}
+                >
+                  {d === 'positive' && <TrendingUpIcon size={10} />}
+                  {d === 'negative' && <TrendingDownIcon size={10} />}
+                  {d === 'all' ? 'All' : d.charAt(0).toUpperCase() + d.slice(1)}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -252,7 +256,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       )}
 
       <p className="text-center text-[10px] text-slate-300 mt-5 tracking-widest">
-        EAGLEVIEW V4.1.10 · EQUAL-WEIGHTED BASKETS · YAHOO FINANCE
+        EAGLEVIEW V4.2.0 · EQUAL-WEIGHTED BASKETS · YAHOO FINANCE
       </p>
     </div>
   )

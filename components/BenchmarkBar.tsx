@@ -47,8 +47,13 @@ export default function BenchmarkBar({ benchmarks, period }: Props) {
                 pos ? 'border-emerald-100/60' : 'border-rose-100/60'
               }`}
             >
-              {/* Bloom — top-right corner */}
-              <div className={`absolute -top-6 -right-6 w-16 h-16 rounded-full blur-[20px] pointer-events-none opacity-[0.14] group-hover:opacity-[0.28] group-hover:scale-[1.6] transition-all duration-600 ${bloomColor}`} />
+              {/* Bloom — top-right corner, isolated in its own clipping layer so the
+                  border + radius + overflow + blur combination on the tile itself
+                  (unreliable across browsers, esp. WebKit) can never let it bleed
+                  past the rounded corner */}
+              <div className="absolute inset-0 rounded-[20px] overflow-hidden pointer-events-none">
+                <div className={`absolute -top-4 -right-4 w-14 h-14 rounded-full blur-[18px] opacity-[0.14] group-hover:opacity-[0.28] group-hover:scale-[1.6] transition-all duration-600 ${bloomColor}`} />
+              </div>
 
               {/* Name + icon row */}
               <div className="flex items-center justify-between mb-1.5 relative z-10">

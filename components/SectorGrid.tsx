@@ -11,6 +11,7 @@ import SectorCard from './SectorCard'
 import BenchmarkBar from './BenchmarkBar'
 import HoldingsModal from './HoldingsModal'
 import MarketRegime from './MarketRegime'
+import BadgeLegend from './BadgeLegend'
 
 interface Props {
   sectors:    Sector[]
@@ -59,6 +60,18 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
     return sorted
   }, [sorted, filterMode, period])
 
+  // ── Badge legend: only define a term if it's actually visible right now ──
+  // Mirrors SectorCard's exact render conditions, including "Hot overrides
+  // Rising" priority, so the glossary never describes a badge nobody can see.
+  const anyHot    = displayed.some(s => sorted.indexOf(s) < 2)
+  const anyRising = displayed.some(s => {
+    const isHot = sorted.indexOf(s) < 2
+    const rc    = getRankChange(s, period)
+    return !isHot && rc !== null && rc >= RISING_THRESHOLD
+  })
+  const anyGold   = displayed.some(s => computeScorecard(s, spx) === 'gold')
+  const anySilver = displayed.some(s => computeScorecard(s, spx) === 'silver')
+
   const sectionTitle =
     filterMode === 'hot'    ? 'Hot Sectors' :
     filterMode === 'rising' ? 'Rising Sectors' :
@@ -97,40 +110,42 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
 
         {/* ── Combined Period + Filter control ─────── */}
         <div className="period-control shrink-0">
-          {PERIODS_LOCAL.map(p => (
+          <div className="period-control-inner">
+            {PERIODS_LOCAL.map(p => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`period-pill ${period === p ? 'period-pill-active' : ''}`}
+              >
+                {p}
+              </button>
+            ))}
+
+            {/* Divider */}
+            <div className="w-px h-5 self-center mx-1.5 bg-slate-300/50" />
+
+            {/* HOT filter */}
             <button
-              key={p}
-              onClick={() => setPeriod(p)}
-              className={`period-pill ${period === p ? 'period-pill-active' : ''}`}
+              onClick={() => toggleFilter('hot')}
+              className={`period-pill period-pill-icon flex items-center gap-1 ${filterMode === 'hot' ? 'period-pill-active' : ''}`}
+              aria-pressed={filterMode === 'hot'}
+              title="Show top 2 hot sectors"
             >
-              {p}
+              <FlameIcon size={11} className={filterMode === 'hot' ? 'text-orange-500' : ''} />
+              <span className="hidden sm:inline">Hot</span>
             </button>
-          ))}
 
-          {/* Divider */}
-          <div className="w-px h-5 self-center mx-1.5 bg-slate-300/50" />
-
-          {/* HOT filter */}
-          <button
-            onClick={() => toggleFilter('hot')}
-            className={`period-pill period-pill-icon flex items-center gap-1 ${filterMode === 'hot' ? 'period-pill-active' : ''}`}
-            aria-pressed={filterMode === 'hot'}
-            title="Show top 2 hot sectors"
-          >
-            <FlameIcon size={11} className={filterMode === 'hot' ? 'text-orange-500' : ''} />
-            <span className="hidden sm:inline">Hot</span>
-          </button>
-
-          {/* RISING filter */}
-          <button
-            onClick={() => toggleFilter('rising')}
-            className={`period-pill period-pill-icon flex items-center gap-1 ${filterMode === 'rising' ? 'period-pill-active' : ''}`}
-            aria-pressed={filterMode === 'rising'}
-            title="Show sectors rising 5+ ranks"
-          >
-            <TrendingUpIcon size={11} className={filterMode === 'rising' ? 'text-sky-500' : ''} />
-            <span className="hidden sm:inline">Rising</span>
-          </button>
+            {/* RISING filter */}
+            <button
+              onClick={() => toggleFilter('rising')}
+              className={`period-pill period-pill-icon flex items-center gap-1 ${filterMode === 'rising' ? 'period-pill-active' : ''}`}
+              aria-pressed={filterMode === 'rising'}
+              title="Show sectors rising 5+ ranks"
+            >
+              <TrendingUpIcon size={11} className={filterMode === 'rising' ? 'text-sky-500' : ''} />
+              <span className="hidden sm:inline">Rising</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -234,6 +249,8 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
           })}
         </div>
       )}
+
+      <BadgeLegend showHot={anyHot} showRising={anyRising} showGold={anyGold} showSilver={anySilver} />
 
       {/* ── Modal ───────────────────────────────── */}
       {selected && (
