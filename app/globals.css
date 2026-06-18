@@ -114,7 +114,7 @@
   width: max-content;
 }
 .period-pill {
-  padding: 7px 16px;
+  padding: 7px 13px;
   border-radius: 10px;
   font-weight: 600;
   font-size: 12px;
@@ -139,7 +139,7 @@
 }
 /* Tighter padding variant — for icon(+label) filter pills (Hot/Rising) */
 .period-pill-icon {
-  padding: 7px 14px;
+  padding: 7px 10px;
 }
 
 /* ── Floating nav ────────────────────────────────────────── */

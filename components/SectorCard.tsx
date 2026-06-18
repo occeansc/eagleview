@@ -33,7 +33,7 @@ export default function SectorCard({
   const streak     = sector.streak ?? 0
 
   const pctColor   = positive ? 'text-emerald-600' : negative ? 'text-rose-500' : 'text-slate-400'
-  const bloomColor = positive ? 'bg-emerald-500' : negative ? 'bg-rose-500' : 'bg-slate-400'
+  const glowRgb    = positive ? '16,185,129' : negative ? '244,63,94' : '148,163,184'
   const borderHover = positive ? 'hover:border-emerald-200/60' : negative ? 'hover:border-rose-200/60' : ''
 
   return (
@@ -42,15 +42,15 @@ export default function SectorCard({
       className={`sector-card ${positive ? 'positive' : negative ? 'negative' : ''} card-appear group relative rounded-[22px] text-left w-full flex flex-col outline-none overflow-hidden focus-visible:ring-2 focus-visible:ring-indigo-400 ${borderHover}`}
       style={{ animationDelay: `${delay}ms` }}
     >
-      {/* Bloom — INVISIBLE at rest, only shows on hover via group-hover.
-          Isolated in its own clipping layer (same fix as BenchmarkBar) so the
-          border + radius + overflow + blur combination can never bleed past
-          the card's rounded corner. */}
-      <div className="absolute inset-0 rounded-[22px] overflow-hidden pointer-events-none">
-        <div
-          className={`absolute bottom-[-20%] right-[-12%] w-28 h-28 rounded-full blur-[40px] opacity-0 group-hover:opacity-[0.18] group-hover:scale-[2] transition-all duration-700 ${bloomColor}`}
-        />
-      </div>
+      {/* Glow — INVISIBLE at rest, only shows on hover. Radial gradient instead of
+          a blurred circle: filter:blur() + overflow clipping is a known
+          cross-browser-inconsistent combination, even fully wrapped in its own
+          clipping layer (confirmed on BenchmarkBar). A gradient fades to
+          transparent within its own box, so there's nothing to inconsistently clip. */}
+      <div
+        className="absolute inset-0 rounded-[22px] overflow-hidden pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+        style={{ background: `radial-gradient(circle at bottom right, rgba(${glowRgb},0.20) 0%, transparent 55%)` }}
+      />
 
       {/* ── HOT / RISING inline top banner — never buried, more prominent ── */}
       {(isHot || isRising) && (

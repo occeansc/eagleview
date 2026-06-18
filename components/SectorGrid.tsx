@@ -122,7 +122,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
             ))}
 
             {/* Divider */}
-            <div className="w-px h-5 self-center mx-1.5 bg-slate-300/50" />
+            <div className="w-px h-5 self-center mx-1 bg-slate-300/50" />
 
             {/* HOT filter */}
             <button

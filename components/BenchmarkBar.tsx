@@ -38,7 +38,6 @@ export default function BenchmarkBar({ benchmarks, period }: Props) {
           const pos  = val !== null && val >= 0
           const meta = META[b.ticker] ?? { Icon: BarChartIcon, short: b.name }
           const { Icon } = meta
-          const bloomColor = pos ? 'bg-emerald-500' : 'bg-rose-500'
 
           return (
             <div
@@ -47,13 +46,27 @@ export default function BenchmarkBar({ benchmarks, period }: Props) {
                 pos ? 'border-emerald-100/60' : 'border-rose-100/60'
               }`}
             >
-              {/* Bloom — top-right corner, isolated in its own clipping layer so the
-                  border + radius + overflow + blur combination on the tile itself
-                  (unreliable across browsers, esp. WebKit) can never let it bleed
-                  past the rounded corner */}
-              <div className="absolute inset-0 rounded-[20px] overflow-hidden pointer-events-none">
-                <div className={`absolute -top-4 -right-4 w-14 h-14 rounded-full blur-[18px] opacity-[0.14] group-hover:opacity-[0.28] group-hover:scale-[1.6] transition-all duration-600 ${bloomColor}`} />
-              </div>
+              {/* Glow — radial gradient instead of a blurred circle. filter:blur()
+                  combined with overflow clipping is a known cross-browser-inconsistent
+                  combination (confirmed: still misbehaved even fully wrapped in its
+                  own clipping layer). A gradient fades to transparent within its own
+                  box, so there's nothing for any browser to inconsistently clip. */}
+              <div
+                className="absolute inset-0 rounded-[20px] overflow-hidden pointer-events-none"
+                style={{
+                  background: pos
+                    ? 'radial-gradient(circle at top right, rgba(16,185,129,0.16) 0%, transparent 60%)'
+                    : 'radial-gradient(circle at top right, rgba(244,63,94,0.16) 0%, transparent 60%)',
+                }}
+              />
+              <div
+                className="absolute inset-0 rounded-[20px] overflow-hidden pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
+                style={{
+                  background: pos
+                    ? 'radial-gradient(circle at top right, rgba(16,185,129,0.30) 0%, transparent 68%)'
+                    : 'radial-gradient(circle at top right, rgba(244,63,94,0.30) 0%, transparent 68%)',
+                }}
+              />
 
               {/* Name + icon row */}
               <div className="flex items-center justify-between mb-1.5 relative z-10">
