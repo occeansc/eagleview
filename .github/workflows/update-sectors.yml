@@ -1,16 +1,28 @@
 name: Update Sector Data
 
+# Six slots every 90 minutes across 13:45–21:15 UTC.
+# This window covers market hours in BOTH EDT (UTC-4) and EST (UTC-5).
+# A market-hours guard in update_sectors.py (using zoneinfo, DST-aware)
+# exits cleanly for whichever slot falls outside the current season's
+# market window — no manual adjustment needed when clocks change.
+#
+# EDT (Mar–Nov, UTC-4):  slots at 9:45 11:15 12:45 2:15 3:45 PM run; 5:15 PM blocked
+# EST (Nov–Mar, UTC-5):  8:45 AM blocked; slots at 10:15 11:45 1:15 2:45 4:15 PM run
+
 on:
   schedule:
-    - cron: '30 14 * * 1-5'
-    - cron: '30 17 * * 1-5'
-    - cron: '0 21 * * 1-5'
+    - cron: '45 13 * * 1-5'   # EDT: 9:45 AM  | EST: 8:45 AM  (pre-open, guard blocks)
+    - cron: '15 15 * * 1-5'   # EDT: 11:15 AM | EST: 10:15 AM
+    - cron: '45 16 * * 1-5'   # EDT: 12:45 PM | EST: 11:45 AM
+    - cron: '15 18 * * 1-5'   # EDT: 2:15 PM  | EST: 1:15 PM
+    - cron: '45 19 * * 1-5'   # EDT: 3:45 PM  | EST: 2:45 PM
+    - cron: '15 21 * * 1-5'   # EDT: 5:15 PM  (post-close, guard blocks) | EST: 4:15 PM
   workflow_dispatch:
 
 jobs:
   update-sectors:
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

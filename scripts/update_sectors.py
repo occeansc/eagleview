@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.2.1 — Data Updater
+Eagleview v4.2.2 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -15,8 +15,9 @@ Env vars:
   SUPABASE_SERVICE_KEY  legacy eyJ... service_role key
 """
 
-import os, sys, logging
+import os, sys, logging, time
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 import requests
 import pandas as pd
 import yfinance as yf
@@ -334,6 +335,18 @@ class DB:
             headers=self.ih, json=rows, timeout=30,
         ).raise_for_status()
 
+    def upsert_bulk(self, table: str, rows: list, on_conflict: str) -> None:
+        """Upsert a list of rows in one HTTP call (merge-duplicates).
+        Replaces the old delete_where + insert pattern — halves DB calls
+        and avoids the transient window where holdings were briefly empty."""
+        if not rows:
+            return
+        r = requests.post(
+            f"{self.base}/{table}?on_conflict={on_conflict}",
+            headers=self.mh, json=rows, timeout=60,
+        )
+        r.raise_for_status()
+
 
 # ── Return helpers ────────────────────────────────────────────────────────────
 def calc_returns(series: pd.Series) -> dict:
@@ -392,13 +405,28 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.2.1 Data Sync ══")
+    log.info("══ Eagleview v4.2.2 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
     if not url or not key:
         log.error("Missing SUPABASE_URL or SUPABASE_SERVICE_KEY")
         sys.exit(1)
+
+    # ── Market-hours guard ────────────────────────────────────────────────────
+    # ZoneInfo("America/New_York") resolves to EDT (UTC-4) or EST (UTC-5)
+    # automatically — no manual DST adjustment ever needed.
+    # Cron slots are spaced every 90 min across a UTC window wide enough to
+    # cover both EDT and EST market hours; slots outside the window exit here
+    # cleanly (exit 0, not an error) so GitHub Actions stays green.
+    ET          = ZoneInfo("America/New_York")
+    et_now      = datetime.now(ET)
+    market_open = et_now.replace(hour=9,  minute=15, second=0, microsecond=0)
+    market_shut = et_now.replace(hour=17, minute=15, second=0, microsecond=0)
+    if not (market_open <= et_now <= market_shut):
+        log.info(f"Outside market hours ({et_now.strftime('%a %H:%M %Z')}) — skipping cleanly")
+        sys.exit(0)
+    log.info(f"Market hours confirmed ({et_now.strftime('%H:%M %Z, %Z offset from UTC')})")
 
     db = DB(url, key)
 
@@ -443,16 +471,23 @@ def main():
     )
     log.info(f"  {len(all_tickers)} unique tickers")
 
-    try:
-        raw    = yf.download(all_tickers, period="1y", progress=False, auto_adjust=True)
-        closes = (
-            raw["Close"]
-            if isinstance(raw.columns, pd.MultiIndex)
-            else raw[["Close"]].rename(columns={"Close": all_tickers[0]})
-        )
-        log.info(f"  Downloaded {closes.shape[0]} days × {closes.shape[1]} tickers")
-    except Exception as e:
-        log.error(f"  Download failed: {e}")
+    closes = None
+    for attempt in range(1, 4):
+        try:
+            raw    = yf.download(all_tickers, period="1y", progress=False, auto_adjust=True)
+            closes = (
+                raw["Close"]
+                if isinstance(raw.columns, pd.MultiIndex)
+                else raw[["Close"]].rename(columns={"Close": all_tickers[0]})
+            )
+            log.info(f"  Downloaded {closes.shape[0]} days × {closes.shape[1]} tickers (attempt {attempt})")
+            break
+        except Exception as e:
+            log.warning(f"  Download attempt {attempt}/3 failed: {e}")
+            if attempt < 3:
+                time.sleep(15 * attempt)   # 15s, then 30s
+    if closes is None:
+        log.error("  All download attempts failed — aborting")
         sys.exit(1)
 
     ticker_returns: dict[str, dict] = {
@@ -655,10 +690,10 @@ def main():
                 f"streak={new_streak} | {ok_mark}"
             )
 
-            # Refresh individual stock rows
-            db.delete_where("sector_holdings", "sector_id", sector_id)
+            # Refresh individual stock rows — one upsert per sector instead of
+            # delete+insert, halving DB calls and removing the transient empty-window
             if sc["stock_rows"]:
-                db.insert("sector_holdings", sc["stock_rows"])
+                db.upsert_bulk("sector_holdings", sc["stock_rows"], "sector_id,ticker")
 
             sector_ok += 1
 
