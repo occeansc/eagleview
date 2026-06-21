@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.2.2 — Data Updater
+Eagleview v4.2.3 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -280,6 +280,11 @@ class DB:
             "Content-Type": "application/json",
             "Prefer": "resolution=ignore-duplicates,return=minimal",
         }
+        self.uh   = {   # bulk upsert: merge-duplicates, return=minimal
+            "apikey": key, "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+            "Prefer": "resolution=merge-duplicates,return=minimal",
+        }
 
     def get(self, table: str, params: str = "") -> list:
         r = requests.get(
@@ -343,7 +348,7 @@ class DB:
             return
         r = requests.post(
             f"{self.base}/{table}?on_conflict={on_conflict}",
-            headers=self.mh, json=rows, timeout=60,
+            headers=self.uh, json=rows, timeout=60,
         )
         r.raise_for_status()
 
@@ -405,7 +410,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.2.2 Data Sync ══")
+    log.info("══ Eagleview v4.2.3 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
