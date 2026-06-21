@@ -111,40 +111,45 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
         {/* ── Combined Period + Filter control ─────── */}
         <div className="period-control shrink-0">
           <div className="period-control-inner">
-            {PERIODS_LOCAL.map(p => (
+            {/* Period pills — left group */}
+            <div className="flex gap-1">
+              {PERIODS_LOCAL.map(p => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={`period-pill ${period === p ? 'period-pill-active' : ''}`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
+
+            {/* Divider + filter buttons — right group, pushed to far right */}
+            <div className="flex items-center gap-1 ml-auto">
+              <div className="w-px h-5 self-center mx-1 bg-slate-300/50" />
+
+              {/* HOT filter */}
               <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`period-pill ${period === p ? 'period-pill-active' : ''}`}
+                onClick={() => toggleFilter('hot')}
+                className={`period-pill period-pill-icon flex items-center gap-1 ${filterMode === 'hot' ? 'period-pill-active' : ''}`}
+                aria-pressed={filterMode === 'hot'}
+                title="Show top 2 hot sectors"
               >
-                {p}
+                <FlameIcon size={11} className={filterMode === 'hot' ? 'text-orange-500' : ''} />
+                <span className="hidden sm:inline">Hot</span>
               </button>
-            ))}
 
-            {/* Divider */}
-            <div className="w-px h-5 self-center mx-1 bg-slate-300/50" />
-
-            {/* HOT filter */}
-            <button
-              onClick={() => toggleFilter('hot')}
-              className={`period-pill period-pill-icon flex items-center gap-1 ${filterMode === 'hot' ? 'period-pill-active' : ''}`}
-              aria-pressed={filterMode === 'hot'}
-              title="Show top 2 hot sectors"
-            >
-              <FlameIcon size={11} className={filterMode === 'hot' ? 'text-orange-500' : ''} />
-              <span className="hidden sm:inline">Hot</span>
-            </button>
-
-            {/* RISING filter */}
-            <button
-              onClick={() => toggleFilter('rising')}
-              className={`period-pill period-pill-icon flex items-center gap-1 ${filterMode === 'rising' ? 'period-pill-active' : ''}`}
-              aria-pressed={filterMode === 'rising'}
-              title="Show sectors rising 5+ ranks"
-            >
-              <TrendingUpIcon size={11} className={filterMode === 'rising' ? 'text-sky-500' : ''} />
-              <span className="hidden sm:inline">Rising</span>
-            </button>
+              {/* RISING filter */}
+              <button
+                onClick={() => toggleFilter('rising')}
+                className={`period-pill period-pill-icon flex items-center gap-1 ${filterMode === 'rising' ? 'period-pill-active' : ''}`}
+                aria-pressed={filterMode === 'rising'}
+                title="Show sectors rising 5+ ranks"
+              >
+                <TrendingUpIcon size={11} className={filterMode === 'rising' ? 'text-sky-500' : ''} />
+                <span className="hidden sm:inline">Rising</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>

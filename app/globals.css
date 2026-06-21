@@ -111,7 +111,8 @@
   display: flex;
   gap: 4px;
   padding: 4px;
-  width: max-content;
+  min-width: max-content; /* still scrollable on very narrow screens */
+  width: 100%;            /* fills container when content fits — fixes right dead-space */
 }
 .period-pill {
   padding: 7px 13px;
