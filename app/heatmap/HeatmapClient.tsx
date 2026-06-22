@@ -52,11 +52,11 @@ function tierOf(rank: number): 'xl' | 'lg' | 'md' | 'sm' {
 
 /* ── Helpers ────────────────────────────────────────────── */
 function periodRank(s: Sector, p: Period): number {
-  if (p === '1D') return s.day_rank ?? 999
-  if (p === '1W') return s.week_rank
-  if (p === '1M') return s.month_rank
-  if (p === '3M') return s.quarter_rank
-  return s.ytd_rank
+  if (p === '1D') return s.day_rank ?? 9999
+  if (p === '1W') return s.week_rank ?? 9999
+  if (p === '1M') return s.month_rank ?? 9999
+  if (p === '3M') return s.quarter_rank ?? 9999
+  return s.ytd_rank ?? 9999
 }
 
 function fmt(v: number | null): string {
@@ -161,7 +161,7 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
                       className="text-[9px] font-black px-1.5 py-[3px] rounded-md leading-none"
                       style={{ backgroundColor: 'rgba(0,0,0,0.3)', color: p.muted }}
                     >
-                      #{rank}
+                      #{rank !== 9999 ? rank : '-'}
                     </span>
                     {sc === 'gold'   && (
                       <span className="text-amber-400 text-[13px] leading-none drop-shadow-sm" title="Gold — beats S&P all 4 periods">★</span>
@@ -252,7 +252,6 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
           sector={active}
           period={period}
           benchmarks={benchmarks}
-          snapshots={[]}
           onClose={() => setActive(null)}
         />
       )}
