@@ -23,7 +23,7 @@ export default function BadgeLegend({ showHot, showRising, showGold, showSilver 
     },
     showSilver && {
       key: 'silver', Icon: AwardIcon, iconClass: 'text-slate-400',
-      label: 'Silver', def: 'Beats the S&P 500 in 3 of those 4 timeframes.',
+      label: 'Silver', def: 'Beats the S&P 500 in 3 timeframes.',
     },
   ].filter((t): t is Exclude<typeof t, false> => t !== false)
 

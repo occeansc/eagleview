@@ -2,10 +2,13 @@
 
 import { useState, useMemo } from 'react'
 import {
-  SectorHolding, Sector, Period, PERIODS,
+  SectorHolding, Sector, Period,
   PERIOD_LABELS, getPeriodValue, formatPrice,
 } from '@/lib/types'
 import { SearchIcon, TrendingUpIcon, TrendingDownIcon } from '@/components/Icons'
+
+// Screener shows all 5 periods including 1D — same pattern as Dashboard.
+const SCREENER_PERIODS: Period[] = ['1D', '1W', '1M', '3M', 'YTD']
 
 interface Props {
   holdings: (SectorHolding & { sectors: { name: string } })[]
@@ -91,7 +94,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
         <div className="flex flex-wrap gap-2 items-center">
           <div className="period-control">
             <div className="period-control-inner">
-              {PERIODS.map(p => (
+              {SCREENER_PERIODS.map(p => (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
@@ -144,14 +147,15 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
           <div style={{ minWidth: '460px' }}>
 
             {/* Desktop header */}
-            <div className="hidden sm:grid sm:grid-cols-[40px_80px_1fr_72px_72px_72px_72px_72px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-4 py-3 bg-slate-50/70 border-b border-slate-100">
+            <div className="hidden sm:grid sm:grid-cols-[40px_80px_1fr_64px_64px_64px_64px_64px_64px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-4 py-3 bg-slate-50/70 border-b border-slate-100">
               <span>#</span>
               <span>Ticker</span>
               <span>Company</span>
               <span className="text-right">Price</span>
-              <span className="text-right">1W</span>
-              <span className="text-right">1M</span>
-              <span className="text-right">3M</span>
+              <span className={`text-right ${period === '1D' ? 'text-slate-700' : ''}`}>1D</span>
+              <span className={`text-right ${period === '1W' ? 'text-slate-700' : ''}`}>1W</span>
+              <span className={`text-right ${period === '1M' ? 'text-slate-700' : ''}`}>1M</span>
+              <span className={`text-right ${period === '3M' ? 'text-slate-700' : ''}`}>3M</span>
               <span className={`text-right ${period === 'YTD' ? 'text-slate-700' : ''}`}>YTD</span>
             </div>
 
@@ -202,7 +206,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                   return (
                     <div key={`${h.ticker}-${h.sector_id}`}>
                       {/* Desktop */}
-                      <div className="hidden sm:grid sm:grid-cols-[40px_80px_1fr_72px_72px_72px_72px_72px] items-center px-4 py-2.5 hover:bg-slate-50/80 transition-colors">
+                      <div className="hidden sm:grid sm:grid-cols-[40px_80px_1fr_64px_64px_64px_64px_64px_64px] items-center px-4 py-2.5 hover:bg-slate-50/80 transition-colors">
                         <span className="text-[11px] text-slate-300 tabular-nums font-mono">{i + 1}</span>
                         <Chip />
                         <div className="min-w-0 px-2">
@@ -212,6 +216,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                         <span className="font-mono text-[11px] text-slate-400 text-right tabular-nums">
                           {formatPrice(h.price ?? null)}
                         </span>
+                        <Cell p="1D" />
                         <Cell p="1W" />
                         <Cell p="1M" />
                         <Cell p="3M" />
@@ -256,7 +261,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       )}
 
       <p className="text-center text-[10px] text-slate-300 mt-5 tracking-widest">
-        EAGLEVIEW V4.2.5 · EQUAL-WEIGHTED BASKETS · YAHOO FINANCE
+        EAGLEVIEW V4.3.0 · EQUAL-WEIGHTED BASKETS · YAHOO FINANCE
       </p>
     </div>
   )
