@@ -52,7 +52,7 @@ function tierOf(rank: number): 'xl' | 'lg' | 'md' | 'sm' {
 
 /* ── Helpers ────────────────────────────────────────────── */
 function periodRank(s: Sector, p: Period): number {
-  if (p === '1D') return s.day_rank
+  if (p === '1D') return s.day_rank ?? 999
   if (p === '1W') return s.week_rank
   if (p === '1M') return s.month_rank
   if (p === '3M') return s.quarter_rank
