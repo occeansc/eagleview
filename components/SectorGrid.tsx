@@ -142,7 +142,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
               {/* RISING filter */}
               <button
                 onClick={() => toggleFilter('rising')}
-                className={`period-pill period-pill-icon flex items-center gap-1 ${filterMode === 'rising' ? 'period-pill-active' : ''}`}
+                className={`period-pill period-pill-icon flex items-center gap-1 ml-2 ${filterMode === 'rising' ? 'period-pill-active' : ''}`}
                 aria-pressed={filterMode === 'rising'}
                 title="Show sectors rising 5+ ranks"
               >
