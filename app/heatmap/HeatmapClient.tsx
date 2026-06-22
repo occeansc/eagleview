@@ -5,8 +5,6 @@ import type { Sector, Benchmark, Period } from '@/lib/types'
 import { getPeriodValue, getBreadth, computeScorecard } from '@/lib/types'
 import HoldingsModal from '@/components/HoldingsModal'
 
-// Heatmap shows all 5 periods including 1D.
-// computeScorecard always evaluates on 1W/1M/3M/YTD — no change there.
 const HEATMAP_PERIODS: Period[] = ['1D', '1W', '1M', '3M', 'YTD']
 
 interface Props {
@@ -14,28 +12,30 @@ interface Props {
   benchmarks: Benchmark[]
 }
 
-/* ── Heat palette ───────────────────────────────────────── */
-type Pal = { bg: string; accent: string; label: string; muted: string }
+/* ── UI Heat Palette matched exactly for Pure White Spaces ────────── */
+type Pal = { bg: string; accent: string; label: string; muted: string, tag: string }
 
 function pal(pct: number | null): Pal {
-  if (pct === null)  return { bg: '#1e293b', accent: '#94a3b8', label: '#e2e8f0', muted: '#475569' }
-  if (pct >= 15)     return { bg: '#052e16', accent: '#4ade80', label: '#f0fdf4', muted: '#86efac' }
-  if (pct >=  8)     return { bg: '#14532d', accent: '#86efac', label: '#dcfce7', muted: '#4ade80' }
-  if (pct >=  3)     return { bg: '#166534', accent: '#bbf7d0', label: '#ffffff', muted: '#86efac' }
-  if (pct >=  0.5)   return { bg: '#15803d', accent: '#ffffff', label: '#f0fdf4', muted: '#d1fae5' }
-  if (pct >  -0.5)   return { bg: '#334155', accent: '#cbd5e1', label: '#f1f5f9', muted: '#64748b' }
-  if (pct >= -3)     return { bg: '#dc2626', accent: '#ffffff', label: '#fef2f2', muted: '#fecaca' }
-  if (pct >= -8)     return { bg: '#b91c1c', accent: '#fecaca', label: '#fff1f2', muted: '#fca5a5' }
-  if (pct >= -15)    return { bg: '#991b1b', accent: '#fca5a5', label: '#ffe4e6', muted: '#f87171' }
-  return               { bg: '#450a0a', accent: '#f87171',  label: '#fecaca', muted: '#ef4444' }
+  // Returns highly readable blocks that sit beautifully alongside normal UI frames natively.
+  
+  // Grey Neutral (Near 0 or No Data)
+  if (pct === null)  return { bg: '#f1f5f9', accent: '#64748b', label: '#94a3b8', muted: '#cbd5e1', tag: 'rgba(0,0,0,0.06)' } 
+  if (pct > -0.5 && pct < 0.5) return { bg: '#f1f5f9', accent: '#334155', label: '#64748b', muted: '#94a3b8', tag: 'rgba(0,0,0,0.06)' }
+  
+  // Robust Pure Greens
+  if (pct >= 15) return { bg: '#14532d', accent: '#ffffff', label: '#86efac', muted: '#4ade80', tag: 'rgba(0,0,0,0.3)' } 
+  if (pct >=  8) return { bg: '#15803d', accent: '#ffffff', label: '#bbf7d0', muted: '#86efac', tag: 'rgba(0,0,0,0.25)' }
+  if (pct >=  3) return { bg: '#22c55e', accent: '#ffffff', label: '#ecfdf5', muted: '#bbf7d0', tag: 'rgba(0,0,0,0.2)' }
+  if (pct >= 0.5) return { bg: '#bbf7d0', accent: '#064e3b', label: '#14532d', muted: '#166534', tag: 'rgba(255,255,255,0.45)' } 
+
+  // Emphatic Reds
+  if (pct <= -15) return { bg: '#881337', accent: '#ffffff', label: '#fecdd3', muted: '#fb7185', tag: 'rgba(0,0,0,0.3)' }
+  if (pct <=  -8) return { bg: '#be123c', accent: '#ffffff', label: '#ffe4e6', muted: '#fda4af', tag: 'rgba(0,0,0,0.25)' }
+  if (pct <=  -3) return { bg: '#f43f5e', accent: '#ffffff', label: '#fff1f2', muted: '#fecdd3', tag: 'rgba(0,0,0,0.2)' } 
+  return { bg: '#fecdd3', accent: '#4c0519', label: '#881337', muted: '#e11d48', tag: 'rgba(255,255,255,0.45)' } 
 }
 
-/* ── Tile tiers ─────────────────────────────────────────── */
-//  6-col desktop layout (lg):
-//    rank 1-2  → col-span-3 row-span-2  (two large squares fill row 1-2)
-//    rank 3-5  → col-span-2 row-span-2  (three tiles fill row 3-4)
-//    rank 6-11 → col-span-1 row-span-2  (six tall tiles fill row 5-6)
-//    rank 12+  → col-span-1 row-span-1  (standard tiles, rows 7-8)
+/* ── Tile Tiers (Masonry Spanning Size Matrix) ────────────── */
 const TILE_CLS: Record<string, string> = {
   xl: 'col-span-2 row-span-2 lg:col-span-3 lg:row-span-2',
   lg: 'col-span-1 row-span-1 md:col-span-2 md:row-span-2',
@@ -50,7 +50,7 @@ function tierOf(rank: number): 'xl' | 'lg' | 'md' | 'sm' {
   return 'sm'
 }
 
-/* ── Helpers ────────────────────────────────────────────── */
+/* ── Ranks ────────── */
 function periodRank(s: Sector, p: Period): number {
   if (p === '1D') return s.day_rank ?? 9999
   if (p === '1W') return s.week_rank ?? 9999
@@ -64,41 +64,39 @@ function fmt(v: number | null): string {
   return `${v > 0 ? '+' : ''}${v.toFixed(1)}%`
 }
 
-/* ── Component ──────────────────────────────────────────── */
+/* ── Core Rendering Frame ────────────────────── */
 export default function HeatmapClient({ sectors, benchmarks }: Props) {
   const [period, setPeriod] = useState<Period>('YTD')
   const [active, setActive] = useState<Sector | null>(null)
 
-  const spx    = benchmarks.find(b => b.ticker === '^GSPC')
+  const spx = benchmarks.find(b => b.ticker === '^GSPC')
   const sorted = useMemo(
     () => [...sectors].sort((a, b) => periodRank(a, period) - periodRank(b, period)),
-    [sectors, period],
+    [sectors, period]
   )
 
-  const up  = sorted.filter(s => (getPeriodValue(s, period) ?? 0) >= 0).length
+  const up = sorted.filter(s => (getPeriodValue(s, period) ?? 0) >= 0).length
   const avg = sorted.reduce((sum, s) => sum + (getPeriodValue(s, period) ?? 0), 0) / sorted.length
 
   return (
-    <div className="min-h-dvh bg-[#0c1017]">
-
-      {/* ── Sticky header ── */}
-      <div className="sticky top-0 z-20 bg-[#0c1017]/95 backdrop-blur-sm border-b border-white/[0.06] px-4 py-3">
+    <div className="min-h-dvh">
+      {/* ── Native UI Bright Glass Toolbar ── */}
+      <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 shadow-[0_4px_16px_rgba(0,0,0,0.02)]">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
-
-          {/* Period pills */}
+          {/* Timeline Pills */}
           <div className="flex items-center gap-2.5">
-            <span className="text-[9px] font-black tracking-widest text-slate-600 uppercase hidden sm:block">
-              Period
+            <span className="text-[9px] font-black tracking-widest text-slate-400 uppercase hidden sm:block">
+              Timeline Map
             </span>
-            <div className="flex gap-1 bg-white/[0.06] rounded-full p-1 border border-white/[0.08]">
+            <div className="flex gap-1 bg-slate-50 rounded-full p-1 border border-slate-100 shadow-inner">
               {HEATMAP_PERIODS.map(p => (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
-                  className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all ${
+                  className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all duration-200 ${
                     period === p
-                      ? 'bg-white text-slate-900 shadow-sm'
-                      : 'text-slate-500 hover:text-slate-200'
+                      ? 'bg-white text-slate-800 shadow-[0_2px_4px_rgba(0,0,0,0.06)]'
+                      : 'text-slate-400 hover:text-slate-600'
                   }`}
                 >
                   {p}
@@ -107,25 +105,24 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
             </div>
           </div>
 
-          {/* Summary stats */}
-          <div className="flex items-center gap-4 text-[11px]">
+          {/* Quick Metrics Stats View */}
+          <div className="flex items-center gap-4 text-[11px] bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-100/50">
             <span>
-              <span className="font-black text-emerald-400">{up}↑</span>
-              {' '}
-              <span className="font-black text-red-400">{sorted.length - up}↓</span>
+              <span className="font-extrabold text-emerald-600">{up}↑</span>
+              <span className="font-extrabold text-rose-500 ml-1.5">{sorted.length - up}↓</span>
             </span>
-            <span className={`font-black ${avg >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-              Avg {fmt(avg)}
+            <div className="h-3 w-px bg-slate-200 mx-0.5" />
+            <span className={`font-black ${avg >= 0 ? 'text-emerald-600' : 'text-rose-500'}`}>
+              Average: {fmt(avg)}
             </span>
-            <span className="text-slate-600 text-[10px]">{sorted.length} sectors</span>
           </div>
         </div>
       </div>
 
-      {/* ── Treemap grid ── */}
-      <div className="p-2 sm:p-3 max-w-7xl mx-auto">
+      {/* ── Scaled Treemap Masonry Elements ── */}
+      <div className="p-2 sm:p-3 max-w-7xl mx-auto pt-4 sm:pt-6">
         <div
-          className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-1.5"
+          className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-1.5 sm:gap-2"
           style={{ gridAutoFlow: 'dense', gridAutoRows: '90px' }}
         >
           {sorted.map(sector => {
@@ -133,8 +130,10 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
             const pct  = getPeriodValue(sector, period)
             const bw   = getBreadth(sector, period)
             const sc   = computeScorecard(sector, spx)
-            const p    = pal(pct)
-            const t    = tierOf(rank)
+            
+            const p = pal(pct)
+            const t = tierOf(rank)
+            
             const isXL = t === 'xl'
             const isLG = t === 'lg'
 
@@ -142,111 +141,84 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
               <div
                 key={sector.id}
                 onClick={() => setActive(sector)}
-                className={`relative rounded-xl cursor-pointer overflow-hidden select-none
-                  transition-all duration-150 hover:brightness-110 hover:scale-[1.015] hover:z-10
-                  ${TILE_CLS[t]}`}
+                className={`heat-cell relative rounded-xl cursor-pointer overflow-hidden select-none border border-black/[0.04] shadow-sm ${TILE_CLS[t]}`}
                 style={{ backgroundColor: p.bg }}
               >
-                {/* Top shimmer */}
+                {/* Surface Polish / Top Sheen Line overlay for crisp component visual appeal */}
                 <div
-                  className="absolute inset-x-0 top-0 h-px pointer-events-none"
-                  style={{ background: `linear-gradient(90deg,transparent,${p.accent}44,transparent)` }}
+                  className="absolute inset-x-0 top-0 h-[1.5px] pointer-events-none"
+                  style={{ background: `linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)` }}
                 />
 
-                <div className="absolute inset-0 p-2.5 flex flex-col justify-between">
-
-                  {/* Top row: rank chip + scorecard star */}
+                <div className="absolute inset-0 p-3 sm:p-4 flex flex-col justify-between z-10">
                   <div className="flex items-start justify-between gap-1">
                     <span
-                      className="text-[9px] font-black px-1.5 py-[3px] rounded-md leading-none"
-                      style={{ backgroundColor: 'rgba(0,0,0,0.3)', color: p.muted }}
+                      className="text-[10px] font-bold px-1.5 py-[3px] rounded-md leading-none shadow-[inset_0_1px_1px_rgba(255,255,255,0.15)] backdrop-blur-sm"
+                      style={{ backgroundColor: p.tag, color: p.accent }}
                     >
                       #{rank !== 9999 ? rank : '-'}
                     </span>
-                    {sc === 'gold'   && (
-                      <span className="text-amber-400 text-[13px] leading-none drop-shadow-sm" title="Gold — beats S&P all 4 periods">★</span>
-                    )}
-                    {sc === 'silver' && (
-                      <span className="text-slate-400 text-[10px] leading-none opacity-60" title="Silver — beats S&P 3 of 4 periods">★</span>
-                    )}
+                    <div className="flex items-center gap-1.5 opacity-90 drop-shadow-sm">
+                      {sc === 'gold'   && <span className="text-amber-400 text-[14px] leading-none" title="Beats market consistently (4 Periods)">★</span>}
+                      {sc === 'silver' && <span className="text-slate-200 text-[11px] leading-none opacity-80">★</span>}
+                    </div>
                   </div>
 
-                  {/* Return % hero + sector name */}
-                  <div className="flex-1 flex flex-col justify-center">
+                  <div className="flex-1 flex flex-col justify-center drop-shadow-sm mt-1 sm:mt-2">
                     <div
-                      className={`font-black leading-none tabular-nums ${
-                        isXL ? 'text-3xl lg:text-4xl' :
-                        isLG ? 'text-xl  md:text-2xl' :
-                               'text-lg'
-                      }`}
+                      className={`font-black tracking-tight leading-none tabular-nums ${isXL ? 'text-3xl sm:text-[40px]' : isLG ? 'text-[26px] sm:text-[32px]' : 'text-xl'}`}
                       style={{ color: p.accent }}
                     >
                       {fmt(pct)}
                     </div>
                     <div
-                      className={`font-semibold leading-tight truncate mt-0.5 ${
-                        isXL ? 'text-[11px] lg:text-xs' : 'text-[9px]'
-                      }`}
-                      style={{ color: p.label, opacity: 0.7 }}
+                      className={`font-bold leading-tight truncate mt-1 ${isXL ? 'text-xs sm:text-[14px]' : 'text-[10px]'}`}
+                      style={{ color: p.label, letterSpacing: '-0.01em' }}
                     >
                       {sector.name}
                     </div>
                   </div>
 
-                  {/* Breadth bar — xl tiles always, lg/md tiles on md+ only */}
                   {bw !== null && (
-                    <div className={isXL ? '' : 'hidden md:block'}>
-                      <div className="flex justify-between items-center mb-1">
-                        <span
-                          className="text-[7px] font-black uppercase tracking-widest"
-                          style={{ color: p.muted, opacity: 0.55 }}
-                        >
-                          Breadth
+                    <div className={`${isXL ? '' : 'hidden md:block'} mt-auto pt-3`}>
+                      <div className="flex justify-between items-center mb-[3px]">
+                        <span className="text-[8px] font-black uppercase tracking-[0.2em]" style={{ color: p.label }}>
+                          Br
                         </span>
-                        <span
-                          className="text-[9px] font-black"
-                          style={{ color: p.muted }}
-                        >
+                        <span className="text-[9px] font-black tabular-nums" style={{ color: p.label }}>
                           {bw.toFixed(0)}%
                         </span>
                       </div>
-                      <div
-                        className="h-[3px] rounded-full"
-                        style={{ backgroundColor: 'rgba(0,0,0,0.45)' }}
-                      >
+                      <div className="h-[4px] rounded-full" style={{ backgroundColor: 'rgba(0,0,0,0.15)' }}>
                         <div
-                          className="h-full rounded-full"
-                          style={{ width: `${bw}%`, backgroundColor: p.accent, opacity: 0.55 }}
+                          className="h-full rounded-full transition-all duration-700 ease-out shadow-[0_1px_2px_rgba(0,0,0,0.1)]"
+                          style={{ width: `${bw}%`, backgroundColor: p.accent }}
                         />
                       </div>
                     </div>
                   )}
-
                 </div>
               </div>
             )
           })}
         </div>
 
-        {/* ── Colour legend ── */}
-        <div className="mt-5 flex items-center justify-center gap-3 text-[10px] text-slate-600">
+        {/* ── Classic UI Palette Chart Legend Matching App Space Base  ── */}
+        <div className="mt-8 flex items-center justify-center gap-3 text-[10px] font-black uppercase tracking-widest text-slate-400">
           <span>−15%+</span>
-          <div className="flex rounded-md overflow-hidden gap-px">
-            {['#450a0a','#991b1b','#b91c1c','#dc2626',
-              '#334155',
-              '#15803d','#166534','#14532d','#052e16'].map(c => (
-              <div key={c} style={{ backgroundColor: c }} className="w-6 h-3" />
+          <div className="flex rounded-[6px] shadow-sm overflow-hidden gap-px bg-slate-200/50 p-px border border-slate-200/50">
+            {['#881337', '#be123c', '#f43f5e', '#fecdd3', '#f1f5f9', '#bbf7d0', '#22c55e', '#15803d', '#14532d'].map(c => (
+              <div key={c} style={{ backgroundColor: c }} className="w-5 sm:w-6 h-3.5 rounded-[1px]" />
             ))}
           </div>
           <span>+15%+</span>
         </div>
 
-        <p className="text-center text-[10px] text-slate-700 mt-2">
-          Tap any tile for full holdings breakdown
+        <p className="text-center text-[10px] text-slate-400 font-semibold tracking-wider mt-4 opacity-75">
+          Tap any quadrant above to breakdown core asset allocations within structure
         </p>
       </div>
 
-      {/* ── Holdings modal ── */}
       {active && (
         <HoldingsModal
           sector={active}
