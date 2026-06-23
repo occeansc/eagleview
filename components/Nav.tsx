@@ -38,9 +38,11 @@ export default function Nav() {
       .from('sectors')
       .select('ytd_pct')
       .then(({ data }) => {
-        if (!data?.length) return
-        const pos  = data.filter(s => (s.ytd_pct ?? 0) >= 0).length
-        const bull = pos >= data.length / 2
+        const typedData = data as Array<{ ytd_pct: number | null }> | null
+        
+        if (!typedData?.length) return
+        const pos  = typedData.filter(s => (s.ytd_pct ?? 0) >= 0).length
+        const bull = pos >= typedData.length / 2
         setBullish(bull)
         try {
           localStorage.setItem(CACHE_KEY,  String(bull))
