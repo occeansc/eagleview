@@ -134,7 +134,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
             </div>
 
             {/* Divider + filter buttons — right group, pushed to far right */}
-            <div className="flex items-center gap-1 ml-auto">
+            <div className="flex items-center gap-1 ml-auto pr-1">
               <div className="w-px h-5 self-center mx-1 bg-slate-300/50" />
 
               {/* HOT filter */}
@@ -148,10 +148,10 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
                 <span className="hidden sm:inline">Hot</span>
               </button>
 
-              {/* RISING filter */}
+              {/* RISING filter — ml-1 keeps slight separation from HOT */}
               <button
                 onClick={() => toggleFilter('rising')}
-                className={`period-pill period-pill-icon flex items-center gap-1 ml-2 ${filterMode === 'rising' ? 'period-pill-active' : ''}`}
+                className={`period-pill period-pill-icon flex items-center gap-1 ml-1 ${filterMode === 'rising' ? 'period-pill-active' : ''}`}
                 aria-pressed={filterMode === 'rising'}
                 title="Show sectors rising 5+ ranks"
               >

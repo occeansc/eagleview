@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
   SectorHolding, Sector, Benchmark, Period,
-  getPeriodValue, getMomentumDelta, getBreadth, formatPrice,
+  getPeriodValue, getMomentumDelta, getBreadth, getRankChange, formatPrice,
 } from '@/lib/types'
 import { getSupabaseClient } from '@/lib/supabase'
 import { CloseIcon, ZapIcon } from './Icons'
@@ -60,18 +60,33 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
   const sectorVal     = getPeriodValue(sector, period)
   const momentumDelta = getMomentumDelta(sector, period)
   const breadth       = getBreadth(sector, period)
+  const rankChange    = getRankChange(sector, period)
   const pos           = sectorVal !== null && sectorVal >= 0
   const pctClass      = pos
     ? 'text-emerald-600 drop-shadow-[0_2px_6px_rgba(16,185,129,0.15)]'
     : 'text-rose-600 drop-shadow-[0_2px_6px_rgba(244,63,94,0.12)]'
   const streak        = sector.streak ?? 0
 
-  // Performance gradient — magnitude-aware, fades top→bottom from tinted to pure white
+  // Detect RISING — same logic as SectorCard/SectorGrid
+  const periodRankVal =
+    period === '1D' ? (sector.day_rank     ?? 999) :
+    period === '1W' ? (sector.week_rank    ?? 999) :
+    period === '1M' ? (sector.month_rank   ?? 999) :
+    period === '3M' ? (sector.quarter_rank ?? 999) :
+                      (sector.ytd_rank     ?? 999)
+  const isRisingSector = periodRankVal > 2 && rankChange !== null && rankChange >= 5
+
+  // Gradient — RISING gets sky-blue (momentum signal matches the card banner colour)
+  // All others use performance direction: emerald for positive, rose for negative
   const magnitude  = Math.abs(sectorVal ?? 0)
   const gradAlpha  = sectorVal === null ? 0 : Math.min(0.08 + (magnitude / 100) * 0.16, 0.22)
-  const gradColor  = pos ? `rgba(16,185,129,${gradAlpha})` : `rgba(244,63,94,${gradAlpha})`
-  const headerBg   = `linear-gradient(180deg, ${gradColor} 0%, rgba(255,255,255,0) 100%)`
-  const handlePill = pos ? 'bg-emerald-300/50' : 'bg-rose-300/50'
+  const gradRgb    = isRisingSector ? '56,189,248'       // sky-400
+                   : pos            ? '16,185,129'       // emerald
+                   :                  '244,63,94'        // rose
+  const headerBg   = `linear-gradient(180deg, rgba(${gradRgb},${gradAlpha}) 0%, rgba(255,255,255,0) 100%)`
+  const handlePill = isRisingSector ? 'bg-sky-300/50'
+                   : pos            ? 'bg-emerald-300/50'
+                   :                  'bg-rose-300/50'
 
   const sorted = [...holdings].sort((a, b) =>
     (getPeriodValue(b, period) ?? -Infinity) - (getPeriodValue(a, period) ?? -Infinity)
@@ -247,7 +262,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
         {/* Footer */}
         <div className="px-6 py-3 border-t border-slate-100 bg-white shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400">
-            Eagleview v4.3.5 · Yahoo Finance
+            Eagleview v4.3.6 · Yahoo Finance
           </p>
           <p className="text-[10px] text-slate-300 tabular-nums">
             Last sync: {formatSyncTime(sector.updated_at)}

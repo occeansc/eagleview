@@ -204,7 +204,11 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
                   </div>
 
                   {/* Breadth bar */}
-                  {bw !== null && (
+                  {/* Breadth bar — only on XL/LG/MD tiers (row-span-2 = 180px+).
+                      SM tiles are 90px fixed — adding breadth overflows them.
+                      On mobile, only XL tiles show breadth (intentional — smaller tiles
+                      have no vertical room regardless of tier). */}
+                  {bw !== null && t !== 'sm' && (
                     <div className={isXL ? 'mt-auto pt-2' : 'hidden md:block mt-auto pt-2'}>
                       <div className="flex justify-between items-center mb-1">
                         <span

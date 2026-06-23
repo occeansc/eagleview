@@ -297,7 +297,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       )}
 
       <p className="text-center text-[10px] text-slate-300 mt-5 tracking-widest">
-        EAGLEVIEW V4.3.5 · EQUAL-WEIGHTED BASKETS · YAHOO FINANCE
+        EAGLEVIEW V4.3.6 · EQUAL-WEIGHTED BASKETS · YAHOO FINANCE
       </p>
     </div>
   )

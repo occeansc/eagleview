@@ -17,54 +17,57 @@ const CACHE_KEY  = 'eagleview-sentiment'
 const CACHE_TIME = 'eagleview-sentiment-time'
 const CACHE_TTL  = 900_000 // 15 min — aligns with revalidate = 900
 
+// Tri-state: null = loading, bull/bear/neutral = resolved
+type Sentiment = 'bull' | 'bear' | 'neutral' | null
+
 export default function Nav() {
   const path = usePathname()
-  // null = not yet known (show neutral indigo fallback)
-  // true = majority of sectors positive YTD (green)
-  // false = majority negative YTD (red)
-  const [bullish, setBullish] = useState<boolean | null>(null)
+  const [sentiment, setSentiment] = useState<Sentiment>(null)
 
   useEffect(() => {
-    // Try to use cached value first so the colour is instant on navigation
     try {
-      const cached    = localStorage.getItem(CACHE_KEY)
-      const cachedAt  = localStorage.getItem(CACHE_TIME)
-      const fresh     = cachedAt && Date.now() - Number(cachedAt) < CACHE_TTL
-      if (cached !== null && fresh) { setBullish(cached === 'true'); return }
+      const cached   = localStorage.getItem(CACHE_KEY)
+      const cachedAt = localStorage.getItem(CACHE_TIME)
+      const fresh    = cachedAt && Date.now() - Number(cachedAt) < CACHE_TTL
+      if (cached && fresh) { setSentiment(cached as Sentiment); return }
     } catch { /* localStorage unavailable */ }
 
-    // Fetch 22-row ytd_pct — tiny query
+    // Fetch 22-row ytd_pct — tiny query, explicit cast for TypeScript
     getSupabaseClient()
       .from('sectors')
       .select('ytd_pct')
       .then(({ data }) => {
-        const typedData = data as Array<{ ytd_pct: number | null }> | null
-        
-        if (!typedData?.length) return
-        const pos  = typedData.filter(s => (s.ytd_pct ?? 0) >= 0).length
-        const bull = pos >= typedData.length / 2
-        setBullish(bull)
+        if (!data?.length) return
+        const rows = data as Array<{ ytd_pct: number | null }>
+        const pos  = rows.filter(s => (s.ytd_pct ?? 0) > 0).length
+        const neg  = rows.filter(s => (s.ytd_pct ?? 0) < 0).length
+        const result: Sentiment = pos > neg ? 'bull' : neg > pos ? 'bear' : 'neutral'
+        setSentiment(result)
         try {
-          localStorage.setItem(CACHE_KEY,  String(bull))
+          localStorage.setItem(CACHE_KEY,  result)
           localStorage.setItem(CACHE_TIME, String(Date.now()))
         } catch { /* localStorage unavailable */ }
       })
   }, [])
 
-  // Derived accent classes — falls back to indigo until sentiment loads
-  const iconActive   = bullish === null ? 'text-indigo-300'
-                     : bullish          ? 'text-emerald-400'
-                     :                    'text-rose-400'
+  // Accent colours — null (loading) uses slate, not purple
+  const iconActive =
+    sentiment === 'bull'    ? 'text-emerald-400' :
+    sentiment === 'bear'    ? 'text-rose-400'    :
+    sentiment === 'neutral' ? 'text-slate-400'   :
+                              'text-slate-400'    // loading
 
-  const mobileActive = bullish === null ? 'text-indigo-600'
-                     : bullish          ? 'text-emerald-600'
-                     :                    'text-rose-500'
+  const mobileActive =
+    sentiment === 'bull'    ? 'text-emerald-600' :
+    sentiment === 'bear'    ? 'text-rose-500'    :
+                              'text-slate-500'
 
-  const mobileDot    = bullish === null
-    ? 'bg-indigo-500 shadow-[0_1px_6px_rgba(99,102,241,0.6)]'
-    : bullish
+  const mobileDot =
+    sentiment === 'bull'
       ? 'bg-emerald-500 shadow-[0_1px_6px_rgba(16,185,129,0.55)]'
-      : 'bg-rose-500 shadow-[0_1px_6px_rgba(244,63,94,0.5)]'
+      : sentiment === 'bear'
+      ? 'bg-rose-500 shadow-[0_1px_6px_rgba(244,63,94,0.5)]'
+      : 'bg-slate-400 shadow-[0_1px_4px_rgba(100,116,139,0.30)]' // neutral or loading
 
   return (
     <>
@@ -75,7 +78,8 @@ export default function Nav() {
             <div className="p-1.5 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border border-white/80 shadow-sm group-hover:scale-105 transition-transform">
               <EagleIcon size={17} className="text-slate-800" />
             </div>
-            <span className="font-extrabold tracking-tight text-[15px] bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent group-hover:from-indigo-700 group-hover:to-indigo-500 transition-all">
+            {/* No purple anywhere — hover stays in slate family */}
+            <span className="font-extrabold tracking-tight text-[15px] bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent group-hover:from-slate-700 group-hover:to-slate-500 transition-all">
               Eagleview
             </span>
           </Link>
@@ -104,7 +108,7 @@ export default function Nav() {
         </div>
 
         <span className="text-[10px] font-bold text-slate-400 bg-slate-100/60 px-2.5 py-1 rounded-full border border-slate-200/50 tracking-widest">
-          V4.3.5
+          V4.3.6
         </span>
       </nav>
 
