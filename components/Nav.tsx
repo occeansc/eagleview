@@ -1,8 +1,10 @@
 'use client'
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { EagleIcon, HomeIcon, GridIcon, SearchIcon, BookmarkIcon } from './Icons'
+import { getSupabaseClient } from '@/lib/supabase'
 
 const TABS = [
   { href: '/',          label: 'Dashboard', Icon: HomeIcon     },
@@ -11,8 +13,56 @@ const TABS = [
   { href: '/watchlist', label: 'Watchlist', Icon: BookmarkIcon },
 ]
 
+const CACHE_KEY  = 'eagleview-sentiment'
+const CACHE_TIME = 'eagleview-sentiment-time'
+const CACHE_TTL  = 900_000 // 15 min — aligns with revalidate = 900
+
 export default function Nav() {
   const path = usePathname()
+  // null = not yet known (show neutral indigo fallback)
+  // true = majority of sectors positive YTD (green)
+  // false = majority negative YTD (red)
+  const [bullish, setBullish] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    // Try to use cached value first so the colour is instant on navigation
+    try {
+      const cached    = localStorage.getItem(CACHE_KEY)
+      const cachedAt  = localStorage.getItem(CACHE_TIME)
+      const fresh     = cachedAt && Date.now() - Number(cachedAt) < CACHE_TTL
+      if (cached !== null && fresh) { setBullish(cached === 'true'); return }
+    } catch { /* localStorage unavailable */ }
+
+    // Fetch 22-row ytd_pct — tiny query
+    getSupabaseClient()
+      .from('sectors')
+      .select('ytd_pct')
+      .then(({ data }) => {
+        if (!data?.length) return
+        const pos  = data.filter(s => (s.ytd_pct ?? 0) >= 0).length
+        const bull = pos >= data.length / 2
+        setBullish(bull)
+        try {
+          localStorage.setItem(CACHE_KEY,  String(bull))
+          localStorage.setItem(CACHE_TIME, String(Date.now()))
+        } catch { /* localStorage unavailable */ }
+      })
+  }, [])
+
+  // Derived accent classes — falls back to indigo until sentiment loads
+  const iconActive   = bullish === null ? 'text-indigo-300'
+                     : bullish          ? 'text-emerald-400'
+                     :                    'text-rose-400'
+
+  const mobileActive = bullish === null ? 'text-indigo-600'
+                     : bullish          ? 'text-emerald-600'
+                     :                    'text-rose-500'
+
+  const mobileDot    = bullish === null
+    ? 'bg-indigo-500 shadow-[0_1px_6px_rgba(99,102,241,0.6)]'
+    : bullish
+      ? 'bg-emerald-500 shadow-[0_1px_6px_rgba(16,185,129,0.55)]'
+      : 'bg-rose-500 shadow-[0_1px_6px_rgba(244,63,94,0.5)]'
 
   return (
     <>
@@ -43,7 +93,7 @@ export default function Nav() {
                       : 'text-slate-500 hover:text-slate-900 hover:bg-white/70 hover:shadow-sm'
                   }`}
                 >
-                  <Icon size={13} className={active ? 'text-indigo-300' : 'text-slate-400'} />
+                  <Icon size={13} className={active ? iconActive : 'text-slate-400'} />
                   {label}
                 </Link>
               )
@@ -52,7 +102,7 @@ export default function Nav() {
         </div>
 
         <span className="text-[10px] font-bold text-slate-400 bg-slate-100/60 px-2.5 py-1 rounded-full border border-slate-200/50 tracking-widest">
-          V4.3.0
+          V4.3.5
         </span>
       </nav>
 
@@ -65,13 +115,13 @@ export default function Nav() {
               key={href}
               href={href}
               className={`relative flex-1 flex flex-col items-center justify-center gap-1 py-2.5 transition-all duration-200 ${
-                active ? 'text-indigo-600 -translate-y-0.5' : 'text-slate-400 hover:text-slate-600'
+                active ? `${mobileActive} -translate-y-0.5` : 'text-slate-400 hover:text-slate-600'
               }`}
             >
               <Icon size={18} className={active ? 'drop-shadow-sm' : ''} />
               <span className="text-[10px] font-bold tracking-wide">{label}</span>
               {active && (
-                <span className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 bg-indigo-500 rounded-full shadow-[0_1px_6px_rgba(99,102,241,0.6)]" />
+                <span className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${mobileDot}`} />
               )}
             </Link>
           )

@@ -6,7 +6,7 @@ import {
   getPeriodValue, getRankChange, PERIOD_LABELS, computeScorecard,
 } from '@/lib/types'
 import { useWatchlist } from '@/lib/watchlist'
-import { EagleIcon, FlameIcon, TrendingUpIcon } from './Icons'
+import { EagleIcon, FlameIcon, TrendingUpIcon, TrendingDownIcon } from './Icons'
 import SectorCard from './SectorCard'
 import BenchmarkBar from './BenchmarkBar'
 import HoldingsModal from './HoldingsModal'
@@ -19,10 +19,11 @@ interface Props {
   snapshots:  Record<number, SectorSnapshot[]>
 }
 
-type FilterMode = 'all' | 'hot' | 'rising'
+type FilterMode = 'all' | 'hot' | 'rising' | 'falling'
 
 const PERIODS_LOCAL: Period[] = ['1D', '1W', '1M', '3M', 'YTD']
-const RISING_THRESHOLD = 5
+const RISING_THRESHOLD  =  5
+const FALLING_THRESHOLD = -5
 
 export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
   const [period, setPeriod]         = useState<Period>('YTD')
@@ -55,8 +56,9 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
 
   // ── Filtered display set ──────────────────────────────────────
   const displayed = useMemo(() => {
-    if (filterMode === 'hot')    return sorted.slice(0, 2)
-    if (filterMode === 'rising') return sorted.filter(s => (getRankChange(s, period) ?? 0) >= RISING_THRESHOLD)
+    if (filterMode === 'hot')     return sorted.slice(0, 2)
+    if (filterMode === 'rising')  return sorted.filter(s => (getRankChange(s, period) ?? 0) >= RISING_THRESHOLD)
+    if (filterMode === 'falling') return sorted.filter(s => (getRankChange(s, period) ?? 0) <= FALLING_THRESHOLD)
     return sorted
   }, [sorted, filterMode, period])
 
@@ -69,12 +71,19 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
     const rc    = getRankChange(s, period)
     return !isHot && rc !== null && rc >= RISING_THRESHOLD
   })
+  const anyFalling = displayed.some(s => {
+    const isHot    = sorted.indexOf(s) < 2
+    const isRising = !isHot && (getRankChange(s, period) ?? 0) >= RISING_THRESHOLD
+    const rc       = getRankChange(s, period)
+    return !isHot && !isRising && rc !== null && rc <= FALLING_THRESHOLD
+  })
   const anyGold   = displayed.some(s => computeScorecard(s, spx) === 'gold')
   const anySilver = displayed.some(s => computeScorecard(s, spx) === 'silver')
 
   const sectionTitle =
-    filterMode === 'hot'    ? 'Hot Sectors' :
-    filterMode === 'rising' ? 'Rising Sectors' :
+    filterMode === 'hot'     ? 'Hot Sectors' :
+    filterMode === 'rising'  ? 'Rising Sectors' :
+    filterMode === 'falling' ? 'Falling Sectors' :
     'Sector Rankings'
 
   const toggleFilter = (mode: FilterMode) => {
@@ -149,6 +158,17 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
                 <TrendingUpIcon size={11} className={filterMode === 'rising' ? 'text-sky-500' : ''} />
                 <span className="hidden sm:inline">Rising</span>
               </button>
+
+              {/* FALLING filter */}
+              <button
+                onClick={() => toggleFilter('falling')}
+                className={`period-pill period-pill-icon flex items-center gap-1 ml-1 ${filterMode === 'falling' ? 'period-pill-active' : ''}`}
+                aria-pressed={filterMode === 'falling'}
+                title="Show sectors falling 5+ ranks"
+              >
+                <TrendingDownIcon size={11} className={filterMode === 'falling' ? 'text-rose-500' : ''} />
+                <span className="hidden sm:inline">Falling</span>
+              </button>
             </div>
           </div>
         </div>
@@ -189,8 +209,9 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
       {/* ── Rankings divider ─────────────────────── */}
       <div className="flex items-center gap-3 mb-4">
         <span className="text-[10px] font-bold tracking-widest text-slate-400 uppercase whitespace-nowrap flex items-center gap-1.5">
-          {filterMode === 'hot'    && <FlameIcon size={11} className="text-orange-500" />}
-          {filterMode === 'rising' && <TrendingUpIcon size={11} className="text-sky-500" />}
+          {filterMode === 'hot'     && <FlameIcon size={11} className="text-orange-500" />}
+          {filterMode === 'rising'  && <TrendingUpIcon size={11} className="text-sky-500" />}
+          {filterMode === 'falling' && <TrendingDownIcon size={11} className="text-rose-500" />}
           {sectionTitle}
           {filterMode !== 'all' && (
             <span className="text-slate-300 font-normal">· {displayed.length}</span>
@@ -218,9 +239,15 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
         </div>
       ) : displayed.length === 0 ? (
         <div className="text-center py-16">
-          <TrendingUpIcon size={36} className="mx-auto mb-3 text-slate-200" />
+          {filterMode === 'falling'
+            ? <TrendingDownIcon size={36} className="mx-auto mb-3 text-slate-200" />
+            : <TrendingUpIcon   size={36} className="mx-auto mb-3 text-slate-200" />
+          }
           <p className="font-semibold text-slate-600 text-base">
-            No sectors rose {RISING_THRESHOLD}+ ranks this sync
+            {filterMode === 'falling'
+              ? `No sectors dropped ${Math.abs(FALLING_THRESHOLD)}+ ranks this sync`
+              : `No sectors rose ${RISING_THRESHOLD}+ ranks this sync`
+            }
           </p>
           <p className="text-sm mt-1.5 text-slate-400">
             Check back after the next sync, or view all sectors.
@@ -255,7 +282,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
         </div>
       )}
 
-      <BadgeLegend showHot={anyHot} showRising={anyRising} showGold={anyGold} showSilver={anySilver} />
+      <BadgeLegend showHot={anyHot} showRising={anyRising} showFalling={anyFalling} showGold={anyGold} showSilver={anySilver} />
 
       {/* ── Modal ───────────────────────────────── */}
       {selected && (

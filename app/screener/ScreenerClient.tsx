@@ -44,8 +44,11 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
     if (direction === 'positive') rows = rows.filter(h => (getPeriodValue(h, period) ?? 0) >= 0)
     if (direction === 'negative') rows = rows.filter(h => (getPeriodValue(h, period) ?? 1) < 0)
 
+    const desc = direction !== 'negative'
     return rows.sort((a, b) =>
-      (getPeriodValue(b, period) ?? -Infinity) - (getPeriodValue(a, period) ?? -Infinity)
+      desc
+        ? (getPeriodValue(b, period) ?? -Infinity) - (getPeriodValue(a, period) ?? -Infinity)
+        : (getPeriodValue(a, period) ??  Infinity) - (getPeriodValue(b, period) ??  Infinity)
     )
   }, [holdings, period, query, sector, direction])
 
@@ -112,10 +115,18 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                 <button
                   key={d}
                   onClick={() => setDirection(d)}
-                  className={`period-pill flex items-center gap-1 ${direction === d ? 'period-pill-active' : ''}`}
+                  className={`period-pill flex items-center gap-1 ${
+                    direction === d
+                      ? d === 'positive'
+                        ? 'period-pill-active !bg-emerald-50 !text-emerald-700 !border-emerald-200/80 !shadow-none'
+                        : d === 'negative'
+                        ? 'period-pill-active !bg-rose-50 !text-rose-700 !border-rose-200/80 !shadow-none'
+                        : 'period-pill-active'
+                      : ''
+                  }`}
                 >
-                  {d === 'positive' && <TrendingUpIcon size={10} />}
-                  {d === 'negative' && <TrendingDownIcon size={10} />}
+                  {d === 'positive' && <TrendingUpIcon size={10} className={direction === 'positive' ? 'text-emerald-600' : ''} />}
+                  {d === 'negative' && <TrendingDownIcon size={10} className={direction === 'negative' ? 'text-rose-600' : ''} />}
                   {d === 'all' ? 'All' : d.charAt(0).toUpperCase() + d.slice(1)}
                 </button>
               ))}
@@ -143,32 +154,20 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
           boxShadow: '0 1px 0 rgba(255,255,255,1) inset, 0 2px 12px rgba(0,0,0,0.04)',
         }}
       >
-        <div className="overflow-x-auto">
-          <div style={{ minWidth: '460px' }}>
-
-            {/* Desktop header */}
-            <div className="hidden sm:grid sm:grid-cols-[40px_80px_1fr_64px_64px_64px_64px_64px_64px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-4 py-3 bg-slate-50/70 border-b border-slate-100">
+        {/* ── Desktop table (sm+) — full overflow-x-auto with all columns ── */}
+        <div className="hidden sm:block overflow-x-auto">
+          <div style={{ minWidth: '560px' }}>
+            <div className="grid grid-cols-[40px_80px_1fr_64px_64px_64px_64px_64px_64px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-4 py-3 bg-slate-50/70 border-b border-slate-100">
               <span>#</span>
               <span>Ticker</span>
               <span>Company</span>
               <span className="text-right">Price</span>
-              <span className={`text-right ${period === '1D' ? 'text-slate-700' : ''}`}>1D</span>
-              <span className={`text-right ${period === '1W' ? 'text-slate-700' : ''}`}>1W</span>
-              <span className={`text-right ${period === '1M' ? 'text-slate-700' : ''}`}>1M</span>
-              <span className={`text-right ${period === '3M' ? 'text-slate-700' : ''}`}>3M</span>
+              <span className={`text-right ${period === '1D'  ? 'text-slate-700' : ''}`}>1D</span>
+              <span className={`text-right ${period === '1W'  ? 'text-slate-700' : ''}`}>1W</span>
+              <span className={`text-right ${period === '1M'  ? 'text-slate-700' : ''}`}>1M</span>
+              <span className={`text-right ${period === '3M'  ? 'text-slate-700' : ''}`}>3M</span>
               <span className={`text-right ${period === 'YTD' ? 'text-slate-700' : ''}`}>YTD</span>
             </div>
-
-            {/* Mobile header */}
-            <div className="sm:hidden grid grid-cols-[28px_60px_1fr_64px_72px_60px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-3 py-2.5 bg-slate-50/70 border-b border-slate-100">
-              <span>#</span>
-              <span>Ticker</span>
-              <span>Company · Sector</span>
-              <span className="text-right">Price</span>
-              <span className="text-right text-slate-600">{period}</span>
-              <span className="text-right">1W</span>
-            </div>
-
             {shown.length === 0 ? (
               <div className="text-center py-16">
                 <SearchIcon size={28} className="mx-auto mb-3 text-slate-200" />
@@ -178,9 +177,8 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
               <div className="divide-y divide-slate-50">
                 {shown.map((h, i) => {
                   const sectorName = h.sectors?.name ?? ''
-                  const val  = getPeriodValue(h, period)
+                  const val   = getPeriodValue(h, period)
                   const isPos = val !== null && val >= 0
-
                   const Chip = () => (
                     <span className={`font-mono text-[11px] font-black px-1.5 py-1 rounded-[8px] text-center inline-block shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
                       isPos ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
@@ -188,7 +186,6 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                       {h.ticker}
                     </span>
                   )
-
                   const Cell = ({ p }: { p: Period }) => {
                     const v   = getPeriodValue(h, p)
                     const pos = v !== null && v >= 0
@@ -202,43 +199,82 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                       </span>
                     )
                   }
-
                   return (
-                    <div key={`${h.ticker}-${h.sector_id}`}>
-                      {/* Desktop */}
-                      <div className="hidden sm:grid sm:grid-cols-[40px_80px_1fr_64px_64px_64px_64px_64px_64px] items-center px-4 py-2.5 hover:bg-slate-50/80 transition-colors">
-                        <span className="text-[11px] text-slate-300 tabular-nums font-mono">{i + 1}</span>
-                        <Chip />
-                        <div className="min-w-0 px-2">
-                          <p className="text-[13px] font-semibold text-slate-800 truncate leading-tight">{h.company_name}</p>
-                          <p className="text-[10px] text-slate-400 truncate">{sectorName}</p>
-                        </div>
-                        <span className="font-mono text-[11px] text-slate-400 text-right tabular-nums">
-                          {formatPrice(h.price ?? null)}
-                        </span>
-                        <Cell p="1D" />
-                        <Cell p="1W" />
-                        <Cell p="1M" />
-                        <Cell p="3M" />
-                        <Cell p="YTD" />
+                    <div key={`${h.ticker}-${h.sector_id}`}
+                      className={`grid grid-cols-[40px_80px_1fr_64px_64px_64px_64px_64px_64px] items-center px-4 py-2.5 transition-colors ${
+                        isPos ? 'hover:bg-emerald-50/40' : 'hover:bg-rose-50/40'
+                      }`}>
+                      <span className="text-[11px] text-slate-300 tabular-nums font-mono">{i + 1}</span>
+                      <Chip />
+                      <div className="min-w-0 px-2">
+                        <p className="text-[13px] font-semibold text-slate-800 truncate leading-tight">{h.company_name}</p>
+                        <p className="text-[10px] text-slate-400 truncate">{sectorName}</p>
                       </div>
+                      <span className="font-mono text-[11px] text-slate-400 text-right tabular-nums">
+                        {formatPrice(h.price ?? null)}
+                      </span>
+                      <Cell p="1D" />
+                      <Cell p="1W" />
+                      <Cell p="1M" />
+                      <Cell p="3M" />
+                      <Cell p="YTD" />
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        </div>
 
-                      {/* Mobile */}
-                      <div className="sm:hidden grid grid-cols-[28px_60px_1fr_64px_72px_60px] items-center px-3 py-2.5 hover:bg-slate-50 transition-colors">
-                        <span className="text-[11px] text-slate-300 tabular-nums font-mono">{i + 1}</span>
-                        <Chip />
-                        <div className="min-w-0 px-2">
-                          <p className="text-[12px] font-semibold text-slate-800 truncate leading-tight">{h.company_name}</p>
-                          <p className="text-[10px] text-slate-400 truncate">{sectorName}</p>
-                        </div>
-                        <span className="font-mono text-[11px] text-slate-400 text-right tabular-nums">
-                          {formatPrice(h.price ?? null)}
-                        </span>
-                        <span className={`font-mono text-[14px] font-extrabold text-right tabular-nums ${isPos ? 'text-emerald-600' : 'text-rose-600'}`}>
-                          {val !== null ? `${isPos ? '+' : ''}${val.toFixed(1)}%` : '—'}
-                        </span>
-                        <Cell p="1W" />
+        {/* ── Mobile table — selected period always visible; 1W scrolls ── */}
+        <div className="sm:hidden overflow-x-auto">
+          {/* No minWidth — columns size naturally so selected period fits without scrolling */}
+          <div>
+            <div className="grid grid-cols-[24px_52px_1fr_60px_64px_52px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-3 py-2.5 bg-slate-50/70 border-b border-slate-100">
+              <span>#</span>
+              <span>Ticker</span>
+              <span>Company · Sector</span>
+              <span className="text-right">Price</span>
+              <span className="text-right text-slate-700">{period}</span>
+              <span className="text-right">1W</span>
+            </div>
+            {shown.length === 0 ? (
+              <div className="text-center py-16">
+                <SearchIcon size={28} className="mx-auto mb-3 text-slate-200" />
+                <p className="text-slate-500 font-semibold text-[13px]">No stocks match</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-slate-50">
+                {shown.map((h, i) => {
+                  const sectorName = h.sectors?.name ?? ''
+                  const val   = getPeriodValue(h, period)
+                  const isPos = val !== null && val >= 0
+                  const valW  = getPeriodValue(h, '1W')
+                  const isPosW = valW !== null && valW >= 0
+                  return (
+                    <div key={`${h.ticker}-${h.sector_id}-m`}
+                      className={`grid grid-cols-[24px_52px_1fr_60px_64px_52px] items-center px-3 py-2.5 transition-colors ${
+                        isPos ? 'hover:bg-emerald-50/40' : 'hover:bg-rose-50/40'
+                      }`}>
+                      <span className="text-[11px] text-slate-300 tabular-nums font-mono">{i + 1}</span>
+                      <span className={`font-mono text-[10px] font-black px-1 py-1 rounded-[7px] text-center inline-block ${
+                        isPos ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
+                      }`}>
+                        {h.ticker}
+                      </span>
+                      <div className="min-w-0 px-1.5">
+                        <p className="text-[12px] font-semibold text-slate-800 truncate leading-tight">{h.company_name}</p>
+                        <p className="text-[10px] text-slate-400 truncate">{sectorName}</p>
                       </div>
+                      <span className="font-mono text-[10px] text-slate-400 text-right tabular-nums">
+                        {formatPrice(h.price ?? null)}
+                      </span>
+                      <span className={`font-mono text-[13px] font-extrabold text-right tabular-nums ${isPos ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        {val !== null ? `${isPos ? '+' : ''}${val.toFixed(1)}%` : '—'}
+                      </span>
+                      <span className={`font-mono text-[11px] text-right tabular-nums ${isPosW ? 'text-emerald-400' : 'text-rose-300'}`}>
+                        {valW !== null ? `${isPosW ? '+' : ''}${valW.toFixed(1)}%` : '—'}
+                      </span>
                     </div>
                   )
                 })}
@@ -261,7 +297,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       )}
 
       <p className="text-center text-[10px] text-slate-300 mt-5 tracking-widest">
-        EAGLEVIEW V4.3.0 · EQUAL-WEIGHTED BASKETS · YAHOO FINANCE
+        EAGLEVIEW V4.3.5 · EQUAL-WEIGHTED BASKETS · YAHOO FINANCE
       </p>
     </div>
   )

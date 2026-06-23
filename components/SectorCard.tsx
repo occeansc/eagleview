@@ -4,7 +4,7 @@ import {
   Sector, Period, ScorecardLevel, SectorSnapshot,
   getPeriodValue, getRankChange, getBreadth,
 } from '@/lib/types'
-import { ZapIcon, BookmarkIcon, AwardIcon, FlameIcon, TrendingUpIcon } from './Icons'
+import { ZapIcon, BookmarkIcon, AwardIcon, FlameIcon, TrendingUpIcon, TrendingDownIcon } from './Icons'
 import Sparkline from './Sparkline'
 
 interface Props {
@@ -30,11 +30,16 @@ export default function SectorCard({
   const positive   = value !== null && value >= 0
   const negative   = value !== null && value < 0
   const isRising   = rankChange !== null && rankChange >= 5
+  const isFalling  = !isHot && !isRising && rankChange !== null && rankChange <= -5
   const streak     = sector.streak ?? 0
 
-  const pctColor   = positive ? 'text-emerald-600' : negative ? 'text-rose-500' : 'text-slate-400'
-  const glowRgb    = positive ? '16,185,129' : negative ? '244,63,94' : '148,163,184'
+  const pctColor    = positive ? 'text-emerald-600' : negative ? 'text-rose-500' : 'text-slate-400'
+  const glowRgb     = positive ? '16,185,129' : negative ? '244,63,94' : '148,163,184'
   const borderHover = positive ? 'hover:border-emerald-200/60' : negative ? 'hover:border-rose-200/60' : ''
+
+  // Subtle performance tint — magnitude-aware, capped low so 22 cards stay clean
+  const tintAlpha = value === null ? 0 : Math.min(0.04 + Math.abs(value) / 100 * 0.07, 0.10)
+  const tintColor = positive ? `rgba(16,185,129,${tintAlpha})` : negative ? `rgba(244,63,94,${tintAlpha})` : 'transparent'
 
   return (
     <button
@@ -42,30 +47,40 @@ export default function SectorCard({
       className={`sector-card ${positive ? 'positive' : negative ? 'negative' : ''} card-appear group relative rounded-[22px] text-left w-full flex flex-col outline-none overflow-hidden focus-visible:ring-2 focus-visible:ring-indigo-400 ${borderHover}`}
       style={{ animationDelay: `${delay}ms` }}
     >
-      {/* Glow — INVISIBLE at rest, only shows on hover. Radial gradient instead of
-          a blurred circle: filter:blur() + overflow clipping is a known
-          cross-browser-inconsistent combination, even fully wrapped in its own
-          clipping layer (confirmed on BenchmarkBar). A gradient fades to
-          transparent within its own box, so there's nothing to inconsistently clip. */}
+      {/* Hover glow — radial gradient, bottom-right */}
       <div
         className="absolute inset-0 rounded-[22px] overflow-hidden pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
         style={{ background: `radial-gradient(circle at bottom right, rgba(${glowRgb},0.20) 0%, transparent 55%)` }}
       />
 
+      {/* Performance tint — always visible, very subtle top gradient, magnitude-aware */}
+      {tintAlpha > 0 && (
+        <div
+          className="absolute inset-x-0 top-0 h-3/5 rounded-t-[22px] pointer-events-none z-0"
+          style={{ background: `linear-gradient(180deg, ${tintColor} 0%, transparent 100%)` }}
+        />
+      )}
+
       {/* ── HOT / RISING inline top banner — never buried, more prominent ── */}
-      {(isHot || isRising) && (
+      {(isHot || isRising || isFalling) && (
         <div className={`w-full px-3.5 py-2 rounded-t-[22px] border-b flex items-center gap-2 relative z-10 ${
           isHot
             ? 'bg-gradient-to-r from-orange-100 via-orange-50 to-rose-50 border-orange-200/70'
-            : 'bg-gradient-to-r from-sky-100 via-sky-50 to-indigo-50 border-sky-200/70'
+            : isRising
+              ? 'bg-gradient-to-r from-sky-100 via-sky-50 to-indigo-50 border-sky-200/70'
+              : 'bg-gradient-to-r from-rose-100 via-rose-50 to-pink-50 border-rose-200/70'
         }`}>
           {isHot ? (
             <FlameIcon size={12} className="hot-badge shrink-0 text-orange-500" />
-          ) : (
+          ) : isRising ? (
             <TrendingUpIcon size={12} className="rising-badge shrink-0 text-sky-500" />
+          ) : (
+            <TrendingDownIcon size={12} className="shrink-0 text-rose-500" />
           )}
-          <span className={`text-[10px] font-black uppercase tracking-[0.22em] ${isHot ? 'text-orange-700' : 'text-sky-700'}`}>
-            {isHot ? 'Hot' : 'Rising'}
+          <span className={`text-[10px] font-black uppercase tracking-[0.22em] ${
+            isHot ? 'text-orange-700' : isRising ? 'text-sky-700' : 'text-rose-700'
+          }`}>
+            {isHot ? 'Hot' : isRising ? 'Rising' : 'Falling'}
           </span>
         </div>
       )}

@@ -39,6 +39,14 @@ export default function BenchmarkBar({ benchmarks, period }: Props) {
           const meta = META[b.ticker] ?? { Icon: BarChartIcon, short: b.name }
           const { Icon } = meta
 
+          // Magnitude-aware glow — benchmarks are smaller-scale than sectors
+          const mag       = Math.abs(val ?? 0)
+          const baseAlpha = Math.min(0.08 + (mag / 50) * 0.18, 0.28)
+          const hoverAlpha = Math.min(baseAlpha + 0.14, 0.42)
+          const rgb       = pos ? '16,185,129' : '244,63,94'
+          const baseGlow  = `radial-gradient(circle at top right, rgba(${rgb},${baseAlpha.toFixed(2)}) 0%, transparent 60%)`
+          const hoverGlow = `radial-gradient(circle at top right, rgba(${rgb},${hoverAlpha.toFixed(2)}) 0%, transparent 68%)`
+
           return (
             <div
               key={b.ticker}
@@ -46,26 +54,15 @@ export default function BenchmarkBar({ benchmarks, period }: Props) {
                 pos ? 'border-emerald-100/60' : 'border-rose-100/60'
               }`}
             >
-              {/* Glow — radial gradient instead of a blurred circle. filter:blur()
-                  combined with overflow clipping is a known cross-browser-inconsistent
-                  combination (confirmed: still misbehaved even fully wrapped in its
-                  own clipping layer). A gradient fades to transparent within its own
-                  box, so there's nothing for any browser to inconsistently clip. */}
+              {/* Base glow — magnitude-aware, always visible */}
               <div
                 className="absolute inset-0 rounded-[20px] overflow-hidden pointer-events-none"
-                style={{
-                  background: pos
-                    ? 'radial-gradient(circle at top right, rgba(16,185,129,0.16) 0%, transparent 60%)'
-                    : 'radial-gradient(circle at top right, rgba(244,63,94,0.16) 0%, transparent 60%)',
-                }}
+                style={{ background: baseGlow }}
               />
+              {/* Hover glow — amplified */}
               <div
                 className="absolute inset-0 rounded-[20px] overflow-hidden pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                style={{
-                  background: pos
-                    ? 'radial-gradient(circle at top right, rgba(16,185,129,0.30) 0%, transparent 68%)'
-                    : 'radial-gradient(circle at top right, rgba(244,63,94,0.30) 0%, transparent 68%)',
-                }}
+                style={{ background: hoverGlow }}
               />
 
               {/* Name + icon row */}

@@ -1,13 +1,14 @@
-import { FlameIcon, TrendingUpIcon, AwardIcon } from './Icons'
+import { FlameIcon, TrendingUpIcon, TrendingDownIcon, AwardIcon } from './Icons'
 
 interface BadgeLegendProps {
-  showHot:    boolean
-  showRising: boolean
-  showGold:   boolean
-  showSilver: boolean
+  showHot:     boolean
+  showRising:  boolean
+  showFalling: boolean
+  showGold:    boolean
+  showSilver:  boolean
 }
 
-export default function BadgeLegend({ showHot, showRising, showGold, showSilver }: BadgeLegendProps) {
+export default function BadgeLegend({ showHot, showRising, showFalling, showGold, showSilver }: BadgeLegendProps) {
   const terms = [
     showHot && {
       key: 'hot', Icon: FlameIcon, iconClass: 'text-orange-500',
@@ -16,6 +17,10 @@ export default function BadgeLegend({ showHot, showRising, showGold, showSilver 
     showRising && {
       key: 'rising', Icon: TrendingUpIcon, iconClass: 'text-sky-500',
       label: 'Rising', def: 'Climbed 5+ ranks since the last sync.',
+    },
+    showFalling && {
+      key: 'falling', Icon: TrendingDownIcon, iconClass: 'text-rose-500',
+      label: 'Falling', def: 'Dropped 5+ ranks since the last sync.',
     },
     showGold && {
       key: 'gold', Icon: AwardIcon, iconClass: 'text-amber-500',

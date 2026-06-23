@@ -66,6 +66,13 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
     : 'text-rose-600 drop-shadow-[0_2px_6px_rgba(244,63,94,0.12)]'
   const streak        = sector.streak ?? 0
 
+  // Performance gradient — magnitude-aware, fades top→bottom from tinted to pure white
+  const magnitude  = Math.abs(sectorVal ?? 0)
+  const gradAlpha  = sectorVal === null ? 0 : Math.min(0.08 + (magnitude / 100) * 0.16, 0.22)
+  const gradColor  = pos ? `rgba(16,185,129,${gradAlpha})` : `rgba(244,63,94,${gradAlpha})`
+  const headerBg   = `linear-gradient(180deg, ${gradColor} 0%, rgba(255,255,255,0) 100%)`
+  const handlePill = pos ? 'bg-emerald-300/50' : 'bg-rose-300/50'
+
   const sorted = [...holdings].sort((a, b) =>
     (getPeriodValue(b, period) ?? -Infinity) - (getPeriodValue(a, period) ?? -Infinity)
   )
@@ -84,69 +91,73 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
         style={{ maxHeight: 'min(92vh, 760px)' }}
         onMouseDown={e => e.stopPropagation()}
       >
-        {/* Drag handle — mobile */}
-        <div className="sm:hidden flex justify-center pt-3 pb-1 shrink-0">
-          <div className="w-10 h-1 bg-slate-300/60 rounded-full" />
-        </div>
+        {/* ── Unified gradient top section: drag handle + header ── */}
+        <div className="shrink-0" style={{ background: headerBg }}>
 
-        {/* ── Sticky header ────────────────────── */}
-        <div className="px-6 pt-4 sm:pt-6 pb-5 bg-white border-b border-slate-100/70 shrink-0 relative">
-          <button
-            onClick={onClose}
-            className="absolute right-5 top-5 w-8 h-8 bg-slate-100 hover:bg-slate-200 flex items-center justify-center rounded-full text-slate-500 hover:text-slate-800 transition-colors"
-            aria-label="Close"
-          >
-            <CloseIcon size={14} />
-          </button>
-
-          <h2 className="text-[22px] font-black tracking-tight text-slate-900 leading-tight pr-10 mb-4">
-            {sector.name}
-          </h2>
-
-          {/* Return pill */}
-          <div className="flex items-baseline gap-2.5 bg-slate-50 border border-slate-100 rounded-[14px] px-4 py-2.5 w-fit mb-3 shadow-[inset_0_1px_3px_rgba(0,0,0,0.04)]">
-            <span className={`font-mono text-[28px] font-extrabold leading-none tabular-nums ${pctClass}`}>
-              {sectorVal !== null
-                ? `${sectorVal > 0 ? '+' : ''}${sectorVal.toFixed(2)}%`
-                : '—'
-              }
-            </span>
-            <span className="text-[10px] uppercase font-black tracking-[0.16em] text-slate-400 shrink-0">
-              {period} Avg
-            </span>
+          {/* Drag handle — mobile, pill now tinted */}
+          <div className="sm:hidden flex justify-center pt-3 pb-1">
+            <div className={`w-10 h-1 rounded-full ${handlePill}`} />
           </div>
 
-          {/* Badges row */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {momentumDelta !== null && (
-              <span className={`flex items-center font-black tracking-[0.12em] text-[9px] uppercase px-2.5 py-1.5 rounded-[8px] border ${
-                momentumDelta > 0
-                  ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                  : momentumDelta < 0
-                  ? 'bg-rose-50 text-rose-800 border-rose-200'
-                  : 'bg-slate-50 text-slate-600 border-slate-200'
-              }`}>
-                {momentumDelta > 0 ? 'Mom Up ↑' : momentumDelta < 0 ? 'Mom Down ↓' : 'Flat'}{' '}
-                {momentumDelta > 0 ? '+' : ''}{momentumDelta.toFixed(1)}%
+          {/* ── Sticky header ────────────────────── */}
+          <div className="px-6 pt-4 sm:pt-6 pb-5 border-b border-slate-100/70 relative">
+            <button
+              onClick={onClose}
+              className="absolute right-5 top-5 w-8 h-8 bg-white/70 hover:bg-white flex items-center justify-center rounded-full text-slate-500 hover:text-slate-800 transition-colors shadow-sm"
+              aria-label="Close"
+            >
+              <CloseIcon size={14} />
+            </button>
+
+            <h2 className="text-[22px] font-black tracking-tight text-slate-900 leading-tight pr-10 mb-4">
+              {sector.name}
+            </h2>
+
+            {/* Return pill */}
+            <div className="flex items-baseline gap-2.5 bg-white/80 border border-slate-100 rounded-[14px] px-4 py-2.5 w-fit mb-3 shadow-[inset_0_1px_3px_rgba(0,0,0,0.04)]">
+              <span className={`font-mono text-[28px] font-extrabold leading-none tabular-nums ${pctClass}`}>
+                {sectorVal !== null
+                  ? `${sectorVal > 0 ? '+' : ''}${sectorVal.toFixed(2)}%`
+                  : '—'
+                }
               </span>
-            )}
-            {streak >= 5 && (
-              <span className="flex items-center gap-1 px-2.5 py-1.5 font-black uppercase rounded-[8px] bg-orange-50 border border-orange-100 text-[9px] text-orange-600 tracking-widest">
-                <ZapIcon size={10} /> {streak} syncs
+              <span className="text-[10px] uppercase font-black tracking-[0.16em] text-slate-400 shrink-0">
+                {period} Avg
               </span>
-            )}
-            {!loading && holdings.length > 0 && (
-              <span className="text-[12px] ml-auto">
-                <span className="text-emerald-600 font-bold">{posCount}↑</span>
-                {' '}
-                <span className="text-rose-500 font-bold">{holdings.length - posCount}↓</span>
-                {breadth !== null && (
-                  <span className="text-slate-400 text-[11px]"> · {breadth}% breadth</span>
-                )}
-              </span>
-            )}
+            </div>
+
+            {/* Badges row */}
+            <div className="flex items-center gap-2 flex-wrap">
+              {momentumDelta !== null && (
+                <span className={`flex items-center font-black tracking-[0.12em] text-[9px] uppercase px-2.5 py-1.5 rounded-[8px] border ${
+                  momentumDelta > 0
+                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    : momentumDelta < 0
+                    ? 'bg-rose-50 text-rose-800 border-rose-200'
+                    : 'bg-slate-50 text-slate-600 border-slate-200'
+                }`}>
+                  {momentumDelta > 0 ? 'Mom Up ↑' : momentumDelta < 0 ? 'Mom Down ↓' : 'Flat'}{' '}
+                  {momentumDelta > 0 ? '+' : ''}{momentumDelta.toFixed(1)}%
+                </span>
+              )}
+              {streak >= 5 && (
+                <span className="flex items-center gap-1 px-2.5 py-1.5 font-black uppercase rounded-[8px] bg-orange-50 border border-orange-100 text-[9px] text-orange-600 tracking-widest">
+                  <ZapIcon size={10} /> {streak} syncs
+                </span>
+              )}
+              {!loading && holdings.length > 0 && (
+                <span className="text-[12px] ml-auto">
+                  <span className="text-emerald-600 font-bold">{posCount}↑</span>
+                  {' '}
+                  <span className="text-rose-500 font-bold">{holdings.length - posCount}↓</span>
+                  {breadth !== null && (
+                    <span className="text-slate-400 text-[11px]"> · {breadth}% breadth</span>
+                  )}
+                </span>
+              )}
+            </div>
           </div>
-        </div>
+        </div>{/* end gradient top section */}
 
         {/* ── Scrollable body ─────────────────── */}
         <div className="overflow-y-auto flex-1 overscroll-contain bg-white" ref={scrollRef}>
@@ -236,7 +247,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
         {/* Footer */}
         <div className="px-6 py-3 border-t border-slate-100 bg-white shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400">
-            Eagleview v4.3.0 · Yahoo Finance
+            Eagleview v4.3.5 · Yahoo Finance
           </p>
           <p className="text-[10px] text-slate-300 tabular-nums">
             Last sync: {formatSyncTime(sector.updated_at)}

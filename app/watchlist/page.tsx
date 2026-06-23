@@ -2,14 +2,16 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import {
-  Sector, Benchmark, Period, PERIODS, PERIOD_LABELS,
+  Sector, Benchmark, Period, PERIOD_LABELS,
   getPeriodValue, computeScorecard,
 } from '@/lib/types'
 import { useWatchlist } from '@/lib/watchlist'
 import { getSupabaseClient } from '@/lib/supabase'
 import { BookmarkIcon, TrendingUpIcon, TrendingDownIcon } from '@/components/Icons'
 import HoldingsModal from '@/components/HoldingsModal'
-import PeriodToggle from '@/components/PeriodToggle'
+
+// Watchlist shows all 5 periods including 1D — consistent with Dashboard/Heatmap/Screener
+const WATCHLIST_PERIODS: Period[] = ['1D', '1W', '1M', '3M', 'YTD']
 
 const cardStyle = {
   background:  '#ffffff',
@@ -69,7 +71,25 @@ export default function WatchlistPage() {
               : `${sorted.length} sector${sorted.length !== 1 ? 's' : ''} pinned`}
           </p>
         </div>
-        {sorted.length > 0 && <PeriodToggle selected={period} onChange={setPeriod} />}
+
+        {/* Period pills — 5 periods including 1D */}
+        {sorted.length > 0 && (
+          <div className="flex gap-1 bg-slate-100/70 rounded-full p-1 border border-slate-200/60 shrink-0">
+            {WATCHLIST_PERIODS.map(p => (
+              <button
+                key={p}
+                onClick={() => setPeriod(p)}
+                className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all duration-200 ${
+                  period === p
+                    ? 'bg-white text-slate-800 shadow-sm'
+                    : 'text-slate-400 hover:text-slate-600'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {sorted.length === 0 ? (
@@ -79,10 +99,10 @@ export default function WatchlistPage() {
           {/* Comparison table */}
           <div className="rounded-[22px] overflow-hidden mb-5" style={cardStyle}>
             <div className="overflow-x-auto">
-              <div style={{ minWidth: '400px' }}>
-                <div className="grid grid-cols-[1fr_repeat(4,64px)_44px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-5 py-3 bg-slate-50/70 border-b border-slate-100">
+              <div style={{ minWidth: '460px' }}>
+                <div className="grid grid-cols-[1fr_repeat(5,56px)_44px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-5 py-3 bg-slate-50/70 border-b border-slate-100">
                   <span>Sector</span>
-                  {PERIODS.map(p => (
+                  {WATCHLIST_PERIODS.map(p => (
                     <span key={p} className={`text-right ${p === period ? 'text-slate-700' : ''}`}>{p}</span>
                   ))}
                   <span />
@@ -94,7 +114,7 @@ export default function WatchlistPage() {
                     <div
                       key={sector.id}
                       onClick={() => setSelected(sector)}
-                      className="grid grid-cols-[1fr_repeat(4,64px)_44px] items-center px-5 py-3.5 hover:bg-slate-50/80 transition-colors border-b border-slate-50 last:border-0 cursor-pointer"
+                      className="grid grid-cols-[1fr_repeat(5,56px)_44px] items-center px-5 py-3.5 hover:bg-slate-50/80 transition-colors border-b border-slate-50 last:border-0 cursor-pointer"
                     >
                       <div className="min-w-0 pr-3">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -112,9 +132,9 @@ export default function WatchlistPage() {
                         </p>
                       </div>
 
-                      {PERIODS.map(p => {
-                        const val = getPeriodValue(sector, p)
-                        const pos = val !== null && val >= 0
+                      {WATCHLIST_PERIODS.map(p => {
+                        const val  = getPeriodValue(sector, p)
+                        const pos  = val !== null && val >= 0
                         const bold = p === period
                         return (
                           <span key={p} className={`font-mono text-right tabular-nums ${bold ? 'font-extrabold' : 'font-semibold'} ${
@@ -141,9 +161,9 @@ export default function WatchlistPage() {
             </div>
           </div>
 
-          {/* Stats grid */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {PERIODS.map(p => {
+          {/* Stats grid — one card per period */}
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-2 sm:gap-3">
+            {WATCHLIST_PERIODS.map(p => {
               const rets     = sorted.map(s => getPeriodValue(s, p)).filter((v): v is number => v !== null)
               const avg      = rets.length ? rets.reduce((a,b) => a+b,0) / rets.length : null
               const posCount = rets.filter(v => v >= 0).length
@@ -153,17 +173,21 @@ export default function WatchlistPage() {
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
-                  className="rounded-[20px] p-4 text-left transition-all duration-200"
+                  className="rounded-[20px] p-3 sm:p-4 text-left transition-all duration-200"
                   style={active ? {
-                    background: '#0f172a',
-                    border: '1px solid #0f172a',
-                    boxShadow: '0 4px 16px rgba(15,23,42,0.20)',
+                    background: avg === null ? '#0f172a'
+                      : pos ? '#052e16'
+                      :        '#4c0519',
+                    border: `1px solid ${avg === null ? '#0f172a' : pos ? '#14532d' : '#881337'}`,
+                    boxShadow: pos
+                      ? '0 4px 16px rgba(5,46,22,0.35)'
+                      : '0 4px 16px rgba(76,5,25,0.35)',
                   } : cardStyle}
                 >
-                  <p className={`text-[9px] font-black tracking-[0.18em] uppercase mb-2 ${active ? 'text-slate-400' : 'text-slate-400'}`}>
+                  <p className="text-[9px] font-black tracking-[0.18em] uppercase mb-2 text-slate-400">
                     {PERIOD_LABELS[p]} avg
                   </p>
-                  <p className={`font-mono text-[22px] font-extrabold leading-none tabular-nums mb-2 ${
+                  <p className={`font-mono text-[18px] sm:text-[22px] font-extrabold leading-none tabular-nums mb-2 ${
                     avg === null ? 'text-slate-300'
                       : pos ? (active ? 'text-emerald-400' : 'text-emerald-600')
                       : (active ? 'text-rose-400' : 'text-rose-600')
@@ -175,8 +199,8 @@ export default function WatchlistPage() {
                       ? <TrendingUpIcon  size={11} className={active ? 'text-emerald-400' : 'text-emerald-500'} />
                       : <TrendingDownIcon size={11} className={active ? 'text-rose-400'   : 'text-rose-400'}   />
                     }
-                    <span className={`text-[10px] font-semibold ${active ? 'text-slate-400' : 'text-slate-400'}`}>
-                      {rets.length > 0 ? `${posCount}/${rets.length} positive` : 'No data'}
+                    <span className="text-[10px] font-semibold text-slate-400">
+                      {rets.length > 0 ? `${posCount}/${rets.length} +ve` : 'No data'}
                     </span>
                   </div>
                 </button>
