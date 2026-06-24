@@ -117,11 +117,12 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
           </div>
         </div>
 
-        {/* ── Combined Period + Filter control ─────── */}
-        <div className="period-control shrink-0">
-          <div className="period-control-inner">
-            {/* Period pills — left group */}
-            <div className="flex gap-1">
+        {/* ── Period bar: scroll container (pills) + filter group (buttons) ── */}
+        <div className="period-bar shrink-0">
+
+          {/* Period pills — inside the scrollable container */}
+          <div className="period-control">
+            <div className="period-control-inner">
               {PERIODS_LOCAL.map(p => (
                 <button
                   key={p}
@@ -132,45 +133,45 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
                 </button>
               ))}
             </div>
-
-            {/* Divider + filter buttons — right group, pushed to far right */}
-            <div className="flex items-center gap-1 ml-auto pr-1">
-              <div className="w-px h-5 self-center mx-1 bg-slate-300/50" />
-
-              {/* HOT filter */}
-              <button
-                onClick={() => toggleFilter('hot')}
-                className={`period-pill period-pill-icon flex items-center gap-1 ${filterMode === 'hot' ? 'period-pill-active' : ''}`}
-                aria-pressed={filterMode === 'hot'}
-                title="Show top 2 hot sectors"
-              >
-                <FlameIcon size={11} className={filterMode === 'hot' ? 'text-orange-500' : ''} />
-                <span className="hidden sm:inline">Hot</span>
-              </button>
-
-              {/* RISING filter — ml-1 keeps slight separation from HOT */}
-              <button
-                onClick={() => toggleFilter('rising')}
-                className={`period-pill period-pill-icon flex items-center gap-1 ml-1 ${filterMode === 'rising' ? 'period-pill-active' : ''}`}
-                aria-pressed={filterMode === 'rising'}
-                title="Show sectors rising 5+ ranks"
-              >
-                <TrendingUpIcon size={11} className={filterMode === 'rising' ? 'text-sky-500' : ''} />
-                <span className="hidden sm:inline">Rising</span>
-              </button>
-
-              {/* FALLING filter */}
-              <button
-                onClick={() => toggleFilter('falling')}
-                className={`period-pill period-pill-icon flex items-center gap-1 ml-1 ${filterMode === 'falling' ? 'period-pill-active' : ''}`}
-                aria-pressed={filterMode === 'falling'}
-                title="Show sectors falling 5+ ranks"
-              >
-                <TrendingDownIcon size={11} className={filterMode === 'falling' ? 'text-rose-500' : ''} />
-                <span className="hidden sm:inline">Falling</span>
-              </button>
-            </div>
           </div>
+
+          {/* Filter buttons — sibling to scroll container, NOT inside it.
+              This is the architectural fix: active-state box-shadows are never
+              clipped by the scroll container's overflow. */}
+          <div className="period-filter-group">
+            <div className="w-px h-5 self-center mr-1 bg-slate-300/50" />
+
+            <button
+              onClick={() => toggleFilter('hot')}
+              className={`period-pill period-pill-icon flex items-center gap-1 ${filterMode === 'hot' ? 'period-pill-active' : ''}`}
+              aria-pressed={filterMode === 'hot'}
+              title="Show top 2 hot sectors"
+            >
+              <FlameIcon size={11} className={filterMode === 'hot' ? 'text-orange-500' : ''} />
+              <span className="hidden sm:inline">Hot</span>
+            </button>
+
+            <button
+              onClick={() => toggleFilter('rising')}
+              className={`period-pill period-pill-icon flex items-center gap-1 ${filterMode === 'rising' ? 'period-pill-active' : ''}`}
+              aria-pressed={filterMode === 'rising'}
+              title="Show sectors rising 5+ ranks"
+            >
+              <TrendingUpIcon size={11} className={filterMode === 'rising' ? 'text-sky-500' : ''} />
+              <span className="hidden sm:inline">Rising</span>
+            </button>
+
+            <button
+              onClick={() => toggleFilter('falling')}
+              className={`period-pill period-pill-icon flex items-center gap-1 ${filterMode === 'falling' ? 'period-pill-active' : ''}`}
+              aria-pressed={filterMode === 'falling'}
+              title="Show sectors falling 5+ ranks"
+            >
+              <TrendingDownIcon size={11} className={filterMode === 'falling' ? 'text-rose-500' : ''} />
+              <span className="hidden sm:inline">Falling</span>
+            </button>
+          </div>
+
         </div>
       </div>
 
