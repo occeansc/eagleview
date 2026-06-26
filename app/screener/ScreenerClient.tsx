@@ -6,6 +6,7 @@ import {
   PERIOD_LABELS, getPeriodValue, formatPrice,
 } from '@/lib/types'
 import { SearchIcon, TrendingUpIcon, TrendingDownIcon } from '@/components/Icons'
+import TickerModal from '@/components/TickerModal'
 
 // Screener shows all 5 periods including 1D — same pattern as Dashboard.
 const SCREENER_PERIODS: Period[] = ['1D', '1W', '1M', '3M', 'YTD']
@@ -21,6 +22,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
   const [sector,    setSector]    = useState<number | 'all'>('all')
   const [direction, setDirection] = useState<'all' | 'positive' | 'negative'>('all')
   const [limit,     setLimit]     = useState(50)
+  const [selectedTicker, setSelectedTicker] = useState<SectorHolding | null>(null)
 
   const filtered = useMemo(() => {
     /* Dedupe: one entry per ticker, keep highest return for active period */
@@ -201,7 +203,8 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                   }
                   return (
                     <div key={`${h.ticker}-${h.sector_id}`}
-                      className={`grid grid-cols-[40px_80px_1fr_64px_64px_64px_64px_64px_64px] items-center px-4 py-2.5 transition-colors ${
+                      onClick={() => setSelectedTicker(h)}
+                      className={`grid grid-cols-[40px_80px_1fr_64px_64px_64px_64px_64px_64px] items-center px-4 py-2.5 transition-colors cursor-pointer ${
                         isPos ? 'hover:bg-emerald-50/40' : 'hover:bg-rose-50/40'
                       }`}>
                       <span className="text-[11px] text-slate-300 tabular-nums font-mono">{i + 1}</span>
@@ -253,7 +256,8 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                   const isPosW = valW !== null && valW >= 0
                   return (
                     <div key={`${h.ticker}-${h.sector_id}-m`}
-                      className={`grid grid-cols-[24px_52px_1fr_60px_64px_52px] items-center px-3 py-2.5 transition-colors ${
+                      onClick={() => setSelectedTicker(h)}
+                      className={`grid grid-cols-[24px_52px_1fr_60px_64px_52px] items-center px-3 py-2.5 transition-colors cursor-pointer ${
                         isPos ? 'hover:bg-emerald-50/40' : 'hover:bg-rose-50/40'
                       }`}>
                       <span className="text-[11px] text-slate-300 tabular-nums font-mono">{i + 1}</span>
@@ -297,8 +301,16 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       )}
 
       <p className="text-center text-[10px] text-slate-300 mt-5 tracking-widest">
-        EAGLEVIEW V4.3.7 · EQUAL-WEIGHTED BASKETS · YAHOO FINANCE
+        EAGLEVIEW V4.4.0 · EQUAL-WEIGHTED BASKETS · YAHOO FINANCE
       </p>
+
+      {selectedTicker && (
+        <TickerModal
+          holding={selectedTicker}
+          sectorName={selectedTicker.sectors?.name ?? ''}
+          onClose={() => setSelectedTicker(null)}
+        />
+      )}
     </div>
   )
 }

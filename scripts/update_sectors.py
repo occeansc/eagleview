@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.3.7 — Data Updater
+Eagleview v4.4.0 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -376,11 +376,12 @@ def calc_returns(series: pd.Series) -> dict:
         ytd   = round((current - start) / start * 100, 2) if start else None
 
     result = {
-        "day_pct":     pct(1),
-        "week_pct":    pct(5),
-        "month_pct":   pct(21),
-        "quarter_pct": pct(63),
-        "ytd_pct":     ytd,
+        "day_pct":       pct(1),
+        "week_pct":      pct(5),
+        "month_pct":     pct(21),
+        "quarter_pct":   pct(63),
+        "half_year_pct": pct(126),
+        "ytd_pct":       ytd,
     }
     return result if any(v is not None for v in result.values()) else {}
 
@@ -410,7 +411,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.3.7 Data Sync ══")
+    log.info("══ Eagleview v4.4.0 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")

@@ -47,11 +47,12 @@ export interface Sector extends HasPeriodValues {
 }
 
 export interface SectorHolding extends HasPeriodValues {
-  id:           number
-  sector_id:    number
-  ticker:       string
-  company_name: string
-  price:        number | null
+  id:              number
+  sector_id:       number
+  ticker:          string
+  company_name:    string
+  price:           number | null
+  half_year_pct:   number | null   // 6M — added in migrate_v440
   // joined (available in screener)
   sectors?: { name: string }
 }

@@ -8,6 +8,7 @@ import {
 } from '@/lib/types'
 import { getSupabaseClient } from '@/lib/supabase'
 import { CloseIcon, ZapIcon } from './Icons'
+import TickerModal from './TickerModal'
 
 interface Props {
   sector:     Sector
@@ -26,6 +27,7 @@ function formatSyncTime(iso: string): string {
 
 export default function HoldingsModal(props: Props) {
   const [mounted, setMounted] = useState(false)
+  const [selectedTicker, setSelectedTicker] = useState<SectorHolding | null>(null)
   useEffect(() => { setMounted(true) }, [])
   if (!mounted) return null
   return createPortal(<ModalContent {...props} />, document.body)
@@ -230,12 +232,13 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
                   return (
                     <div
                       key={h.id}
-                      className="flex items-center gap-2 py-2 px-3 rounded-xl hover:bg-slate-50 transition-colors"
+                      onClick={() => setSelectedTicker(h)}
+                      className="flex items-center gap-2 py-2 px-3 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group"
                     >
                       <span className="text-[11px] text-slate-300 w-5 text-right shrink-0 font-mono tabular-nums">
                         {i + 1}
                       </span>
-                      <span className={`font-mono text-[11px] font-bold px-1.5 py-1 rounded-[8px] shrink-0 w-12 text-center ${
+                      <span className={`font-mono text-[11px] font-bold px-1.5 py-1 rounded-[8px] shrink-0 w-12 text-center group-hover:opacity-80 transition-opacity ${
                         isPos ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
                       }`}>
                         {h.ticker}
@@ -262,13 +265,22 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
         {/* Footer */}
         <div className="px-6 py-3 border-t border-slate-100 bg-white shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400">
-            Eagleview v4.3.7 · Yahoo Finance
+            Eagleview v4.4.0 · Yahoo Finance
           </p>
           <p className="text-[10px] text-slate-300 tabular-nums">
             Last sync: {formatSyncTime(sector.updated_at)}
           </p>
         </div>
       </div>
+
+      {/* Ticker detail — opens stacked on top of this modal (z-[10001]) */}
+      {selectedTicker && (
+        <TickerModal
+          holding={selectedTicker}
+          sectorName={sector.name}
+          onClose={() => setSelectedTicker(null)}
+        />
+      )}
     </div>
   )
 }
