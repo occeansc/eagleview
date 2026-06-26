@@ -116,7 +116,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
       style={{ zIndex: 10001 }}
       onClick={e => { if (e.target === overlayRef.current) onClose() }}
     >
-      <div className="modal-sheet w-full sm:max-w-md sm:rounded-[28px] rounded-t-[28px] flex flex-col overflow-hidden bg-white">
+      <div className="modal-sheet w-full sm:max-w-lg sm:rounded-[28px] rounded-t-[28px] flex flex-col overflow-hidden bg-white">
 
         {/* ── Gradient header ── */}
         <div className="shrink-0" style={{ background: headerBg }}>
@@ -161,10 +161,35 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
             <p className="text-[8px] font-black tracking-[0.22em] uppercase text-slate-400 mb-3">
               Performance
             </p>
-            <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {TILES.map(({ label, key }) => {
-                const v = holding[key] as number | null
-                const p = pal(v)
+                const v       = holding[key] as number | null
+                const pending = key === 'half_year_pct' && v === null
+                const p       = pal(v)
+                const formatted = fmt(v)
+                // Shrink font for large numbers (>6 chars) to prevent overflow
+                const numSize = formatted.length > 7 ? 'text-[13px]' : formatted.length > 5 ? 'text-[15px]' : 'text-[17px]'
+
+                if (pending) {
+                  return (
+                    <div
+                      key={label}
+                      className="rounded-[12px] pt-3 pb-2.5 px-2 flex flex-col items-start"
+                      style={{
+                        backgroundColor: 'transparent',
+                        border: '1.5px dashed rgba(148,163,184,0.35)',
+                      }}
+                    >
+                      <span className="text-[8px] font-black tracking-[0.18em] uppercase mb-2 leading-none text-slate-400">
+                        {label}
+                      </span>
+                      <span className="text-[12px] font-bold text-slate-300 leading-none">
+                        Soon
+                      </span>
+                    </div>
+                  )
+                }
+
                 return (
                   <div
                     key={label}
@@ -178,20 +203,16 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
                       {label}
                     </span>
                     <span
-                      className="font-black tabular-nums leading-none text-[15px]"
+                      className={`font-black tabular-nums leading-none ${numSize}`}
                       style={{ color: p.text }}
                     >
-                      {fmt(v)}
+                      {formatted}
                     </span>
                   </div>
                 )
               })}
             </div>
-            {holding.half_year_pct === null && !loading && (
-              <p className="text-[10px] text-slate-400 mt-2 italic">
-                6M data appears after the next sync.
-              </p>
-            )}
+
           </div>
 
           {/* About section */}
@@ -244,7 +265,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
         {/* Footer */}
         <div className="px-5 py-3 border-t border-slate-100 bg-white/90 shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400">
-            Eagleview v4.4.1 · Yahoo Finance
+            Eagleview v4.4.2 · Yahoo Finance
           </p>
           {info?.website && (
             <a
