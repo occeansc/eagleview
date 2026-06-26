@@ -27,7 +27,6 @@ function formatSyncTime(iso: string): string {
 
 export default function HoldingsModal(props: Props) {
   const [mounted, setMounted] = useState(false)
-  const [selectedTicker, setSelectedTicker] = useState<SectorHolding | null>(null)
   useEffect(() => { setMounted(true) }, [])
   if (!mounted) return null
   return createPortal(<ModalContent {...props} />, document.body)
@@ -36,6 +35,7 @@ export default function HoldingsModal(props: Props) {
 function ModalContent({ sector, period, benchmarks, onClose }: Props) {
   const [holdings, setHoldings] = useState<SectorHolding[]>([])
   const [loading, setLoading]   = useState(true)
+  const [selectedTicker, setSelectedTicker] = useState<SectorHolding | null>(null)
   const scrollRef               = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -265,7 +265,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
         {/* Footer */}
         <div className="px-6 py-3 border-t border-slate-100 bg-white shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400">
-            Eagleview v4.4.0 · Yahoo Finance
+            Eagleview v4.4.1 · Yahoo Finance
           </p>
           <p className="text-[10px] text-slate-300 tabular-nums">
             Last sync: {formatSyncTime(sector.updated_at)}
