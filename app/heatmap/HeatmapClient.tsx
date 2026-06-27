@@ -7,7 +7,7 @@ import HoldingsModal from '@/components/HoldingsModal'
 
 // Heatmap shows all 5 periods including 1D.
 // computeScorecard always evaluates on 1W/1M/3M/YTD — unaffected.
-const HEATMAP_PERIODS: Period[] = ['1D', '1W', '1M', '3M', 'YTD']
+const HEATMAP_PERIODS: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD']
 
 interface Props {
   sectors:    Sector[]

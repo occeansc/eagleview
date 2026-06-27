@@ -80,7 +80,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
     setLoading(true)
     setInfo(null)
 
-    fetch(`/api/ticker-info/${ticker}`, { signal: abortRef.current.signal })
+    fetch(`/api/ticker-info/${ticker}?company=${encodeURIComponent(holding.company_name)}`, { signal: abortRef.current.signal })
       .then(r => r.json())
       .then((data: TickerInfo) => {
         clientCache.set(ticker, data)   // warm the module-level cache
@@ -265,7 +265,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
         {/* Footer */}
         <div className="px-5 py-3 border-t border-slate-100 bg-white/90 shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400">
-            Eagleview v4.4.2 · Yahoo Finance
+            Eagleview v4.4.3 · Yahoo Finance
           </p>
           {info?.website && (
             <a

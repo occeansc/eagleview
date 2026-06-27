@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.4.2 — Data Updater
+Eagleview v4.4.3 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -411,7 +411,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.4.2 Data Sync ══")
+    log.info("══ Eagleview v4.4.3 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -461,11 +461,12 @@ def main():
         old_state = {}
 
     # Pre-compute old ranks (needed for delta calculation later)
-    old_day_ranks     = rank_by(old_state, "day_pct")
-    old_ytd_ranks     = rank_by(old_state, "ytd_pct")
-    old_week_ranks    = rank_by(old_state, "week_pct")
-    old_month_ranks   = rank_by(old_state, "month_pct")
-    old_quarter_ranks = rank_by(old_state, "quarter_pct")
+    old_day_ranks          = rank_by(old_state, "day_pct")
+    old_ytd_ranks          = rank_by(old_state, "ytd_pct")
+    old_week_ranks         = rank_by(old_state, "week_pct")
+    old_month_ranks        = rank_by(old_state, "month_pct")
+    old_quarter_ranks      = rank_by(old_state, "quarter_pct")
+    old_half_year_ranks    = rank_by(old_state, "half_year_pct")
 
     # ══════════════════════════════════════════════════════════════════════════
     # PHASE 2 — Batch download all tickers
@@ -551,8 +552,9 @@ def main():
                 "day_pct":     safe_avg([s.get("day_pct")     for s in stock_rows]),
                 "week_pct":    safe_avg([s.get("week_pct")    for s in stock_rows]),
                 "month_pct":   safe_avg([s.get("month_pct")   for s in stock_rows]),
-                "quarter_pct": safe_avg([s.get("quarter_pct") for s in stock_rows]),
-                "ytd_pct":     safe_avg([s.get("ytd_pct")     for s in stock_rows]),
+                "quarter_pct":    safe_avg([s.get("quarter_pct")    for s in stock_rows]),
+                "half_year_pct":  safe_avg([s.get("half_year_pct")  for s in stock_rows]),
+                "ytd_pct":        safe_avg([s.get("ytd_pct")        for s in stock_rows]),
             }
 
             # Breadth (% of stocks with positive return for each period)
@@ -565,6 +567,7 @@ def main():
                 "breadth_1w":  breadth(stock_rows, "week_pct"),
                 "breadth_1m":  breadth(stock_rows, "month_pct"),
                 "breadth_3m":  breadth(stock_rows, "quarter_pct"),
+                "breadth_6m":  breadth(stock_rows, "half_year_pct"),
                 "breadth_ytd": breadth(stock_rows, "ytd_pct"),
             }
         except Exception as e:
@@ -582,11 +585,12 @@ def main():
         sc["sector_id"]: sc["rets"]
         for sc in sector_computed.values()
     }
-    new_day_ranks     = rank_by(returns_by_id, "day_pct")
-    new_ytd_ranks     = rank_by(returns_by_id, "ytd_pct")
-    new_week_ranks    = rank_by(returns_by_id, "week_pct")
-    new_month_ranks   = rank_by(returns_by_id, "month_pct")
-    new_quarter_ranks = rank_by(returns_by_id, "quarter_pct")
+    new_day_ranks          = rank_by(returns_by_id, "day_pct")
+    new_ytd_ranks          = rank_by(returns_by_id, "ytd_pct")
+    new_week_ranks         = rank_by(returns_by_id, "week_pct")
+    new_month_ranks        = rank_by(returns_by_id, "month_pct")
+    new_quarter_ranks      = rank_by(returns_by_id, "quarter_pct")
+    new_half_year_ranks    = rank_by(returns_by_id, "half_year_pct")
 
     # ══════════════════════════════════════════════════════════════════════════
     # PHASE 5 & 6 — Compute deltas/streaks + write to DB
@@ -618,7 +622,8 @@ def main():
                     "ytd_rank":     old.get("ytd_rank") or old_ytd_ranks.get(sector_id),
                     "week_rank":    old.get("week_rank") or old_week_ranks.get(sector_id),
                     "month_rank":   old.get("month_rank") or old_month_ranks.get(sector_id),
-                    "quarter_rank": old.get("quarter_rank") or old_quarter_ranks.get(sector_id),
+                    "quarter_rank":     old.get("quarter_rank") or old_quarter_ranks.get(sector_id),
+                    "half_year_rank":   old.get("half_year_rank") or old_half_year_ranks.get(sector_id),
                     "streak":       old.get("streak", 0),
                 }])
             except Exception as e:
@@ -642,29 +647,33 @@ def main():
             new_streak   = (old_streak + 1) if ytd_positive else 0
 
             # New ranks for this sector
-            new_day_rank     = new_day_ranks.get(sector_id)
-            new_ytd_rank     = new_ytd_ranks.get(sector_id)
-            new_week_rank    = new_week_ranks.get(sector_id)
-            new_month_rank   = new_month_ranks.get(sector_id)
-            new_quarter_rank = new_quarter_ranks.get(sector_id)
+            new_day_rank          = new_day_ranks.get(sector_id)
+            new_ytd_rank          = new_ytd_ranks.get(sector_id)
+            new_week_rank         = new_week_ranks.get(sector_id)
+            new_month_rank        = new_month_ranks.get(sector_id)
+            new_quarter_rank      = new_quarter_ranks.get(sector_id)
+            new_half_year_rank    = new_half_year_ranks.get(sector_id)
 
             # Patch: write all new data in one call
             patch_result = db.patch("sectors", {"id": sector_id}, {
                 # Returns
                 **rets,
+                # Note: half_year_pct comes from rets via **rets
                 "stock_count":    sc["stock_count"],
                 # Ranks
-                "day_rank":       new_day_rank,
-                "ytd_rank":       new_ytd_rank,
-                "week_rank":      new_week_rank,
-                "month_rank":     new_month_rank,
-                "quarter_rank":   new_quarter_rank,
+                "day_rank":          new_day_rank,
+                "ytd_rank":          new_ytd_rank,
+                "week_rank":         new_week_rank,
+                "month_rank":        new_month_rank,
+                "quarter_rank":      new_quarter_rank,
+                "half_year_rank":    new_half_year_rank,
                 # Rank deltas
                 "day_rank_change":     rank_delta(old_day_ranks,     new_day_ranks,     sector_id),
                 "ytd_rank_change":     rank_delta(old_ytd_ranks,     new_ytd_ranks,     sector_id),
                 "week_rank_change":    rank_delta(old_week_ranks,    new_week_ranks,    sector_id),
                 "month_rank_change":   rank_delta(old_month_ranks,   new_month_ranks,   sector_id),
-                "quarter_rank_change": rank_delta(old_quarter_ranks, new_quarter_ranks, sector_id),
+                "quarter_rank_change":      rank_delta(old_quarter_ranks,   new_quarter_ranks,   sector_id),
+                "half_year_rank_change":    rank_delta(old_half_year_ranks, new_half_year_ranks, sector_id),
                 # Streak
                 "streak": new_streak,
                 # Breadth
@@ -672,13 +681,15 @@ def main():
                 "breadth_1w":  sc["breadth_1w"],
                 "breadth_1m":  sc["breadth_1m"],
                 "breadth_3m":  sc["breadth_3m"],
+                "breadth_6m":  sc["breadth_6m"],
                 "breadth_ytd": sc["breadth_ytd"],
                 # Previous values (for momentum delta in UI)
                 "prev_day_pct":     old.get("day_pct"),
                 "prev_week_pct":    old.get("week_pct"),
                 "prev_month_pct":   old.get("month_pct"),
-                "prev_quarter_pct": old.get("quarter_pct"),
-                "prev_ytd_pct":     old.get("ytd_pct"),
+                "prev_quarter_pct":    old.get("quarter_pct"),
+                "prev_half_year_pct":  old.get("half_year_pct"),
+                "prev_ytd_pct":        old.get("ytd_pct"),
                 "updated_at":       datetime.now(timezone.utc).isoformat(),
             })
 

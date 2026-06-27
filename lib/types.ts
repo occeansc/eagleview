@@ -8,11 +8,12 @@
  * without requiring dirty casts.
  */
 export interface HasPeriodValues {
-  day_pct:     number | null
-  week_pct:    number | null
-  month_pct:   number | null
-  quarter_pct: number | null
-  ytd_pct:     number | null
+  day_pct:        number | null
+  week_pct:       number | null
+  month_pct:      number | null
+  quarter_pct:    number | null
+  half_year_pct:  number | null   // 6M
+  ytd_pct:        number | null
 }
 
 export interface Sector extends HasPeriodValues {
@@ -30,20 +31,23 @@ export interface Sector extends HasPeriodValues {
   ytd_rank_change:     number | null
   week_rank_change:    number | null
   month_rank_change:   number | null
-  quarter_rank_change: number | null
+  quarter_rank_change:      number | null
+  half_year_rank_change:    number | null   // 6M
   // v3.0 streak + breadth
   streak:       number | null
   breadth_1d:   number | null
   breadth_1w:   number | null
   breadth_1m:   number | null
   breadth_3m:   number | null
+  breadth_6m:   number | null   // 6M
   breadth_ytd:  number | null
   // v3.0 previous values for momentum delta
   prev_day_pct:     number | null
   prev_week_pct:    number | null
   prev_month_pct:   number | null
-  prev_quarter_pct: number | null
-  prev_ytd_pct:     number | null
+  prev_quarter_pct:    number | null
+  prev_half_year_pct:  number | null   // 6M
+  prev_ytd_pct:        number | null
 }
 
 export interface SectorHolding extends HasPeriodValues {
@@ -52,7 +56,6 @@ export interface SectorHolding extends HasPeriodValues {
   ticker:          string
   company_name:    string
   price:           number | null
-  half_year_pct:   number | null   // 6M — added in migrate_v440
   // joined (available in screener)
   sectors?: { name: string }
 }
@@ -71,7 +74,7 @@ export interface SectorSnapshot {
   synced_at: string
 }
 
-export type Period         = '1D' | '1W' | '1M' | '3M' | 'YTD'
+export type Period         = '1D' | '1W' | '1M' | '3M' | '6M' | 'YTD'
 export type ScorecardLevel = 'gold' | 'silver' | 'bronze' | null
 export type RegimeType     = 'risk-on' | 'risk-off' | 'mixed' | 'loading'
 
@@ -82,6 +85,7 @@ export const PERIOD_LABELS: Record<Period, string> = {
   '1W':  '1 Week',
   '1M':  '1 Month',
   '3M':  '3 Months',
+  '6M':  '6 Months',
   'YTD': 'Year to Date',
 }
 
@@ -93,6 +97,7 @@ export function getPeriodValue(s: HasPeriodValues, period: Period): number | nul
     case '1W':  return s.week_pct
     case '1M':  return s.month_pct
     case '3M':  return s.quarter_pct
+    case '6M':  return s.half_year_pct
     case 'YTD': return s.ytd_pct
   }
 }
@@ -103,6 +108,7 @@ export function getRankChange(s: Sector, period: Period): number | null {
     case '1W':  return s.week_rank_change
     case '1M':  return s.month_rank_change
     case '3M':  return s.quarter_rank_change
+    case '6M':  return s.half_year_rank_change
     case 'YTD': return s.ytd_rank_change
   }
 }
@@ -113,6 +119,7 @@ export function getBreadth(s: Sector, period: Period): number | null {
     case '1W':  return s.breadth_1w
     case '1M':  return s.breadth_1m
     case '3M':  return s.breadth_3m
+    case '6M':  return s.breadth_6m
     case 'YTD': return s.breadth_ytd
   }
 }
@@ -124,8 +131,9 @@ export function getMomentumDelta(s: Sector, period: Period): number | null {
     case '1D':  curr = s.day_pct;     prev = s.prev_day_pct;     break
     case '1W':  curr = s.week_pct;    prev = s.prev_week_pct;    break
     case '1M':  curr = s.month_pct;   prev = s.prev_month_pct;   break
-    case '3M':  curr = s.quarter_pct; prev = s.prev_quarter_pct; break
-    case 'YTD': curr = s.ytd_pct;     prev = s.prev_ytd_pct;     break
+    case '3M':  curr = s.quarter_pct;    prev = s.prev_quarter_pct;    break
+    case '6M':  curr = s.half_year_pct; prev = s.prev_half_year_pct; break
+    case 'YTD': curr = s.ytd_pct;       prev = s.prev_ytd_pct;       break
   }
   if (curr === null || prev === null) return null
   return Math.round((curr - prev) * 10) / 10

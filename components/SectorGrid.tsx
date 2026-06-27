@@ -21,7 +21,7 @@ interface Props {
 
 type FilterMode = 'all' | 'hot' | 'rising' | 'falling'
 
-const PERIODS_LOCAL: Period[] = ['1D', '1W', '1M', '3M', 'YTD']
+const PERIODS_LOCAL: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD']
 const RISING_THRESHOLD  =  5
 const FALLING_THRESHOLD = -5
 
