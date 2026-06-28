@@ -265,7 +265,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
         {/* Footer */}
         <div className="px-5 py-3 border-t border-slate-100 bg-white/90 shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400">
-            Eagleview v4.4.3 · Yahoo Finance
+            Eagleview v4.4.4
           </p>
           {info?.website && (
             <a

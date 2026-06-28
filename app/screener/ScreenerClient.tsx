@@ -9,7 +9,7 @@ import { SearchIcon, TrendingUpIcon, TrendingDownIcon } from '@/components/Icons
 import TickerModal from '@/components/TickerModal'
 
 // Screener shows all 5 periods including 1D — same pattern as Dashboard.
-const SCREENER_PERIODS: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD']
+const SCREENER_PERIODS: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y']
 
 interface Props {
   holdings: (SectorHolding & { sectors: { name: string } })[]
@@ -159,7 +159,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
         {/* ── Desktop table (sm+) — full overflow-x-auto with all columns ── */}
         <div className="hidden sm:block overflow-x-auto">
           <div style={{ minWidth: '560px' }}>
-            <div className="grid grid-cols-[40px_80px_1fr_60px_56px_56px_56px_56px_56px_56px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-4 py-3 bg-slate-50/70 border-b border-slate-100">
+            <div className="grid grid-cols-[32px_70px_1fr_60px_52px_52px_52px_52px_52px_52px_52px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-4 py-3 bg-slate-50/70 border-b border-slate-100">
               <span>#</span>
               <span>Ticker</span>
               <span>Company</span>
@@ -170,6 +170,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
               <span className={`text-right ${period === '3M'  ? 'text-slate-700' : ''}`}>3M</span>
               <span className={`text-right ${period === '6M'  ? 'text-slate-700' : ''}`}>6M</span>
               <span className={`text-right ${period === 'YTD' ? 'text-slate-700' : ''}`}>YTD</span>
+              <span className={`text-right ${period === '1Y'  ? 'text-slate-700' : ''}`}>1Y</span>
             </div>
             {shown.length === 0 ? (
               <div className="text-center py-16">
@@ -205,7 +206,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                   return (
                     <div key={`${h.ticker}-${h.sector_id}`}
                       onClick={() => setSelectedTicker(h)}
-                      className={`grid grid-cols-[40px_80px_1fr_60px_56px_56px_56px_56px_56px_56px] items-center px-4 py-2.5 transition-colors cursor-pointer ${
+                      className={`grid grid-cols-[32px_70px_1fr_60px_52px_52px_52px_52px_52px_52px_52px] items-center px-4 py-2.5 transition-colors cursor-pointer ${
                         isPos ? 'hover:bg-emerald-50/40' : 'hover:bg-rose-50/40'
                       }`}>
                       <span className="text-[11px] text-slate-300 tabular-nums font-mono">{i + 1}</span>
@@ -221,7 +222,9 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                       <Cell p="1W" />
                       <Cell p="1M" />
                       <Cell p="3M" />
+                      <Cell p="6M" />
                       <Cell p="YTD" />
+                      <Cell p="1Y" />
                     </div>
                   )
                 })}
@@ -302,7 +305,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       )}
 
       <p className="text-center text-[10px] text-slate-300 mt-5 tracking-widest">
-        EAGLEVIEW V4.4.3 · EQUAL-WEIGHTED BASKETS · YAHOO FINANCE
+        EAGLEVIEW V4.4.4 · EQUAL-WEIGHTED BASKETS
       </p>
 
       {selectedTicker && (

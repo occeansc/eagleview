@@ -21,7 +21,7 @@ interface Props {
 
 type FilterMode = 'all' | 'hot' | 'rising' | 'falling'
 
-const PERIODS_LOCAL: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD']
+const PERIODS_LOCAL: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y']
 const RISING_THRESHOLD  =  5
 const FALLING_THRESHOLD = -5
 
@@ -100,7 +100,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
             <EagleIcon size={22} className="text-slate-800 shrink-0" />
             <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Eagleview</h1>
           </div>
-          <div className="flex flex-wrap items-center gap-2 pl-8 sm:pl-0">
+          <div className="tagline-block flex flex-wrap items-center gap-2 pl-8 sm:pl-0">
             <p className="text-xs text-slate-400">
               {sorted.length} sectors · {PERIOD_LABELS[period]}
               {positiveCount > 0 && (

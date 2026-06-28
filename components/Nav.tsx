@@ -108,7 +108,7 @@ export default function Nav() {
         </div>
 
         <span className="text-[10px] font-bold text-slate-400 bg-slate-100/60 px-2.5 py-1 rounded-full border border-slate-200/50 tracking-widest">
-          V4.4.3
+          V4.4.4
         </span>
       </nav>
 

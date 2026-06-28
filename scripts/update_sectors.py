@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.4.3 — Data Updater
+Eagleview v4.4.4 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -381,6 +381,7 @@ def calc_returns(series: pd.Series) -> dict:
         "month_pct":     pct(21),
         "quarter_pct":   pct(63),
         "half_year_pct": pct(126),
+        "year_pct":      pct(252),
         "ytd_pct":       ytd,
     }
     return result if any(v is not None for v in result.values()) else {}
@@ -411,7 +412,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.4.3 Data Sync ══")
+    log.info("══ Eagleview v4.4.4 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -420,19 +421,21 @@ def main():
         sys.exit(1)
 
     # ── Market-hours guard ────────────────────────────────────────────────────
-    # ZoneInfo("America/New_York") resolves to EDT (UTC-4) or EST (UTC-5)
-    # automatically — no manual DST adjustment ever needed.
-    # Cron slots are spaced every 90 min across a UTC window wide enough to
-    # cover both EDT and EST market hours; slots outside the window exit here
-    # cleanly (exit 0, not an error) so GitHub Actions stays green.
-    ET          = ZoneInfo("America/New_York")
-    et_now      = datetime.now(ET)
-    market_open = et_now.replace(hour=9,  minute=15, second=0, microsecond=0)
-    market_shut = et_now.replace(hour=17, minute=15, second=0, microsecond=0)
-    if not (market_open <= et_now <= market_shut):
-        log.info(f"Outside market hours ({et_now.strftime('%a %H:%M %Z')}) — skipping cleanly")
-        sys.exit(0)
-    log.info(f"Market hours confirmed ({et_now.strftime('%H:%M %Z, %Z offset from UTC')})")
+    # workflow_dispatch (manual trigger) bypasses this gate entirely — useful
+    # for weekend testing, post-deployment syncs, and debugging.
+    # Scheduled cron runs still enforce market hours.
+    is_manual = os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    if is_manual:
+        log.info("Manual dispatch — bypassing market hours gate, running full sync")
+    else:
+        ET          = ZoneInfo("America/New_York")
+        et_now      = datetime.now(ET)
+        market_open = et_now.replace(hour=9,  minute=15, second=0, microsecond=0)
+        market_shut = et_now.replace(hour=17, minute=15, second=0, microsecond=0)
+        if not (market_open <= et_now <= market_shut):
+            log.info(f"Outside market hours ({et_now.strftime('%a %H:%M %Z')}) — skipping cleanly")
+            sys.exit(0)
+        log.info(f"Market hours confirmed ({et_now.strftime('%H:%M %Z, %Z offset from UTC')})")
 
     db = DB(url, key)
 
@@ -467,6 +470,7 @@ def main():
     old_month_ranks        = rank_by(old_state, "month_pct")
     old_quarter_ranks      = rank_by(old_state, "quarter_pct")
     old_half_year_ranks    = rank_by(old_state, "half_year_pct")
+    old_year_ranks         = rank_by(old_state, "year_pct")
 
     # ══════════════════════════════════════════════════════════════════════════
     # PHASE 2 — Batch download all tickers
@@ -554,6 +558,7 @@ def main():
                 "month_pct":   safe_avg([s.get("month_pct")   for s in stock_rows]),
                 "quarter_pct":    safe_avg([s.get("quarter_pct")    for s in stock_rows]),
                 "half_year_pct":  safe_avg([s.get("half_year_pct")  for s in stock_rows]),
+                "year_pct":       safe_avg([s.get("year_pct")       for s in stock_rows]),
                 "ytd_pct":        safe_avg([s.get("ytd_pct")        for s in stock_rows]),
             }
 
@@ -568,6 +573,7 @@ def main():
                 "breadth_1m":  breadth(stock_rows, "month_pct"),
                 "breadth_3m":  breadth(stock_rows, "quarter_pct"),
                 "breadth_6m":  breadth(stock_rows, "half_year_pct"),
+                "breadth_1y":  breadth(stock_rows, "year_pct"),
                 "breadth_ytd": breadth(stock_rows, "ytd_pct"),
             }
         except Exception as e:
@@ -591,6 +597,7 @@ def main():
     new_month_ranks        = rank_by(returns_by_id, "month_pct")
     new_quarter_ranks      = rank_by(returns_by_id, "quarter_pct")
     new_half_year_ranks    = rank_by(returns_by_id, "half_year_pct")
+    new_year_ranks         = rank_by(returns_by_id, "year_pct")
 
     # ══════════════════════════════════════════════════════════════════════════
     # PHASE 5 & 6 — Compute deltas/streaks + write to DB
@@ -653,6 +660,7 @@ def main():
             new_month_rank        = new_month_ranks.get(sector_id)
             new_quarter_rank      = new_quarter_ranks.get(sector_id)
             new_half_year_rank    = new_half_year_ranks.get(sector_id)
+            new_year_rank         = new_year_ranks.get(sector_id)
 
             # Patch: write all new data in one call
             patch_result = db.patch("sectors", {"id": sector_id}, {
@@ -667,6 +675,7 @@ def main():
                 "month_rank":        new_month_rank,
                 "quarter_rank":      new_quarter_rank,
                 "half_year_rank":    new_half_year_rank,
+                "year_rank":         new_year_rank,
                 # Rank deltas
                 "day_rank_change":     rank_delta(old_day_ranks,     new_day_ranks,     sector_id),
                 "ytd_rank_change":     rank_delta(old_ytd_ranks,     new_ytd_ranks,     sector_id),
@@ -674,6 +683,7 @@ def main():
                 "month_rank_change":   rank_delta(old_month_ranks,   new_month_ranks,   sector_id),
                 "quarter_rank_change":      rank_delta(old_quarter_ranks,   new_quarter_ranks,   sector_id),
                 "half_year_rank_change":    rank_delta(old_half_year_ranks, new_half_year_ranks, sector_id),
+                "year_rank_change":         rank_delta(old_year_ranks,      new_year_ranks,      sector_id),
                 # Streak
                 "streak": new_streak,
                 # Breadth
@@ -682,6 +692,7 @@ def main():
                 "breadth_1m":  sc["breadth_1m"],
                 "breadth_3m":  sc["breadth_3m"],
                 "breadth_6m":  sc["breadth_6m"],
+                "breadth_1y":  sc["breadth_1y"],
                 "breadth_ytd": sc["breadth_ytd"],
                 # Previous values (for momentum delta in UI)
                 "prev_day_pct":     old.get("day_pct"),
@@ -689,6 +700,7 @@ def main():
                 "prev_month_pct":   old.get("month_pct"),
                 "prev_quarter_pct":    old.get("quarter_pct"),
                 "prev_half_year_pct":  old.get("half_year_pct"),
+                "prev_year_pct":       old.get("year_pct"),
                 "prev_ytd_pct":        old.get("ytd_pct"),
                 "updated_at":       datetime.now(timezone.utc).isoformat(),
             })

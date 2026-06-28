@@ -121,7 +121,6 @@
   gap: 4px;
   padding: 4px;
   min-width: max-content;
-  width: 100%;
 }
 
 /* Filter buttons — lives OUTSIDE the scroll container so active-state
@@ -318,3 +317,18 @@
 
 /* ── Misc ────────────────────────────────────────────────── */
 .tabular-nums { font-variant-numeric: tabular-nums; }
+
+/* ── Mobile landscape: compact tagline block ────────────────────────────── */
+@media (orientation: landscape) and (max-height: 500px) {
+  .tagline-block {
+    display: flex !important;
+    flex-direction: row !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 6px 14px !important;
+    margin-bottom: 8px !important;
+  }
+  .tagline-block > * {
+    margin-bottom: 0 !important;
+  }
+}
