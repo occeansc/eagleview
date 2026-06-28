@@ -23,11 +23,13 @@ export interface Sector extends HasPeriodValues {
   stock_count:  number | null
   updated_at:   string
   // v3.0 ranks
-  day_rank:         number | null
-  ytd_rank:         number | null
-  week_rank:        number | null
-  month_rank:       number | null
-  quarter_rank:     number | null
+  day_rank:            number | null
+  ytd_rank:            number | null
+  week_rank:           number | null
+  month_rank:          number | null
+  quarter_rank:        number | null
+  half_year_rank:      number | null   // 6M
+  year_rank:           number | null   // 1Y
   day_rank_change:     number | null
   ytd_rank_change:     number | null
   week_rank_change:    number | null
