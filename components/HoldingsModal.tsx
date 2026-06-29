@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, forwardRef } from 'react'
 import { createPortal } from 'react-dom'
 import {
   SectorHolding, Sector, Benchmark, Period,
-  getPeriodValue, getMomentumDelta, getBreadth, getRankChange, formatPrice,
+  getPeriodValue, getMomentumDelta, getBreadth, getRankChange, formatPrice, PERIOD_LABELS,
 } from '@/lib/types'
 import { getSupabaseClient } from '@/lib/supabase'
 import { CloseIcon, ZapIcon } from './Icons'
@@ -33,10 +33,13 @@ export default function HoldingsModal(props: Props) {
 }
 
 function ModalContent({ sector, period, benchmarks, onClose }: Props) {
-  const [holdings, setHoldings] = useState<SectorHolding[]>([])
-  const [loading, setLoading]   = useState(true)
+  const [holdings, setHoldings]     = useState<SectorHolding[]>([])
+  const [loading, setLoading]       = useState(true)
   const [selectedTicker, setSelectedTicker] = useState<SectorHolding | null>(null)
-  const scrollRef               = useRef<HTMLDivElement>(null)
+  const [localPeriod, setLocalPeriod]   = useState<Period>(period)
+  const [dropdownOpen, setDropdownOpen] = useState<'return' | 'ranked' | null>(null)
+  const dropdownRef = useRef<HTMLDivElement>(null)
+  const scrollRef   = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     getSupabaseClient()
@@ -48,8 +51,16 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    const onClickOutsideDropdown = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node))
+        setDropdownOpen(null)
+    }
+    document.addEventListener('mousedown', onClickOutsideDropdown)
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      document.removeEventListener('mousedown', onClickOutsideDropdown)
+    }
   }, [onClose])
 
   // Lock body scroll
@@ -59,10 +70,10 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
     return () => { document.body.style.overflow = prev }
   }, [])
 
-  const sectorVal     = getPeriodValue(sector, period)
-  const momentumDelta = getMomentumDelta(sector, period)
-  const breadth       = getBreadth(sector, period)
-  const rankChange    = getRankChange(sector, period)
+  const sectorVal     = getPeriodValue(sector, localPeriod)
+  const momentumDelta = getMomentumDelta(sector, localPeriod)
+  const breadth       = getBreadth(sector, localPeriod)
+  const rankChange    = getRankChange(sector, localPeriod)
   const pos           = sectorVal !== null && sectorVal >= 0
   const pctClass      = pos
     ? 'text-emerald-600 drop-shadow-[0_2px_6px_rgba(16,185,129,0.15)]'
@@ -71,11 +82,13 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
 
   // Detect RISING — same logic as SectorCard/SectorGrid
   const periodRankVal =
-    period === '1D' ? (sector.day_rank     ?? 999) :
-    period === '1W' ? (sector.week_rank    ?? 999) :
-    period === '1M' ? (sector.month_rank   ?? 999) :
-    period === '3M' ? (sector.quarter_rank ?? 999) :
-                      (sector.ytd_rank     ?? 999)
+    localPeriod === '1D' ? (sector.day_rank       ?? 999) :
+    localPeriod === '1W' ? (sector.week_rank      ?? 999) :
+    localPeriod === '1M' ? (sector.month_rank     ?? 999) :
+    localPeriod === '3M' ? (sector.quarter_rank   ?? 999) :
+    localPeriod === '6M' ? (sector.half_year_rank ?? 999) :
+    localPeriod === '1Y' ? (sector.year_rank      ?? 999) :
+                           (sector.ytd_rank       ?? 999)
   const isRisingSector = periodRankVal > 2 && rankChange !== null && rankChange >= 5
 
   // Gradient — RISING gets sky-blue (momentum signal matches the card banner colour)
@@ -91,9 +104,9 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
                    :                  'bg-rose-300/50'
 
   const sorted = [...holdings].sort((a, b) =>
-    (getPeriodValue(b, period) ?? -Infinity) - (getPeriodValue(a, period) ?? -Infinity)
+    (getPeriodValue(b, localPeriod) ?? -Infinity) - (getPeriodValue(a, localPeriod) ?? -Infinity)
   )
-  const posCount = sorted.filter(h => (getPeriodValue(h, period) ?? 0) >= 0).length
+  const posCount = sorted.filter(h => (getPeriodValue(h, localPeriod) ?? 0) >= 0).length
 
   return (
     /* Full-screen fixed overlay — rendered into document.body via portal */
@@ -130,17 +143,23 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
               {sector.name}
             </h2>
 
-            {/* Return pill */}
-            <div className="flex items-baseline gap-2.5 bg-white/80 border border-slate-100 rounded-[14px] px-4 py-2.5 w-fit mb-3 shadow-[inset_0_1px_3px_rgba(0,0,0,0.04)]">
-              <span className={`font-mono text-[28px] font-extrabold leading-none tabular-nums ${pctClass}`}>
-                {sectorVal !== null
-                  ? `${sectorVal > 0 ? '+' : ''}${sectorVal.toFixed(2)}%`
-                  : '—'
-                }
-              </span>
-              <span className="text-[10px] uppercase font-black tracking-[0.16em] text-slate-400 shrink-0">
-                {period} Avg
-              </span>
+            {/* Return pill — click to change period */}
+            <div className="relative w-fit mb-3">
+              <button
+                onClick={() => setDropdownOpen(dropdownOpen === 'return' ? null : 'return')}
+                className="flex items-baseline gap-2.5 bg-white/80 hover:bg-white border border-slate-100 hover:border-slate-200 rounded-[14px] px-4 py-2.5 shadow-[inset_0_1px_3px_rgba(0,0,0,0.04)] transition-colors"
+              >
+                <span className={`font-mono text-[28px] font-extrabold leading-none tabular-nums ${pctClass}`}>
+                  {sectorVal !== null ? `${sectorVal > 0 ? '+' : ''}${sectorVal.toFixed(2)}%` : '—'}
+                </span>
+                <span className="text-[10px] uppercase font-black tracking-[0.16em] text-slate-400 shrink-0 flex items-center gap-0.5">
+                  {localPeriod} Avg
+                  <span className="text-[8px] opacity-50">▾</span>
+                </span>
+              </button>
+              {dropdownOpen === 'return' && (
+                <PeriodDropdown ref={dropdownRef} current={localPeriod} onSelect={p => { setLocalPeriod(p); setDropdownOpen(null) }} side="left" />
+              )}
             </div>
 
             {/* Badges row */}
@@ -188,7 +207,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
               sectorVal={sectorVal}
               sectorName={sector.name}
               benchmarks={benchmarks}
-              period={period}
+              period={localPeriod}
             />
           </div>
 
@@ -203,9 +222,18 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
                 </span>
               </p>
               {!loading && (
-                <p className="text-[10px] text-slate-400 font-semibold tracking-wide">
-                  Ranked by {period}
-                </p>
+                <div className="relative">
+                  <button
+                    onClick={() => setDropdownOpen(dropdownOpen === 'ranked' ? null : 'ranked')}
+                    className="flex items-center gap-0.5 text-[10px] text-slate-400 font-semibold tracking-wide hover:text-slate-700 transition-colors"
+                  >
+                    Ranked by {localPeriod}
+                    <span className="text-[8px] opacity-50">▾</span>
+                  </button>
+                  {dropdownOpen === 'ranked' && (
+                    <PeriodDropdown ref={dropdownRef} current={localPeriod} onSelect={p => { setLocalPeriod(p); setDropdownOpen(null) }} side="right" />
+                  )}
+                </div>
               )}
             </div>
 
@@ -227,7 +255,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
             ) : (
               <div className="px-3 mt-1">
                 {sorted.map((h, i) => {
-                  const val   = getPeriodValue(h, period)
+                  const val   = getPeriodValue(h, localPeriod)
                   const isPos = val !== null && val >= 0
                   return (
                     <div
@@ -265,7 +293,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
         {/* Footer */}
         <div className="px-6 py-3 border-t border-slate-100 bg-white shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400">
-            Eagleview v4.4.4 · Yahoo Finance
+            Eagleview v4.4.5 · Yahoo Finance
           </p>
           <p className="text-[10px] text-slate-300 tabular-nums">
             Last sync: {formatSyncTime(sector.updated_at)}
@@ -284,6 +312,40 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
     </div>
   )
 }
+
+/* ── Period dropdown — shared by return pill and "Ranked by" trigger ─────── */
+
+const MODAL_PERIODS: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y']
+
+const PeriodDropdown = forwardRef<
+  HTMLDivElement,
+  { current: Period; onSelect: (p: Period) => void; side: 'left' | 'right' }
+>(({ current, onSelect, side }, ref) => (
+  <div
+    ref={ref}
+    className={`absolute top-full mt-1.5 z-50 bg-white rounded-2xl border border-slate-200/80 shadow-[0_8px_30px_rgba(0,0,0,0.12)] overflow-hidden min-w-[160px] ${
+      side === 'right' ? 'right-0' : 'left-0'
+    }`}
+  >
+    {MODAL_PERIODS.map(p => (
+      <button
+        key={p}
+        onClick={() => onSelect(p)}
+        className={`flex items-center justify-between w-full px-4 py-2.5 text-left transition-colors ${
+          p === current
+            ? 'bg-slate-900 text-white'
+            : 'text-slate-700 hover:bg-slate-50'
+        }`}
+      >
+        <span className={`text-[12px] ${p === current ? 'font-extrabold' : 'font-semibold'}`}>
+          {PERIOD_LABELS[p]}
+        </span>
+        {p === current && <span className="text-[10px] text-emerald-400">✓</span>}
+      </button>
+    ))}
+  </div>
+))
+PeriodDropdown.displayName = 'PeriodDropdown'
 
 function BenchmarkRows({ sectorVal, sectorName, benchmarks, period }: {
   sectorVal:  number | null

@@ -84,7 +84,7 @@ export type Period         = '1D' | '1W' | '1M' | '3M' | '6M' | 'YTD' | '1Y'
 export type ScorecardLevel = 'gold' | 'silver' | 'bronze' | null
 export type RegimeType     = 'risk-on' | 'risk-off' | 'mixed' | 'loading'
 
-export const PERIODS: Period[] = ['1W', '1M', '3M', 'YTD']
+export const PERIODS: Period[] = ['1M', '3M', '6M', 'YTD']
 
 export const PERIOD_LABELS: Record<Period, string> = {
   '1D':  '1 Day',

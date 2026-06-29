@@ -24,11 +24,11 @@ export default function BadgeLegend({ showHot, showRising, showFalling, showGold
     },
     showGold && {
       key: 'gold', Icon: AwardIcon, iconClass: 'text-amber-500',
-      label: 'Gold', def: 'Beats the S&P 500 across 1W, 1M, 3M, and YTD.',
+      label: 'Gold', def: 'Beats the S&P 500 across 1M, 3M, 6M, and YTD — sustained outperformance.',
     },
     showSilver && {
       key: 'silver', Icon: AwardIcon, iconClass: 'text-slate-400',
-      label: 'Silver', def: 'Beats the S&P 500 in 3 timeframes.',
+      label: 'Silver', def: 'Beats the S&P 500 in 3 of 4 medium-to-long-term timeframes.',
     },
   ].filter((t): t is Exclude<typeof t, false> => t !== false)
 

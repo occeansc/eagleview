@@ -185,7 +185,7 @@ export default function WatchlistPage() {
                   } : cardStyle}
                 >
                   <p className="text-[9px] font-black tracking-[0.18em] uppercase mb-2 text-slate-400">
-                    {PERIOD_LABELS[p]} avg
+                    {p} Avg
                   </p>
                   <p className={`font-mono text-[18px] sm:text-[22px] font-extrabold leading-none tabular-nums mb-2 ${
                     avg === null ? 'text-slate-300'

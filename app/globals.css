@@ -318,17 +318,37 @@
 /* ── Misc ────────────────────────────────────────────────── */
 .tabular-nums { font-variant-numeric: tabular-nums; }
 
-/* ── Mobile landscape: compact tagline block ────────────────────────────── */
+/* ── Mobile landscape: compact header ───────────────────────────────────── */
+/* Targets short viewports (landscape mobile). iPad landscape is 1024px tall
+   and won't match max-height: 500px, so desktop is unaffected.            */
 @media (orientation: landscape) and (max-height: 500px) {
+  /* Shrink hero title to save vertical space */
+  .landscape-title {
+    font-size: 1.25rem !important;
+    line-height: 1.2 !important;
+    margin-bottom: 2px !important;
+  }
+  /* Tagline: single flex row, no wrap */
   .tagline-block {
     display: flex !important;
     flex-direction: row !important;
-    flex-wrap: wrap !important;
+    flex-wrap: nowrap !important;
     align-items: center !important;
-    gap: 6px 14px !important;
-    margin-bottom: 8px !important;
+    gap: 6px !important;
+    margin-bottom: 4px !important;
+    overflow: hidden;
   }
-  .tagline-block > * {
-    margin-bottom: 0 !important;
+  /* Tagline text: truncate if too long */
+  .tagline-block > p {
+    font-size: 10px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    flex-shrink: 1 !important;
+    min-width: 0 !important;
+  }
+  /* MarketRegime subtitle: hide in landscape — keeps badge compact */
+  .regime-sub {
+    display: none !important;
   }
 }

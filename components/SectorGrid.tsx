@@ -98,7 +98,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
         <div>
           <div className="flex items-center gap-2.5 mb-1.5">
             <EagleIcon size={22} className="text-slate-800 shrink-0" />
-            <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Eagleview</h1>
+            <h1 className="landscape-title text-2xl font-bold text-slate-800 tracking-tight">Eagleview</h1>
           </div>
           <div className="tagline-block flex flex-wrap items-center gap-2 pl-8 sm:pl-0">
             <p className="text-xs text-slate-400">
