@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.4.5 — Data Updater
+Eagleview v4.4.6 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -41,6 +41,7 @@ SECTOR_STOCKS = [
         ("ARM","ARM Holdings"), ("STX","Seagate Technology"),
         ("WDC","Western Digital"), ("SNDK","SanDisk"),
         ("ALAB","Astera Labs"), ("AXTI","AXT Inc"),
+        ("SWKS","Skyworks Solutions"), ("QRVO","Qorvo"), ("GFS","GlobalFoundries"),
     ]),
     ("Software & Cloud", [
         ("MSFT","Microsoft"), ("CRM","Salesforce"), ("NOW","ServiceNow"),
@@ -69,6 +70,7 @@ SECTOR_STOCKS = [
         ("AEVA","Aeva Technologies"), ("ORCL","Oracle"),
         ("ASAN","Asana"), ("BRZE","Braze"), ("UPST","Upstart"),
         ("NBIS","Nebius Group"), ("CRWV","CoreWeave"),
+        ("MSFT","Microsoft"),
     ]),
     ("Fintech & Insurtech", [
         ("XYZ","Block"), ("PYPL","PayPal"), ("HOOD","Robinhood"),
@@ -96,6 +98,7 @@ SECTOR_STOCKS = [
         ("INSM","Insmed"), ("RXRX","Recursion Pharma"), ("BMRN","BioMarin Pharma"),
         ("ILMN","Illumina"), ("NTRA","Natera"),
         ("TXG","10x Genomics"), ("PACB","Pacific Biosciences"),
+        ("EXAS","Exact Sciences"), ("GH","Guardant Health"),
     ]),
     ("Pharma & MedTech", [
         ("JNJ","Johnson & Johnson"), ("PFE","Pfizer"), ("LLY","Eli Lilly"),
@@ -105,6 +108,7 @@ SECTOR_STOCKS = [
         ("BSX","Boston Scientific"), ("DXCM","Dexcom"), ("PODD","Insulet"),
         ("BDX","Becton Dickinson"), ("ZBH","Zimmer Biomet"), ("INMD","InMode"),
         ("AMGN","Amgen"), ("GILD","Gilead Sciences"),
+        ("UNH","UnitedHealth Group"),
     ]),
     ("EV, Battery & Autonomy", [
         ("TSLA","Tesla"), ("RIVN","Rivian"), ("LCID","Lucid Motors"),
@@ -170,6 +174,7 @@ SECTOR_STOCKS = [
         ("PLUG","Plug Power"), ("FCEL","FuelCell Energy"), ("BE","Bloom Energy"),
         ("MAXN","Maxeon Solar"), ("SHLS","Shoals Technologies"), ("STEM","Stem Inc"),
         ("FLNC","Fluence Energy"), ("BEP","Brookfield Renewable Partners"),
+        ("EOSE","Eos Energy Enterprises"),
     ]),
     ("Power & Data Centers", [
         ("VRT","Vertiv Holdings"), ("ETN","Eaton Corp"), ("HUBB","Hubbell"),
@@ -190,6 +195,7 @@ SECTOR_STOCKS = [
         ("W","Wayfair"), ("CHWY","Chewy"), ("BABA","Alibaba"),
         ("JD","JD.com"), ("PDD","PDD Holdings"), ("DKNG","DraftKings"),
         ("PENN","PENN Entertainment"), ("DASH","DoorDash"),
+        ("MCD","McDonald's"), ("SBUX","Starbucks"), ("CMG","Chipotle Mexican Grill"),
     ]),
     ("Traditional Finance", [
         ("JPM","JPMorgan Chase"), ("BAC","Bank of America"), ("WFC","Wells Fargo"),
@@ -249,6 +255,42 @@ SECTOR_STOCKS = [
                         # industrial gases (now Linde)
         ("LIN","Linde"),                 # industrial gases
         ("VMC","Vulcan Materials"),      # construction aggregates
+    ]),
+
+    # NEW: Oil & Gas / Energy
+    # Traditional energy majors and infrastructure — a notable gap given the
+    # existing Nuclear, Clean Energy, and Power & Data Centers sectors cover
+    # alternative/infra energy but nothing in conventional oil & gas.
+    ("Oil & Gas / Energy", [
+        ("XOM","ExxonMobil"), ("CVX","Chevron"), ("OXY","Occidental Petroleum"),
+        ("COP","ConocoPhillips"), ("SLB","SLB"), ("EOG","EOG Resources"),
+        ("MPC","Marathon Petroleum"), ("PSX","Phillips 66"), ("VLO","Valero Energy"),
+        ("WMB","Williams Companies"), ("KMI","Kinder Morgan"), ("HAL","Halliburton"),
+        ("BKR","Baker Hughes"), ("DVN","Devon Energy"), ("FANG","Diamondback Energy"),
+        ("HES","Hess Corporation"), ("TRGP","Targa Resources"), ("OKE","ONEOK"),
+    ]),
+
+    # NEW: Mobility & Logistics
+    # Ride-hailing, delivery, and freight/logistics — a category with no
+    # current home; DASH already lives in Consumer & E-commerce, cross-listed
+    # here since delivery logistics is core to both themes.
+    ("Mobility & Logistics", [
+        ("UBER","Uber Technologies"), ("LYFT","Lyft"), ("GRAB","Grab Holdings"),
+        ("DASH","DoorDash"), ("FDX","FedEx"), ("UPS","United Parcel Service"),
+        ("XPO","XPO Inc"), ("ODFL","Old Dominion Freight Line"), ("JBHT","J.B. Hunt Transport"),
+        ("CHRW","C.H. Robinson Worldwide"), ("KNX","Knight-Swift Transportation"),
+        ("SAIA","Saia Inc"), ("RXO","RXO Inc"), ("LSTR","Landstar System"),
+    ]),
+
+    # NEW: Media, Telecom & Entertainment
+    # Streaming, broadcast, and telecom infrastructure — covers the
+    # content/distribution layer with no current sector representation.
+    ("Media, Telecom & Entertainment", [
+        ("DIS","Walt Disney"), ("NFLX","Netflix"), ("WBD","Warner Bros Discovery"),
+        ("PARA","Paramount Global"), ("CMCSA","Comcast"), ("T","AT&T"),
+        ("VZ","Verizon Communications"), ("TMUS","T-Mobile US"), ("CHTR","Charter Communications"),
+        ("SPOT","Spotify Technology"), ("LYV","Live Nation Entertainment"), ("ROKU","Roku"),
+        ("FOXA","Fox Corporation"), ("SIRI","Sirius XM Holdings"),
     ]),
 ]
 
@@ -412,7 +454,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.4.5 Data Sync ══")
+    log.info("══ Eagleview v4.4.6 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -485,7 +527,11 @@ def main():
     closes = None
     for attempt in range(1, 4):
         try:
-            raw    = yf.download(all_tickers, period="1y", progress=False, auto_adjust=True)
+            # period="1y" returns ~251 trading days, which is NOT enough for
+            # pct(252) — that needs len(series) > 252, i.e. 253+ rows. This was
+            # silently returning None for year_pct on every single ticker.
+            # period="2y" gives ~502 days, comfortable headroom for the 1Y lookback.
+            raw    = yf.download(all_tickers, period="2y", progress=False, auto_adjust=True)
             closes = (
                 raw["Close"]
                 if isinstance(raw.columns, pd.MultiIndex)

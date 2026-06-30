@@ -7,7 +7,7 @@ import {
   getPeriodValue, getMomentumDelta, getBreadth, getRankChange, formatPrice, PERIOD_LABELS,
 } from '@/lib/types'
 import { getSupabaseClient } from '@/lib/supabase'
-import { CloseIcon, ZapIcon } from './Icons'
+import { CloseIcon, ZapIcon, ChevronDownIcon } from './Icons'
 import TickerModal from './TickerModal'
 
 interface Props {
@@ -152,9 +152,9 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
                 <span className={`font-mono text-[28px] font-extrabold leading-none tabular-nums ${pctClass}`}>
                   {sectorVal !== null ? `${sectorVal > 0 ? '+' : ''}${sectorVal.toFixed(2)}%` : '—'}
                 </span>
-                <span className="text-[10px] uppercase font-black tracking-[0.16em] text-slate-400 shrink-0 flex items-center gap-0.5">
+                <span className="text-[10px] uppercase font-black tracking-[0.16em] text-slate-400 shrink-0 flex items-center gap-1">
                   {localPeriod} Avg
-                  <span className="text-[8px] opacity-50">▾</span>
+                  <ChevronDownIcon size={14} className="text-slate-400" />
                 </span>
               </button>
               {dropdownOpen === 'return' && (
@@ -225,10 +225,10 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
                 <div className="relative">
                   <button
                     onClick={() => setDropdownOpen(dropdownOpen === 'ranked' ? null : 'ranked')}
-                    className="flex items-center gap-0.5 text-[10px] text-slate-400 font-semibold tracking-wide hover:text-slate-700 transition-colors"
+                    className="flex items-center gap-1 text-[10px] text-slate-400 font-semibold tracking-wide hover:text-slate-700 transition-colors"
                   >
                     Ranked by {localPeriod}
-                    <span className="text-[8px] opacity-50">▾</span>
+                    <ChevronDownIcon size={13} className="text-slate-400" />
                   </button>
                   {dropdownOpen === 'ranked' && (
                     <PeriodDropdown ref={dropdownRef} current={localPeriod} onSelect={p => { setLocalPeriod(p); setDropdownOpen(null) }} side="right" />
@@ -293,7 +293,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
         {/* Footer */}
         <div className="px-6 py-3 border-t border-slate-100 bg-white shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400">
-            Eagleview v4.4.5 · Yahoo Finance
+            Eagleview v4.4.6 · Yahoo Finance
           </p>
           <p className="text-[10px] text-slate-300 tabular-nums">
             Last sync: {formatSyncTime(sector.updated_at)}
