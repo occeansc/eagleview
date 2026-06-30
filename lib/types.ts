@@ -14,6 +14,7 @@ export interface HasPeriodValues {
   quarter_pct:    number | null
   half_year_pct:  number | null   // 6M
   year_pct:       number | null   // 1Y
+  five_year_pct:  number | null   // 5Y
   ytd_pct:        number | null
 }
 
@@ -30,6 +31,7 @@ export interface Sector extends HasPeriodValues {
   quarter_rank:        number | null
   half_year_rank:      number | null   // 6M
   year_rank:           number | null   // 1Y
+  five_year_rank:      number | null   // 5Y
   day_rank_change:     number | null
   ytd_rank_change:     number | null
   week_rank_change:    number | null
@@ -37,6 +39,7 @@ export interface Sector extends HasPeriodValues {
   quarter_rank_change:      number | null
   half_year_rank_change:    number | null   // 6M
   year_rank_change:         number | null   // 1Y
+  five_year_rank_change:    number | null   // 5Y
   // v3.0 streak + breadth
   streak:       number | null
   breadth_1d:   number | null
@@ -45,6 +48,7 @@ export interface Sector extends HasPeriodValues {
   breadth_3m:   number | null
   breadth_6m:   number | null   // 6M
   breadth_1y:   number | null   // 1Y
+  breadth_5y:   number | null   // 5Y
   breadth_ytd:  number | null
   // v3.0 previous values for momentum delta
   prev_day_pct:     number | null
@@ -53,6 +57,7 @@ export interface Sector extends HasPeriodValues {
   prev_quarter_pct:    number | null
   prev_half_year_pct:  number | null   // 6M
   prev_year_pct:       number | null   // 1Y
+  prev_five_year_pct:  number | null   // 5Y
   prev_ytd_pct:        number | null
 }
 
@@ -80,7 +85,7 @@ export interface SectorSnapshot {
   synced_at: string
 }
 
-export type Period         = '1D' | '1W' | '1M' | '3M' | '6M' | 'YTD' | '1Y'
+export type Period         = '1D' | '1W' | '1M' | '3M' | '6M' | 'YTD' | '1Y' | '5Y'
 export type ScorecardLevel = 'gold' | 'silver' | 'bronze' | null
 export type RegimeType     = 'risk-on' | 'risk-off' | 'mixed' | 'loading'
 
@@ -94,6 +99,7 @@ export const PERIOD_LABELS: Record<Period, string> = {
   '6M':  '6 Months',
   'YTD': 'Year to Date',
   '1Y':  '1 Year',
+  '5Y':  '5 Years',
 }
 
 // ─── Period helpers ───────────────────────────────────────────────────────────
@@ -107,6 +113,7 @@ export function getPeriodValue(s: HasPeriodValues, period: Period): number | nul
     case '6M':  return s.half_year_pct
     case 'YTD': return s.ytd_pct
     case '1Y':  return s.year_pct
+    case '5Y':  return s.five_year_pct
   }
 }
 
@@ -119,6 +126,7 @@ export function getRankChange(s: Sector, period: Period): number | null {
     case '6M':  return s.half_year_rank_change
     case 'YTD': return s.ytd_rank_change
     case '1Y':  return s.year_rank_change
+    case '5Y':  return s.five_year_rank_change
   }
 }
 
@@ -131,6 +139,7 @@ export function getBreadth(s: Sector, period: Period): number | null {
     case '6M':  return s.breadth_6m
     case 'YTD': return s.breadth_ytd
     case '1Y':  return s.breadth_1y
+    case '5Y':  return s.breadth_5y
   }
 }
 
@@ -145,6 +154,7 @@ export function getMomentumDelta(s: Sector, period: Period): number | null {
     case '6M':  curr = s.half_year_pct; prev = s.prev_half_year_pct; break
     case 'YTD': curr = s.ytd_pct;       prev = s.prev_ytd_pct;       break
     case '1Y':  curr = s.year_pct;      prev = s.prev_year_pct;      break
+    case '5Y':  curr = s.five_year_pct; prev = s.prev_five_year_pct; break
   }
   if (curr === null || prev === null) return null
   return Math.round((curr - prev) * 10) / 10

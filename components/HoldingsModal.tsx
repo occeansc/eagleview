@@ -88,6 +88,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
     localPeriod === '3M' ? (sector.quarter_rank   ?? 999) :
     localPeriod === '6M' ? (sector.half_year_rank ?? 999) :
     localPeriod === '1Y' ? (sector.year_rank      ?? 999) :
+    localPeriod === '5Y' ? (sector.five_year_rank ?? 999) :
                            (sector.ytd_rank       ?? 999)
   const isRisingSector = periodRankVal > 2 && rankChange !== null && rankChange >= 5
 
@@ -293,7 +294,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
         {/* Footer */}
         <div className="px-6 py-3 border-t border-slate-100 bg-white shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400">
-            Eagleview v4.4.6 · Yahoo Finance
+            Eagleview v4.4.7 · Yahoo Finance
           </p>
           <p className="text-[10px] text-slate-300 tabular-nums">
             Last sync: {formatSyncTime(sector.updated_at)}
@@ -315,7 +316,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
 
 /* ── Period dropdown — shared by return pill and "Ranked by" trigger ─────── */
 
-const MODAL_PERIODS: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y']
+const MODAL_PERIODS: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '5Y']
 
 const PeriodDropdown = forwardRef<
   HTMLDivElement,

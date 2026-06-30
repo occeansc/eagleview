@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.4.6 — Data Updater
+Eagleview v4.4.7 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -98,7 +98,7 @@ SECTOR_STOCKS = [
         ("INSM","Insmed"), ("RXRX","Recursion Pharma"), ("BMRN","BioMarin Pharma"),
         ("ILMN","Illumina"), ("NTRA","Natera"),
         ("TXG","10x Genomics"), ("PACB","Pacific Biosciences"),
-        ("EXAS","Exact Sciences"), ("GH","Guardant Health"),
+        ("GH","Guardant Health"),
     ]),
     ("Pharma & MedTech", [
         ("JNJ","Johnson & Johnson"), ("PFE","Pfizer"), ("LLY","Eli Lilly"),
@@ -108,7 +108,7 @@ SECTOR_STOCKS = [
         ("BSX","Boston Scientific"), ("DXCM","Dexcom"), ("PODD","Insulet"),
         ("BDX","Becton Dickinson"), ("ZBH","Zimmer Biomet"), ("INMD","InMode"),
         ("AMGN","Amgen"), ("GILD","Gilead Sciences"),
-        ("UNH","UnitedHealth Group"),
+        ("UNH","UnitedHealth Group"), ("ABT","Abbott Laboratories"),
     ]),
     ("EV, Battery & Autonomy", [
         ("TSLA","Tesla"), ("RIVN","Rivian"), ("LCID","Lucid Motors"),
@@ -267,7 +267,7 @@ SECTOR_STOCKS = [
         ("MPC","Marathon Petroleum"), ("PSX","Phillips 66"), ("VLO","Valero Energy"),
         ("WMB","Williams Companies"), ("KMI","Kinder Morgan"), ("HAL","Halliburton"),
         ("BKR","Baker Hughes"), ("DVN","Devon Energy"), ("FANG","Diamondback Energy"),
-        ("HES","Hess Corporation"), ("TRGP","Targa Resources"), ("OKE","ONEOK"),
+        ("TRGP","Targa Resources"), ("OKE","ONEOK"),
     ]),
 
     # NEW: Mobility & Logistics
@@ -287,7 +287,7 @@ SECTOR_STOCKS = [
     # content/distribution layer with no current sector representation.
     ("Media, Telecom & Entertainment", [
         ("DIS","Walt Disney"), ("NFLX","Netflix"), ("WBD","Warner Bros Discovery"),
-        ("PARA","Paramount Global"), ("CMCSA","Comcast"), ("T","AT&T"),
+        ("PSKY","Paramount Skydance"), ("CMCSA","Comcast"), ("T","AT&T"),
         ("VZ","Verizon Communications"), ("TMUS","T-Mobile US"), ("CHTR","Charter Communications"),
         ("SPOT","Spotify Technology"), ("LYV","Live Nation Entertainment"), ("ROKU","Roku"),
         ("FOXA","Fox Corporation"), ("SIRI","Sirius XM Holdings"),
@@ -424,6 +424,7 @@ def calc_returns(series: pd.Series) -> dict:
         "quarter_pct":   pct(63),
         "half_year_pct": pct(126),
         "year_pct":      pct(252),
+        "five_year_pct": pct(1260),
         "ytd_pct":       ytd,
     }
     return result if any(v is not None for v in result.values()) else {}
@@ -454,7 +455,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.4.6 Data Sync ══")
+    log.info("══ Eagleview v4.4.7 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -496,8 +497,8 @@ def main():
     try:
         old_rows = db.get(
             "sectors",
-            "select=id,name,day_pct,week_pct,month_pct,quarter_pct,ytd_pct,"
-            "day_rank,week_rank,month_rank,quarter_rank,ytd_rank,streak",
+            "select=id,name,day_pct,week_pct,month_pct,quarter_pct,half_year_pct,year_pct,five_year_pct,ytd_pct,"
+            "day_rank,week_rank,month_rank,quarter_rank,half_year_rank,year_rank,five_year_rank,ytd_rank,streak",
         )
         old_state = {row["id"]: row for row in old_rows}
         log.info(f"  Read {len(old_state)} existing sector rows")
@@ -513,6 +514,7 @@ def main():
     old_quarter_ranks      = rank_by(old_state, "quarter_pct")
     old_half_year_ranks    = rank_by(old_state, "half_year_pct")
     old_year_ranks         = rank_by(old_state, "year_pct")
+    old_five_year_ranks    = rank_by(old_state, "five_year_pct")
 
     # ══════════════════════════════════════════════════════════════════════════
     # PHASE 2 — Batch download all tickers
@@ -527,11 +529,12 @@ def main():
     closes = None
     for attempt in range(1, 4):
         try:
-            # period="1y" returns ~251 trading days, which is NOT enough for
-            # pct(252) — that needs len(series) > 252, i.e. 253+ rows. This was
-            # silently returning None for year_pct on every single ticker.
-            # period="2y" gives ~502 days, comfortable headroom for the 1Y lookback.
-            raw    = yf.download(all_tickers, period="2y", progress=False, auto_adjust=True)
+            # period="1y" once returned ~251 trading days — not enough for pct(252),
+            # which needs len(series) > 252 (253+ rows). That bug silently broke
+            # year_pct for every ticker. Lesson applied here: 5Y needs pct(1260),
+            # requiring 1261+ rows. period="6y" gives ~1512 trading days — a clean
+            # ~250-day buffer over the minimum, so we never repeat that mistake.
+            raw    = yf.download(all_tickers, period="6y", progress=False, auto_adjust=True)
             closes = (
                 raw["Close"]
                 if isinstance(raw.columns, pd.MultiIndex)
@@ -605,6 +608,7 @@ def main():
                 "quarter_pct":    safe_avg([s.get("quarter_pct")    for s in stock_rows]),
                 "half_year_pct":  safe_avg([s.get("half_year_pct")  for s in stock_rows]),
                 "year_pct":       safe_avg([s.get("year_pct")       for s in stock_rows]),
+                "five_year_pct":  safe_avg([s.get("five_year_pct")  for s in stock_rows]),
                 "ytd_pct":        safe_avg([s.get("ytd_pct")        for s in stock_rows]),
             }
 
@@ -620,6 +624,7 @@ def main():
                 "breadth_3m":  breadth(stock_rows, "quarter_pct"),
                 "breadth_6m":  breadth(stock_rows, "half_year_pct"),
                 "breadth_1y":  breadth(stock_rows, "year_pct"),
+                "breadth_5y":  breadth(stock_rows, "five_year_pct"),
                 "breadth_ytd": breadth(stock_rows, "ytd_pct"),
             }
         except Exception as e:
@@ -644,6 +649,7 @@ def main():
     new_quarter_ranks      = rank_by(returns_by_id, "quarter_pct")
     new_half_year_ranks    = rank_by(returns_by_id, "half_year_pct")
     new_year_ranks         = rank_by(returns_by_id, "year_pct")
+    new_five_year_ranks    = rank_by(returns_by_id, "five_year_pct")
 
     # ══════════════════════════════════════════════════════════════════════════
     # PHASE 5 & 6 — Compute deltas/streaks + write to DB
@@ -670,6 +676,9 @@ def main():
                     "week_pct":     old.get("week_pct"),
                     "month_pct":    old.get("month_pct"),
                     "quarter_pct":  old.get("quarter_pct"),
+                    "half_year_pct":   old.get("half_year_pct"),
+                    "year_pct":        old.get("year_pct"),
+                    "five_year_pct":   old.get("five_year_pct"),
                     "ytd_pct":      old.get("ytd_pct"),
                     "day_rank":     old.get("day_rank") or old_day_ranks.get(sector_id),
                     "ytd_rank":     old.get("ytd_rank") or old_ytd_ranks.get(sector_id),
@@ -677,6 +686,11 @@ def main():
                     "month_rank":   old.get("month_rank") or old_month_ranks.get(sector_id),
                     "quarter_rank":     old.get("quarter_rank") or old_quarter_ranks.get(sector_id),
                     "half_year_rank":   old.get("half_year_rank") or old_half_year_ranks.get(sector_id),
+                    "year_rank":        old.get("year_rank") or old_year_ranks.get(sector_id),
+                    "five_year_rank":   old.get("five_year_rank") or old_five_year_ranks.get(sector_id),
+                    "breadth_6m":   sc.get("breadth_6m"),
+                    "breadth_1y":   sc.get("breadth_1y"),
+                    "breadth_5y":   sc.get("breadth_5y"),
                     "streak":       old.get("streak", 0),
                 }])
             except Exception as e:
@@ -707,6 +721,7 @@ def main():
             new_quarter_rank      = new_quarter_ranks.get(sector_id)
             new_half_year_rank    = new_half_year_ranks.get(sector_id)
             new_year_rank         = new_year_ranks.get(sector_id)
+            new_five_year_rank    = new_five_year_ranks.get(sector_id)
 
             # Patch: write all new data in one call
             patch_result = db.patch("sectors", {"id": sector_id}, {
@@ -722,6 +737,7 @@ def main():
                 "quarter_rank":      new_quarter_rank,
                 "half_year_rank":    new_half_year_rank,
                 "year_rank":         new_year_rank,
+                "five_year_rank":    new_five_year_rank,
                 # Rank deltas
                 "day_rank_change":     rank_delta(old_day_ranks,     new_day_ranks,     sector_id),
                 "ytd_rank_change":     rank_delta(old_ytd_ranks,     new_ytd_ranks,     sector_id),
@@ -730,6 +746,7 @@ def main():
                 "quarter_rank_change":      rank_delta(old_quarter_ranks,   new_quarter_ranks,   sector_id),
                 "half_year_rank_change":    rank_delta(old_half_year_ranks, new_half_year_ranks, sector_id),
                 "year_rank_change":         rank_delta(old_year_ranks,      new_year_ranks,      sector_id),
+                "five_year_rank_change":    rank_delta(old_five_year_ranks, new_five_year_ranks, sector_id),
                 # Streak
                 "streak": new_streak,
                 # Breadth
@@ -739,6 +756,7 @@ def main():
                 "breadth_3m":  sc["breadth_3m"],
                 "breadth_6m":  sc["breadth_6m"],
                 "breadth_1y":  sc["breadth_1y"],
+                "breadth_5y":  sc["breadth_5y"],
                 "breadth_ytd": sc["breadth_ytd"],
                 # Previous values (for momentum delta in UI)
                 "prev_day_pct":     old.get("day_pct"),
@@ -747,6 +765,7 @@ def main():
                 "prev_quarter_pct":    old.get("quarter_pct"),
                 "prev_half_year_pct":  old.get("half_year_pct"),
                 "prev_year_pct":       old.get("year_pct"),
+                "prev_five_year_pct":  old.get("five_year_pct"),
                 "prev_ytd_pct":        old.get("ytd_pct"),
                 "updated_at":       datetime.now(timezone.utc).isoformat(),
             })

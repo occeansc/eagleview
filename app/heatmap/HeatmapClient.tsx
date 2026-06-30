@@ -7,7 +7,7 @@ import HoldingsModal from '@/components/HoldingsModal'
 
 // Heatmap shows all 5 periods including 1D.
 // computeScorecard always evaluates on 1W/1M/3M/YTD — unaffected.
-const HEATMAP_PERIODS: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y']
+const HEATMAP_PERIODS: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '5Y']
 
 interface Props {
   sectors:    Sector[]
@@ -53,6 +53,7 @@ function periodRank(s: Sector, p: Period): number {
   if (p === '3M') return s.quarter_rank  ?? 999
   if (p === '6M') return s.half_year_rank ?? 999
   if (p === '1Y') return s.year_rank     ?? 999
+  if (p === '5Y') return s.five_year_rank ?? 999
   return s.ytd_rank ?? 999
 }
 

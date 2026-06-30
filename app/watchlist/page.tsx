@@ -11,7 +11,7 @@ import { BookmarkIcon, TrendingUpIcon, TrendingDownIcon } from '@/components/Ico
 import HoldingsModal from '@/components/HoldingsModal'
 
 // Watchlist shows all 5 periods including 1D — consistent with Dashboard/Heatmap/Screener
-const WATCHLIST_PERIODS: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y']
+const WATCHLIST_PERIODS: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '5Y']
 
 const cardStyle = {
   background:  '#ffffff',
@@ -99,8 +99,8 @@ export default function WatchlistPage() {
           {/* Comparison table */}
           <div className="rounded-[22px] overflow-hidden mb-5" style={cardStyle}>
             <div className="overflow-x-auto">
-              <div style={{ minWidth: '530px' }}>
-                <div className="grid grid-cols-[1fr_repeat(7,48px)_44px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-5 py-3 bg-slate-50/70 border-b border-slate-100">
+              <div style={{ minWidth: '620px' }}>
+                <div className="grid grid-cols-[minmax(150px,280px)_repeat(8,48px)_44px] gap-x-2 text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-5 py-3 bg-slate-50/70 border-b border-slate-100">
                   <span>Sector</span>
                   {WATCHLIST_PERIODS.map(p => (
                     <span key={p} className={`text-right ${p === period ? 'text-slate-700' : ''}`}>{p}</span>
@@ -114,7 +114,7 @@ export default function WatchlistPage() {
                     <div
                       key={sector.id}
                       onClick={() => setSelected(sector)}
-                      className="grid grid-cols-[1fr_repeat(7,48px)_44px] items-center px-5 py-3.5 hover:bg-slate-50/80 transition-colors border-b border-slate-50 last:border-0 cursor-pointer"
+                      className="grid grid-cols-[minmax(150px,280px)_repeat(8,48px)_44px] gap-x-2 items-center px-5 py-3.5 hover:bg-slate-50/80 transition-colors border-b border-slate-50 last:border-0 cursor-pointer"
                     >
                       <div className="min-w-0 pr-3">
                         <div className="flex items-center gap-2 flex-wrap">
@@ -162,7 +162,7 @@ export default function WatchlistPage() {
           </div>
 
           {/* Stats grid — one card per period */}
-          <div className="grid grid-cols-4 sm:grid-cols-7 gap-2 sm:gap-3">
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 sm:gap-3">
             {WATCHLIST_PERIODS.map(p => {
               const rets     = sorted.map(s => getPeriodValue(s, p)).filter((v): v is number => v !== null)
               const avg      = rets.length ? rets.reduce((a,b) => a+b,0) / rets.length : null
