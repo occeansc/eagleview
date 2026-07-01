@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.4.9 — Data Updater
+Eagleview v4.4.10 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -374,25 +374,27 @@ class DB:
     def insert_ignore(self, table: str, rows: list) -> None:
         """Insert, silently skipping rows that violate a unique constraint.
 
-        sector_snapshots has an EXPRESSION-based unique index —
-        (sector_id, DATE(synced_at)) — not a plain-column constraint.
-        PostgREST's Prefer: resolution=ignore-duplicates only takes effect
-        when paired with an on_conflict= target that exactly matches the
-        indexed expression; passing on_conflict=sector_id,synced_at would
-        not match DATE(synced_at) and would trade this 409 for a Postgres
-        42P10 ("no unique constraint matching ON CONFLICT specification").
-        Instead we catch the 409 directly — for this table it always means
-        exactly what "ignore" was meant to do: a snapshot for this
-        sector+day already exists, so skipping it is the correct outcome.
+        sector_snapshots.snapshot_date is a real GENERATED ALWAYS column
+        (migrate_v4410_snapshot_dedup.sql), backed by a plain unique index
+        on (sector_id, snapshot_date). That lets us pass a proper
+        on_conflict= target — PostgREST + Prefer: resolution=ignore-duplicates
+        now perform true ON CONFLICT DO NOTHING at the database level,
+        the same pattern upsert_bulk() already uses.
+
+        (Earlier versions caught a 409 here instead, because the prior
+        expression-based index — DATE(synced_at) — couldn't be named in
+        on_conflict=. That workaround is gone now that snapshot_date is a
+        real column. The 409 catch below is kept only as a defensive
+        fallback and should no longer trigger in normal operation.)
         """
         if not rows:
             return
         r = requests.post(
-            f"{self.base}/{table}",
+            f"{self.base}/{table}?on_conflict=sector_id,snapshot_date",
             headers=self.ih, json=rows, timeout=30,
         )
         if r.status_code == 409:
-            return  # expected: today's snapshot for this sector already exists
+            return  # defensive fallback — should be unreachable post-migrate_v4410
         r.raise_for_status()
 
     def upsert_bulk(self, table: str, rows: list, on_conflict: str) -> None:
@@ -468,7 +470,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.4.9 Data Sync ══")
+    log.info("══ Eagleview v4.4.10 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
