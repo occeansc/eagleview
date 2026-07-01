@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.4.7 — Data Updater
+Eagleview v4.4.8 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -372,15 +372,28 @@ class DB:
         ).raise_for_status()
 
     def insert_ignore(self, table: str, rows: list) -> None:
-        """Insert, silently skipping rows that violate a unique
-        constraint (ON CONFLICT DO NOTHING — works even for
-        expression-based unique indexes like DATE(synced_at))."""
+        """Insert, silently skipping rows that violate a unique constraint.
+
+        sector_snapshots has an EXPRESSION-based unique index —
+        (sector_id, DATE(synced_at)) — not a plain-column constraint.
+        PostgREST's Prefer: resolution=ignore-duplicates only takes effect
+        when paired with an on_conflict= target that exactly matches the
+        indexed expression; passing on_conflict=sector_id,synced_at would
+        not match DATE(synced_at) and would trade this 409 for a Postgres
+        42P10 ("no unique constraint matching ON CONFLICT specification").
+        Instead we catch the 409 directly — for this table it always means
+        exactly what "ignore" was meant to do: a snapshot for this
+        sector+day already exists, so skipping it is the correct outcome.
+        """
         if not rows:
             return
-        requests.post(
+        r = requests.post(
             f"{self.base}/{table}",
             headers=self.ih, json=rows, timeout=30,
-        ).raise_for_status()
+        )
+        if r.status_code == 409:
+            return  # expected: today's snapshot for this sector already exists
+        r.raise_for_status()
 
     def upsert_bulk(self, table: str, rows: list, on_conflict: str) -> None:
         """Upsert a list of rows in one HTTP call (merge-duplicates).
@@ -455,7 +468,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.4.7 Data Sync ══")
+    log.info("══ Eagleview v4.4.8 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
