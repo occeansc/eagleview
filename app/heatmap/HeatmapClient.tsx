@@ -5,8 +5,8 @@ import type { Sector, Benchmark, Period } from '@/lib/types'
 import { getPeriodValue, getBreadth, computeScorecard } from '@/lib/types'
 import HoldingsModal from '@/components/HoldingsModal'
 
-// Heatmap shows all 5 periods including 1D.
-// computeScorecard always evaluates on 1W/1M/3M/YTD — unaffected.
+// Heatmap shows all 8 periods (1D through 5Y).
+// computeScorecard always evaluates on 1M/3M/6M/YTD — unaffected by period selection here.
 const HEATMAP_PERIODS: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '5Y']
 
 interface Props {
@@ -83,21 +83,21 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
       <div className="sticky top-0 z-20 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-4 py-3 shadow-[0_4px_16px_rgba(0,0,0,0.02)]">
         <div className="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
 
-          {/* Period pills */}
-          <div className="flex gap-1 bg-slate-100/70 rounded-full p-1 border border-slate-200/60">
-            {HEATMAP_PERIODS.map(p => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`px-3 py-1 rounded-full text-[11px] font-bold transition-all duration-200 ${
-                  period === p
-                    ? 'bg-white text-slate-800 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
+          {/* Period pills — scroll-safe on narrow screens */}
+          <div className="period-bar shrink-0" style={{ maxWidth: '100%' }}>
+            <div className="period-control">
+              <div className="period-control-inner">
+                {HEATMAP_PERIODS.map(p => (
+                  <button
+                    key={p}
+                    onClick={() => setPeriod(p)}
+                    className={`period-pill ${period === p ? 'period-pill-active' : ''}`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Summary stats */}
@@ -178,6 +178,18 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
                         }}
                       >
                         Silver
+                      </span>
+                    )}
+                    {sc === 'bronze' && (
+                      <span
+                        className="text-[7px] font-black tracking-widest px-1.5 py-[3px] rounded-full uppercase leading-none border"
+                        style={{
+                          backgroundColor: 'rgba(255,247,237,0.9)',
+                          borderColor:     'rgba(254,215,170,0.7)',
+                          color:           '#c2410c',
+                        }}
+                      >
+                        Bronze
                       </span>
                     )}
                   </div>

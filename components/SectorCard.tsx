@@ -118,6 +118,11 @@ export default function SectorCard({
                 <AwardIcon size={8} /> SLV
               </span>
             )}
+            {scorecard === 'bronze' && (
+              <span className="flex items-center gap-0.5 text-[9px] font-bold scorecard-bronze bg-orange-50/60 border border-orange-200/50 px-1.5 py-0.5 rounded-full">
+                <AwardIcon size={8} className="text-orange-400/80" /> BRZ
+              </span>
+            )}
             {streak >= 5 && !scorecard && (
               <span className="flex items-center gap-[2px] text-[9px] font-extrabold text-orange-500/80">
                 <ZapIcon size={10} /> {streak}

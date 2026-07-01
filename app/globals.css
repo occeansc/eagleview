@@ -282,6 +282,7 @@
   background-clip: text;
 }
 .scorecard-silver { color: #64748b; }
+.scorecard-bronze { color: #c2410c; }
 
 /* ── Sparklines ──────────────────────────────────────────── */
 @keyframes drawLine {

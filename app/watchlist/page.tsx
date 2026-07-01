@@ -72,22 +72,20 @@ export default function WatchlistPage() {
           </p>
         </div>
 
-        {/* Period pills — 5 periods including 1D */}
+        {/* Period pills — 8 periods, scroll-safe on narrow screens */}
         {sorted.length > 0 && (
-          <div className="flex gap-1 bg-slate-100/70 rounded-full p-1 border border-slate-200/60 shrink-0">
-            {WATCHLIST_PERIODS.map(p => (
-              <button
-                key={p}
-                onClick={() => setPeriod(p)}
-                className={`px-2.5 py-1 rounded-full text-[11px] font-bold transition-all duration-200 ${
-                  period === p
-                    ? 'bg-white text-slate-800 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-600'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
+          <div className="period-control shrink-0" style={{ maxWidth: '100%' }}>
+            <div className="period-control-inner">
+              {WATCHLIST_PERIODS.map(p => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={`period-pill ${period === p ? 'period-pill-active' : ''}`}
+                >
+                  {p}
+                </button>
+              ))}
+            </div>
           </div>
         )}
       </div>
@@ -124,6 +122,9 @@ export default function WatchlistPage() {
                           )}
                           {sc === 'silver' && (
                             <span className="text-[8px] font-black tracking-widest bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full uppercase">Silver</span>
+                          )}
+                          {sc === 'bronze' && (
+                            <span className="text-[8px] font-black tracking-widest bg-orange-50/70 text-orange-600/90 px-1.5 py-0.5 rounded-full uppercase">Bronze</span>
                           )}
                         </div>
                         <p className="text-[10px] text-slate-400 mt-0.5 truncate">

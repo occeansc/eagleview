@@ -32,7 +32,7 @@ export default function Nav() {
       if (cached && fresh) { setSentiment(cached as Sentiment); return }
     } catch { /* localStorage unavailable */ }
 
-    // Fetch 22-row ytd_pct — tiny query, explicit cast for TypeScript
+    // Fetch ytd_pct for all sectors — tiny query, explicit cast for TypeScript
     getSupabaseClient()
       .from('sectors')
       .select('ytd_pct')
@@ -108,7 +108,7 @@ export default function Nav() {
         </div>
 
         <span className="text-[10px] font-bold text-slate-400 bg-slate-100/60 px-2.5 py-1 rounded-full border border-slate-200/50 tracking-widest">
-          V4.4.8
+          V4.4.9
         </span>
       </nav>
 

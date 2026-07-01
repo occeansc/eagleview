@@ -102,11 +102,13 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
 
   if (!mounted) return null
 
-  const pos      = (holding.ytd_pct ?? 0) >= 0
+  const hasYtd   = holding.ytd_pct !== null
+  const pos      = hasYtd && holding.ytd_pct! >= 0
+  const neutral  = !hasYtd
   const price    = formatPrice(holding.price ?? null)
   const ytdAbs   = Math.abs(holding.ytd_pct ?? 0)
-  const alpha    = Math.min(0.08 + (ytdAbs / 100) * 0.16, 0.22)
-  const gradRgb  = pos ? '16,185,129' : '244,63,94'
+  const alpha    = hasYtd ? Math.min(0.08 + (ytdAbs / 100) * 0.16, 0.22) : 0
+  const gradRgb  = neutral ? '148,163,184' : pos ? '16,185,129' : '244,63,94'
   const headerBg = `linear-gradient(180deg, rgba(${gradRgb},${alpha}) 0%, rgba(255,255,255,0) 100%)`
 
   return createPortal(
@@ -122,7 +124,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
         <div className="shrink-0" style={{ background: headerBg }}>
           {/* Drag handle */}
           <div className="sm:hidden flex justify-center pt-3 pb-1">
-            <div className={`w-10 h-1 rounded-full ${pos ? 'bg-emerald-300/50' : 'bg-rose-300/50'}`} />
+            <div className={`w-10 h-1 rounded-full ${neutral ? 'bg-slate-300/50' : pos ? 'bg-emerald-300/50' : 'bg-rose-300/50'}`} />
           </div>
 
           <div className="px-5 pt-4 sm:pt-5 pb-4 border-b border-slate-100/80 relative">
@@ -136,7 +138,8 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
 
             <div className="flex items-center gap-3 pr-10">
               <span className={`font-mono text-[13px] font-black px-2.5 py-1.5 rounded-[9px] shrink-0 border ${
-                pos ? 'bg-emerald-50/80 text-emerald-700 border-emerald-100'
+                neutral ? 'bg-slate-50/80  text-slate-600  border-slate-100'
+                    : pos ? 'bg-emerald-50/80 text-emerald-700 border-emerald-100'
                     : 'bg-rose-50/80    text-rose-700    border-rose-100'
               }`}>
                 {holding.ticker}
@@ -164,7 +167,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
             <div className="grid grid-cols-3 gap-2">
               {TILES.map(({ label, key }) => {
                 const v       = holding[key] as number | null
-                const pending = key === 'half_year_pct' && v === null
+                const pending = v === null
                 const p       = pal(v)
                 const formatted = fmt(v)
                 // Shrink font for large numbers (>6 chars) to prevent overflow
@@ -184,7 +187,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
                         {label}
                       </span>
                       <span className="text-[12px] font-bold text-slate-300 leading-none">
-                        Soon
+                        N/A
                       </span>
                     </div>
                   )
@@ -265,7 +268,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
         {/* Footer */}
         <div className="px-5 py-3 border-t border-slate-100 bg-white/90 shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400">
-            Eagleview v4.4.4
+            Eagleview v4.4.9
           </p>
           {info?.website && (
             <a

@@ -8,7 +8,7 @@ import {
 import { SearchIcon, TrendingUpIcon, TrendingDownIcon } from '@/components/Icons'
 import TickerModal from '@/components/TickerModal'
 
-// Screener shows all 5 periods including 1D — same pattern as Dashboard.
+// Screener shows all 8 periods (1D through 5Y) — same pattern as Dashboard.
 const SCREENER_PERIODS: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '5Y']
 
 interface Props {
@@ -307,7 +307,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       )}
 
       <p className="text-center text-[10px] text-slate-300 mt-5 tracking-widest">
-        EAGLEVIEW V4.4.8 · EQUAL-WEIGHTED BASKETS
+        EAGLEVIEW V4.4.9 · EQUAL-WEIGHTED BASKETS
       </p>
 
       {selectedTicker && (

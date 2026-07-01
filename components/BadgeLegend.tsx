@@ -6,9 +6,10 @@ interface BadgeLegendProps {
   showFalling: boolean
   showGold:    boolean
   showSilver:  boolean
+  showBronze:  boolean
 }
 
-export default function BadgeLegend({ showHot, showRising, showFalling, showGold, showSilver }: BadgeLegendProps) {
+export default function BadgeLegend({ showHot, showRising, showFalling, showGold, showSilver, showBronze }: BadgeLegendProps) {
   const terms = [
     showHot && {
       key: 'hot', Icon: FlameIcon, iconClass: 'text-orange-500',
@@ -29,6 +30,10 @@ export default function BadgeLegend({ showHot, showRising, showFalling, showGold
     showSilver && {
       key: 'silver', Icon: AwardIcon, iconClass: 'text-slate-400',
       label: 'Silver', def: 'Beats the S&P 500 in 3 of 4 medium-to-long-term timeframes.',
+    },
+    showBronze && {
+      key: 'bronze', Icon: AwardIcon, iconClass: 'text-orange-400/80',
+      label: 'Bronze', def: 'Beats the S&P 500 in 2 of 4 medium-to-long-term timeframes.',
     },
   ].filter((t): t is Exclude<typeof t, false> => t !== false)
 

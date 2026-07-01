@@ -79,6 +79,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
   })
   const anyGold   = displayed.some(s => computeScorecard(s, spx) === 'gold')
   const anySilver = displayed.some(s => computeScorecard(s, spx) === 'silver')
+  const anyBronze = displayed.some(s => computeScorecard(s, spx) === 'bronze')
 
   const sectionTitle =
     filterMode === 'hot'     ? 'Hot Sectors' :
@@ -283,7 +284,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
         </div>
       )}
 
-      <BadgeLegend showHot={anyHot} showRising={anyRising} showFalling={anyFalling} showGold={anyGold} showSilver={anySilver} />
+      <BadgeLegend showHot={anyHot} showRising={anyRising} showFalling={anyFalling} showGold={anyGold} showSilver={anySilver} showBronze={anyBronze} />
 
       {/* ── Modal ───────────────────────────────── */}
       {selected && (
