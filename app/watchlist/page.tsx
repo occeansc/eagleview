@@ -14,9 +14,9 @@ import HoldingsModal from '@/components/HoldingsModal'
 const WATCHLIST_PERIODS: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '5Y']
 
 const cardStyle = {
-  background:  '#ffffff',
-  border:      '1px solid rgba(226,232,240,0.55)',
-  boxShadow:   '0 1px 0 rgba(255,255,255,1) inset, 0 1px 3px rgba(0,0,0,0.035), 0 2px 8px rgba(0,0,0,0.025)',
+  background:  'var(--bg-surface-1)',
+  border:      '1px solid var(--border-subtle)',
+  boxShadow:   'var(--shadow-glass)',
 }
 
 export default function WatchlistPage() {
@@ -52,7 +52,7 @@ export default function WatchlistPage() {
     return (
       <div className="max-w-4xl mx-auto px-3 sm:px-6 py-6 space-y-3">
         {[1,2,3].map(i => (
-          <div key={i} className="animate-pulse h-16 rounded-[20px] bg-white/70 border border-slate-100" />
+          <div key={i} className="animate-pulse h-16 rounded-[20px] bg-white/70 dark:bg-slate-900/70 border border-slate-100 dark:border-white/10" />
         ))}
       </div>
     )
@@ -64,8 +64,8 @@ export default function WatchlistPage() {
       {/* Header */}
       <div className="flex items-start justify-between mb-6 gap-3">
         <div>
-          <h2 className="text-[22px] font-black tracking-tight text-slate-900">Watchlist</h2>
-          <p className="text-[12px] text-slate-400 mt-0.5">
+          <h2 className="text-[22px] font-black tracking-tight text-slate-900 dark:text-slate-100">Watchlist</h2>
+          <p className="text-[12px] text-slate-400 dark:text-slate-500 mt-0.5">
             {sorted.length === 0
               ? 'Pin sectors from the dashboard to track them here'
               : `${sorted.length} sector${sorted.length !== 1 ? 's' : ''} pinned`}
@@ -98,10 +98,10 @@ export default function WatchlistPage() {
           <div className="rounded-[22px] overflow-hidden mb-5" style={cardStyle}>
             <div className="overflow-x-auto">
               <div style={{ minWidth: '620px' }}>
-                <div className="grid grid-cols-[minmax(150px,280px)_repeat(8,48px)_44px] gap-x-2 text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-5 py-3 bg-slate-50/70 border-b border-slate-100">
+                <div className="grid grid-cols-[minmax(150px,280px)_repeat(8,48px)_44px] gap-x-2 text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 dark:text-slate-500 px-5 py-3 bg-slate-50/70 dark:bg-white/5 border-b border-slate-100 dark:border-white/10">
                   <span>Sector</span>
                   {WATCHLIST_PERIODS.map(p => (
-                    <span key={p} className={`text-right ${p === period ? 'text-slate-700' : ''}`}>{p}</span>
+                    <span key={p} className={`text-right ${p === period ? 'text-slate-700 dark:text-slate-300' : ''}`}>{p}</span>
                   ))}
                   <span />
                 </div>
@@ -112,22 +112,22 @@ export default function WatchlistPage() {
                     <div
                       key={sector.id}
                       onClick={() => setSelected(sector)}
-                      className="grid grid-cols-[minmax(150px,280px)_repeat(8,48px)_44px] gap-x-2 items-center px-5 py-3.5 hover:bg-slate-50/80 transition-colors border-b border-slate-50 last:border-0 cursor-pointer"
+                      className="grid grid-cols-[minmax(150px,280px)_repeat(8,48px)_44px] gap-x-2 items-center px-5 py-3.5 hover:bg-slate-50/80 dark:hover:bg-white/5 transition-colors border-b border-slate-50 dark:border-white/5 last:border-0 cursor-pointer"
                     >
                       <div className="min-w-0 pr-3">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-[13px] font-bold text-slate-800">{sector.name}</p>
+                          <p className="text-[13px] font-bold text-slate-800 dark:text-slate-200">{sector.name}</p>
                           {sc === 'gold' && (
-                            <span className="text-[8px] font-black tracking-widest bg-amber-50 border border-amber-200/70 text-amber-600 px-1.5 py-0.5 rounded-full uppercase">Gold</span>
+                            <span className="text-[8px] font-black tracking-widest bg-amber-50 dark:bg-amber-500/10 border border-amber-200/70 dark:border-amber-500/25 text-amber-600 dark:text-amber-400 dark:text-amber-400 px-1.5 py-0.5 rounded-full uppercase">Gold</span>
                           )}
                           {sc === 'silver' && (
-                            <span className="text-[8px] font-black tracking-widest bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full uppercase">Silver</span>
+                            <span className="text-[8px] font-black tracking-widest bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-full uppercase">Silver</span>
                           )}
                           {sc === 'bronze' && (
-                            <span className="text-[8px] font-black tracking-widest bg-orange-50/70 text-orange-600/90 px-1.5 py-0.5 rounded-full uppercase">Bronze</span>
+                            <span className="text-[8px] font-black tracking-widest bg-orange-50/70 dark:bg-orange-500/10 text-orange-600/90 dark:text-orange-400 px-1.5 py-0.5 rounded-full uppercase">Bronze</span>
                           )}
                         </div>
-                        <p className="text-[10px] text-slate-400 mt-0.5 truncate">
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">
                           {sector.stock_count} assets
                           {sector.breadth_ytd != null && ` · ${sector.breadth_ytd}% br. YTD`}
                         </p>
@@ -139,9 +139,9 @@ export default function WatchlistPage() {
                         const bold = p === period
                         return (
                           <span key={p} className={`font-mono text-right tabular-nums ${bold ? 'font-extrabold' : 'font-semibold'} ${
-                            val === null ? 'text-slate-300'
-                              : pos ? (bold ? 'text-emerald-600' : 'text-emerald-400')
-                              : (bold ? 'text-rose-600' : 'text-rose-300')
+                            val === null ? 'text-slate-300 dark:text-slate-600'
+                              : pos ? (bold ? 'text-emerald-600 dark:text-emerald-400' : 'text-emerald-400')
+                              : (bold ? 'text-rose-600 dark:text-rose-400' : 'text-rose-300')
                           } ${bold ? 'text-[13px]' : 'text-[11px]'}`}>
                             {val !== null ? `${pos ? '+' : ''}${val.toFixed(1)}%` : '—'}
                           </span>
@@ -150,7 +150,7 @@ export default function WatchlistPage() {
 
                       <button
                         onClick={e => { e.stopPropagation(); toggle(sector.id) }}
-                        className="flex justify-center items-center w-8 h-8 rounded-full text-amber-400 hover:text-rose-400 hover:bg-rose-50 transition-all"
+                        className="flex justify-center items-center w-8 h-8 rounded-full text-amber-400 hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all"
                         title="Remove"
                       >
                         <BookmarkIcon size={14} filled />
@@ -185,13 +185,13 @@ export default function WatchlistPage() {
                       : '0 4px 16px rgba(76,5,25,0.35)',
                   } : cardStyle}
                 >
-                  <p className="text-[9px] font-black tracking-[0.18em] uppercase mb-2 text-slate-400">
+                  <p className="text-[9px] font-black tracking-[0.18em] uppercase mb-2 text-slate-400 dark:text-slate-500">
                     {p} Avg
                   </p>
                   <p className={`font-mono text-[18px] sm:text-[22px] font-extrabold leading-none tabular-nums mb-2 ${
-                    avg === null ? 'text-slate-300'
-                      : pos ? (active ? 'text-emerald-400' : 'text-emerald-600')
-                      : (active ? 'text-rose-400' : 'text-rose-600')
+                    avg === null ? 'text-slate-300 dark:text-slate-600'
+                      : pos ? (active ? 'text-emerald-400' : 'text-emerald-600 dark:text-emerald-400')
+                      : (active ? 'text-rose-400' : 'text-rose-600 dark:text-rose-400')
                   }`}>
                     {avg !== null ? `${pos ? '+' : ''}${avg.toFixed(1)}%` : '—'}
                   </p>
@@ -200,7 +200,7 @@ export default function WatchlistPage() {
                       ? <TrendingUpIcon  size={11} className={active ? 'text-emerald-400' : 'text-emerald-500'} />
                       : <TrendingDownIcon size={11} className={active ? 'text-rose-400'   : 'text-rose-400'}   />
                     }
-                    <span className="text-[10px] font-semibold text-slate-400">
+                    <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
                       {rets.length > 0 ? `${posCount}/${rets.length} +ve` : 'No data'}
                     </span>
                   </div>
@@ -233,16 +233,16 @@ function EmptyState({ sectors, pinnedIds, toggle }: {
 
   return (
     <div className="text-center py-12">
-      <div className="w-14 h-14 rounded-[18px] bg-slate-50 border border-slate-100 flex items-center justify-center mx-auto mb-4 shadow-sm">
-        <BookmarkIcon size={24} className="text-slate-200" />
+      <div className="w-14 h-14 rounded-[18px] bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 flex items-center justify-center mx-auto mb-4 shadow-sm">
+        <BookmarkIcon size={24} className="text-slate-200 dark:text-slate-700" />
       </div>
-      <p className="text-slate-700 font-bold text-[15px] mb-1.5">Nothing pinned yet</p>
-      <p className="text-slate-400 text-[12px] mb-8 max-w-xs mx-auto leading-relaxed">
+      <p className="text-slate-700 dark:text-slate-300 font-bold text-[15px] mb-1.5">Nothing pinned yet</p>
+      <p className="text-slate-400 dark:text-slate-500 text-[12px] mb-8 max-w-xs mx-auto leading-relaxed">
         Tap the bookmark icon on any sector card from the Dashboard to start tracking it here.
       </p>
       {top.length > 0 && (
         <div className="max-w-sm mx-auto">
-          <p className="text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 mb-3">
+          <p className="text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 dark:text-slate-500 mb-3">
             Quick-add top sectors
           </p>
           <div className="flex flex-col gap-2">
@@ -255,14 +255,14 @@ function EmptyState({ sectors, pinnedIds, toggle }: {
                   onClick={() => toggle(s.id)}
                   className={`flex items-center gap-3 px-4 py-3 rounded-[16px] border text-left transition-all ${
                     pinned
-                      ? 'bg-amber-50 border-amber-200/70 shadow-[0_2px_8px_rgba(251,191,36,0.12)]'
-                      : 'bg-white border-slate-200/60 hover:border-slate-300 shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
+                      ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-200/70 dark:border-amber-500/25 shadow-[0_2px_8px_rgba(251,191,36,0.12)]'
+                      : 'bg-white dark:bg-slate-900 border-slate-200/60 dark:border-white/20 hover:border-slate-300 dark:hover:border-white/30 shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
                   }`}
                 >
-                  <BookmarkIcon size={13} filled={pinned} className={pinned ? 'text-amber-400' : 'text-slate-300'} />
-                  <span className="flex-1 text-[13px] font-semibold text-slate-700">{s.name}</span>
+                  <BookmarkIcon size={13} filled={pinned} className={pinned ? 'text-amber-400' : 'text-slate-300 dark:text-slate-600'} />
+                  <span className="flex-1 text-[13px] font-semibold text-slate-700 dark:text-slate-300">{s.name}</span>
                   {s.ytd_pct !== null && (
-                    <span className={`font-mono text-[12px] font-bold tabular-nums ${pos ? 'text-emerald-600' : 'text-rose-500'}`}>
+                    <span className={`font-mono text-[12px] font-bold tabular-nums ${pos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
                       {pos ? '+' : ''}{s.ytd_pct.toFixed(1)}%
                     </span>
                   )}

@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Inter, JetBrains_Mono } from 'next/font/google'
 import Nav from '@/components/Nav'
 import InstallPrompt from '@/components/InstallPrompt'
+import { ThemeProvider } from '@/components/ThemeProvider'
 import './globals.css'
 
 const inter = Inter({
@@ -35,11 +36,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" type="image/svg+xml" href="/icon.svg" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        {/* Sets the .dark class on <html> before first paint — reading
+            localStorage synchronously, falling back to OS preference on a
+            first-ever visit. Runs before React hydrates, so there is no
+            flash of the wrong theme. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('eagleview-theme');var d=t?t==='dark':window.matchMedia('(prefers-color-scheme: dark)').matches;if(d)document.documentElement.classList.add('dark')}catch(e){}})()`,
+          }}
+        />
       </head>
       <body className="antialiased font-sans pb-20 sm:pb-0 min-h-dvh">
-        <Nav />
-        {children}
-        <InstallPrompt />
+        <ThemeProvider>
+          <Nav />
+          {children}
+          <InstallPrompt />
+        </ThemeProvider>
       </body>
     </html>
   )

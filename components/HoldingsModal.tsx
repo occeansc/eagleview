@@ -76,8 +76,8 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
   const rankChange    = getRankChange(sector, localPeriod)
   const pos           = sectorVal !== null && sectorVal >= 0
   const pctClass      = pos
-    ? 'text-emerald-600 drop-shadow-[0_2px_6px_rgba(16,185,129,0.15)]'
-    : 'text-rose-600 drop-shadow-[0_2px_6px_rgba(244,63,94,0.12)]'
+    ? 'text-emerald-600 dark:text-emerald-400 drop-shadow-[0_2px_6px_rgba(16,185,129,0.15)]'
+    : 'text-rose-600 dark:text-rose-400 drop-shadow-[0_2px_6px_rgba(244,63,94,0.12)]'
   const streak        = sector.streak ?? 0
 
   // Detect RISING — same logic as SectorCard/SectorGrid
@@ -131,16 +131,16 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
           </div>
 
           {/* ── Sticky header ────────────────────── */}
-          <div className="px-6 pt-4 sm:pt-6 pb-5 border-b border-slate-100/70 relative">
+          <div className="px-6 pt-4 sm:pt-6 pb-5 border-b border-slate-100/70 dark:border-white/10 relative">
             <button
               onClick={onClose}
-              className="absolute right-5 top-5 w-8 h-8 bg-white/70 hover:bg-white flex items-center justify-center rounded-full text-slate-500 hover:text-slate-800 transition-colors shadow-sm"
+              className="absolute right-5 top-5 w-8 h-8 bg-white/70 dark:bg-slate-900/70 hover:bg-white dark:hover:bg-slate-900 flex items-center justify-center rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition-colors shadow-sm"
               aria-label="Close"
             >
               <CloseIcon size={14} />
             </button>
 
-            <h2 className="text-[22px] font-black tracking-tight text-slate-900 leading-tight pr-10 mb-4">
+            <h2 className="text-[22px] font-black tracking-tight text-slate-900 dark:text-slate-100 leading-tight pr-10 mb-4">
               {sector.name}
             </h2>
 
@@ -148,14 +148,14 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
             <div className="relative w-fit mb-3">
               <button
                 onClick={() => setDropdownOpen(dropdownOpen === 'return' ? null : 'return')}
-                className="flex items-baseline gap-2.5 bg-white/80 hover:bg-white border border-slate-100 hover:border-slate-200 rounded-[14px] px-4 py-2.5 shadow-[inset_0_1px_3px_rgba(0,0,0,0.04)] transition-colors"
+                className="flex items-baseline gap-2.5 bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-900 border border-slate-100 dark:border-white/10 hover:border-slate-200 dark:hover:border-white/20 rounded-[14px] px-4 py-2.5 shadow-[inset_0_1px_3px_rgba(0,0,0,0.04)] transition-colors"
               >
                 <span className={`font-mono text-[28px] font-extrabold leading-none tabular-nums ${pctClass}`}>
                   {sectorVal !== null ? `${sectorVal > 0 ? '+' : ''}${sectorVal.toFixed(2)}%` : '—'}
                 </span>
-                <span className="text-[10px] uppercase font-black tracking-[0.16em] text-slate-400 shrink-0 flex items-center gap-1">
+                <span className="text-[10px] uppercase font-black tracking-[0.16em] text-slate-400 dark:text-slate-500 shrink-0 flex items-center gap-1">
                   {localPeriod} Avg
-                  <ChevronDownIcon size={14} className="text-slate-400" />
+                  <ChevronDownIcon size={14} className="text-slate-400 dark:text-slate-500" />
                 </span>
               </button>
               {dropdownOpen === 'return' && (
@@ -168,27 +168,27 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
               {momentumDelta !== null && (
                 <span className={`flex items-center font-black tracking-[0.12em] text-[9px] uppercase px-2.5 py-1.5 rounded-[8px] border ${
                   momentumDelta > 0
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                    ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/25'
                     : momentumDelta < 0
-                    ? 'bg-rose-50 text-rose-800 border-rose-200'
-                    : 'bg-slate-50 text-slate-600 border-slate-200'
+                    ? 'bg-rose-50 dark:bg-rose-500/10 text-rose-800 dark:text-rose-300 border-rose-200 dark:border-rose-500/25'
+                    : 'bg-slate-50 dark:bg-white/5 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-white/20'
                 }`}>
                   {momentumDelta > 0 ? 'Mom Up ↑' : momentumDelta < 0 ? 'Mom Down ↓' : 'Flat'}{' '}
                   {momentumDelta > 0 ? '+' : ''}{momentumDelta.toFixed(1)}%
                 </span>
               )}
               {streak >= 5 && (
-                <span className="flex items-center gap-1 px-2.5 py-1.5 font-black uppercase rounded-[8px] bg-orange-50 border border-orange-100 text-[9px] text-orange-600 tracking-widest">
+                <span className="flex items-center gap-1 px-2.5 py-1.5 font-black uppercase rounded-[8px] bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/25 text-[9px] text-orange-600 dark:text-orange-400 tracking-widest">
                   <ZapIcon size={10} /> {streak} syncs
                 </span>
               )}
               {!loading && holdings.length > 0 && (
                 <span className="text-[12px] ml-auto">
-                  <span className="text-emerald-600 font-bold">{posCount}↑</span>
+                  <span className="text-emerald-600 dark:text-emerald-400 font-bold">{posCount}↑</span>
                   {' '}
-                  <span className="text-rose-500 font-bold">{holdings.length - posCount}↓</span>
+                  <span className="text-rose-500 dark:text-rose-400 font-bold">{holdings.length - posCount}↓</span>
                   {breadth !== null && (
-                    <span className="text-slate-400 text-[11px]"> · {breadth}% breadth</span>
+                    <span className="text-slate-400 dark:text-slate-500 text-[11px]"> · {breadth}% breadth</span>
                   )}
                 </span>
               )}
@@ -197,11 +197,11 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
         </div>{/* end gradient top section */}
 
         {/* ── Scrollable body ─────────────────── */}
-        <div className="overflow-y-auto flex-1 overscroll-contain bg-white" ref={scrollRef}>
+        <div className="overflow-y-auto flex-1 overscroll-contain bg-white dark:bg-slate-900" ref={scrollRef}>
 
           {/* vs Market */}
-          <div className="px-6 py-5 bg-[#FCFCFD] border-b border-slate-100">
-            <p className="text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 mb-4">
+          <div className="px-6 py-5 bg-[#FCFCFD] border-b border-slate-100 dark:border-white/10">
+            <p className="text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 dark:text-slate-500 mb-4">
               vs Market
             </p>
             <BenchmarkRows
@@ -215,10 +215,10 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
           {/* Stocks */}
           <div className="pb-6">
             {/* Sticky table header */}
-            <div className="sticky top-0 z-10 bg-white/95 backdrop-blur-sm border-b border-slate-100 px-6 py-3 flex items-center justify-between">
-              <p className="text-[13px] font-bold text-slate-800">
+            <div className="sticky top-0 z-10 bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm border-b border-slate-100 dark:border-white/10 px-6 py-3 flex items-center justify-between">
+              <p className="text-[13px] font-bold text-slate-800 dark:text-slate-200">
                 Assessed Assets
-                <span className="ml-1.5 text-slate-400 font-normal text-[11px]">
+                <span className="ml-1.5 text-slate-400 dark:text-slate-500 font-normal text-[11px]">
                   ({sector.stock_count ?? holdings.length})
                 </span>
               </p>
@@ -226,10 +226,10 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
                 <div className="relative">
                   <button
                     onClick={() => setDropdownOpen(dropdownOpen === 'ranked' ? null : 'ranked')}
-                    className="flex items-center gap-1 text-[10px] text-slate-400 font-semibold tracking-wide hover:text-slate-700 transition-colors"
+                    className="flex items-center gap-1 text-[10px] text-slate-400 dark:text-slate-500 font-semibold tracking-wide hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
                   >
                     Ranked by {localPeriod}
-                    <ChevronDownIcon size={13} className="text-slate-400" />
+                    <ChevronDownIcon size={13} className="text-slate-400 dark:text-slate-500" />
                   </button>
                   {dropdownOpen === 'ranked' && (
                     <PeriodDropdown ref={dropdownRef} current={localPeriod} onSelect={p => { setLocalPeriod(p); setDropdownOpen(null) }} side="right" />
@@ -242,10 +242,10 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
             {!loading && sorted.length > 0 && (
               <div className="flex items-center gap-2 px-6 pt-3 pb-1">
                 <span className="w-5 shrink-0" />
-                <span className="text-[9px] font-black tracking-widest uppercase text-slate-300 w-12 text-center shrink-0">Ticker</span>
-                <span className="flex-1 text-[9px] font-black tracking-widest uppercase text-slate-300">Company</span>
-                <span className="text-[9px] font-black tracking-widest uppercase text-slate-300 w-16 text-right shrink-0">Price</span>
-                <span className="text-[9px] font-black tracking-widest uppercase text-slate-300 w-14 text-right shrink-0">Return</span>
+                <span className="text-[9px] font-black tracking-widest uppercase text-slate-300 dark:text-slate-600 w-12 text-center shrink-0">Ticker</span>
+                <span className="flex-1 text-[9px] font-black tracking-widest uppercase text-slate-300 dark:text-slate-600">Company</span>
+                <span className="text-[9px] font-black tracking-widest uppercase text-slate-300 dark:text-slate-600 w-16 text-right shrink-0">Price</span>
+                <span className="text-[9px] font-black tracking-widest uppercase text-slate-300 dark:text-slate-600 w-14 text-right shrink-0">Return</span>
               </div>
             )}
 
@@ -262,24 +262,24 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
                     <div
                       key={h.id}
                       onClick={() => setSelectedTicker(h)}
-                      className="flex items-center gap-2 py-2 px-3 rounded-xl hover:bg-slate-50 transition-colors cursor-pointer group"
+                      className="flex items-center gap-2 py-2 px-3 rounded-xl hover:bg-slate-50 dark:hover:bg-white/5 transition-colors cursor-pointer group"
                     >
-                      <span className="text-[11px] text-slate-300 w-5 text-right shrink-0 font-mono tabular-nums">
+                      <span className="text-[11px] text-slate-300 dark:text-slate-600 w-5 text-right shrink-0 font-mono tabular-nums">
                         {i + 1}
                       </span>
                       <span className={`font-mono text-[11px] font-bold px-1.5 py-1 rounded-[8px] shrink-0 w-12 text-center group-hover:opacity-80 transition-opacity ${
-                        isPos ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'
+                        isPos ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 dark:text-emerald-300' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 dark:text-rose-300'
                       }`}>
                         {h.ticker}
                       </span>
-                      <span className="text-[13px] text-slate-600 font-medium flex-1 truncate min-w-0">
+                      <span className="text-[13px] text-slate-600 dark:text-slate-400 font-medium flex-1 truncate min-w-0">
                         {h.company_name}
                       </span>
-                      <span className="font-mono text-[11px] text-slate-400 w-16 text-right shrink-0 tabular-nums">
+                      <span className="font-mono text-[11px] text-slate-400 dark:text-slate-500 w-16 text-right shrink-0 tabular-nums">
                         {formatPrice(h.price)}
                       </span>
                       <span className={`font-mono text-[13px] font-bold w-14 text-right shrink-0 tabular-nums ${
-                        val === null ? 'text-slate-300' : isPos ? 'text-emerald-600' : 'text-rose-500'
+                        val === null ? 'text-slate-300 dark:text-slate-600' : isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'
                       }`}>
                         {val !== null ? `${isPos ? '+' : ''}${val.toFixed(1)}%` : '—'}
                       </span>
@@ -292,11 +292,11 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 border-t border-slate-100 bg-white shrink-0 flex items-center justify-between">
-          <p className="text-[10px] text-slate-400">
-            Eagleview v4.4.10 · Yahoo Finance
+        <div className="px-6 py-3 border-t border-slate-100 dark:border-white/10 bg-white dark:bg-slate-900 shrink-0 flex items-center justify-between">
+          <p className="text-[10px] text-slate-400 dark:text-slate-500">
+            Eagleview v4.4.11 · Yahoo Finance
           </p>
-          <p className="text-[10px] text-slate-300 tabular-nums">
+          <p className="text-[10px] text-slate-300 dark:text-slate-600 tabular-nums">
             Last sync: {formatSyncTime(sector.updated_at)}
           </p>
         </div>
@@ -324,7 +324,7 @@ const PeriodDropdown = forwardRef<
 >(({ current, onSelect, side }, ref) => (
   <div
     ref={ref}
-    className={`absolute top-full mt-1.5 z-50 bg-white rounded-2xl border border-slate-200/80 shadow-[0_8px_30px_rgba(0,0,0,0.12)] overflow-hidden min-w-[160px] ${
+    className={`absolute top-full mt-1.5 z-50 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-white/20 shadow-[0_8px_30px_rgba(0,0,0,0.12)] overflow-hidden min-w-[160px] ${
       side === 'right' ? 'right-0' : 'left-0'
     }`}
   >
@@ -334,8 +334,8 @@ const PeriodDropdown = forwardRef<
         onClick={() => onSelect(p)}
         className={`flex items-center justify-between w-full px-4 py-2.5 text-left transition-colors ${
           p === current
-            ? 'bg-slate-900 text-white'
-            : 'text-slate-700 hover:bg-slate-50'
+            ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900'
+            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5'
         }`}
       >
         <span className={`text-[12px] ${p === current ? 'font-extrabold' : 'font-semibold'}`}>
@@ -365,11 +365,11 @@ function BenchmarkRows({ sectorVal, sectorName, benchmarks, period }: {
     const w = `${Math.min((Math.abs(val ?? 0) / absMax) * 44, 44)}%`
     return (
       <div className={`flex items-center gap-2 py-1.5 ${bold ? 'font-semibold' : ''}`}>
-        <span className={`text-[12px] w-28 shrink-0 truncate ${bold ? 'text-slate-800' : 'text-slate-500'}`}>
+        <span className={`text-[12px] w-28 shrink-0 truncate ${bold ? 'text-slate-800 dark:text-slate-200' : 'text-slate-500 dark:text-slate-400'}`}>
           {label}
         </span>
         <div className="flex-1 relative h-4 flex items-center">
-          <div className="absolute inset-y-0 left-1/2 w-px bg-slate-100" />
+          <div className="absolute inset-y-0 left-1/2 w-px bg-slate-100 dark:bg-white/10" />
           {val !== null && (
             <div
               className={`absolute h-2.5 rounded-sm ${
@@ -380,12 +380,12 @@ function BenchmarkRows({ sectorVal, sectorName, benchmarks, period }: {
           )}
         </div>
         <span className={`font-mono text-[12px] w-14 text-right shrink-0 tabular-nums ${
-          val === null ? 'text-slate-300' : isPos ? 'text-emerald-700' : 'text-rose-600'
+          val === null ? 'text-slate-300 dark:text-slate-600' : isPos ? 'text-emerald-700 dark:text-emerald-300' : 'text-rose-600 dark:text-rose-400'
         }`}>
           {val !== null ? `${val > 0 ? '+' : ''}${val.toFixed(1)}%` : '—'}
         </span>
         <span className={`text-[10px] font-bold w-12 text-right shrink-0 tabular-nums ${
-          alpha == null ? 'invisible' : alpha >= 0 ? 'text-emerald-600' : 'text-rose-500'
+          alpha == null ? 'invisible' : alpha >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'
         }`}>
           {alpha != null ? `${alpha >= 0 ? '+' : ''}${alpha.toFixed(1)}%` : '0%'}
         </span>
@@ -397,17 +397,17 @@ function BenchmarkRows({ sectorVal, sectorName, benchmarks, period }: {
     <div>
       <div className="flex items-center gap-2 mb-1">
         <span className="w-28 shrink-0" /><span className="flex-1" />
-        <span className="text-[9px] text-slate-300 w-14 text-right tracking-widest uppercase">Return</span>
-        <span className="text-[9px] text-slate-300 w-12 text-right tracking-widest uppercase">Alpha</span>
+        <span className="text-[9px] text-slate-300 dark:text-slate-600 w-14 text-right tracking-widest uppercase">Return</span>
+        <span className="text-[9px] text-slate-300 dark:text-slate-600 w-12 text-right tracking-widest uppercase">Alpha</span>
       </div>
       <Row label={`▸ ${sectorName.length > 16 ? sectorName.slice(0,15)+'…' : sectorName}`} val={sectorVal} bold />
-      <div className="my-1.5 border-t border-slate-100" />
+      <div className="my-1.5 border-t border-slate-100 dark:border-white/10" />
       {benchmarks.map(b => {
         const bVal  = getPeriodValue(b, period)
         const alpha = sectorVal != null && bVal != null ? sectorVal - bVal : null
         return <Row key={b.ticker} label={b.name} val={bVal} alpha={alpha} />
       })}
-      <p className="text-[9px] text-slate-300 mt-2">Alpha = sector minus benchmark · {period}</p>
+      <p className="text-[9px] text-slate-300 dark:text-slate-600 mt-2">Alpha = sector minus benchmark · {period}</p>
     </div>
   )
 }
@@ -417,11 +417,11 @@ function LoadingSkeleton() {
     <div className="px-6 pt-4 space-y-2">
       {Array.from({ length: 8 }).map((_, i) => (
         <div key={i} className="animate-pulse flex items-center gap-2 py-2 px-3">
-          <div className="h-3 w-5 bg-slate-100 rounded" />
-          <div className="h-7 w-12 bg-slate-100 rounded-[8px]" />
-          <div className="h-3 flex-1 bg-slate-100 rounded" />
-          <div className="h-3 w-16 bg-slate-100 rounded" />
-          <div className="h-3 w-14 bg-slate-100 rounded" />
+          <div className="h-3 w-5 bg-slate-100 dark:bg-white/10 rounded" />
+          <div className="h-7 w-12 bg-slate-100 dark:bg-white/10 rounded-[8px]" />
+          <div className="h-3 flex-1 bg-slate-100 dark:bg-white/10 rounded" />
+          <div className="h-3 w-16 bg-slate-100 dark:bg-white/10 rounded" />
+          <div className="h-3 w-14 bg-slate-100 dark:bg-white/10 rounded" />
         </div>
       ))}
     </div>
@@ -431,8 +431,8 @@ function LoadingSkeleton() {
 function EmptyStocks() {
   return (
     <div className="text-center py-12 px-6">
-      <p className="text-slate-500 font-semibold text-[13px]">No stock data yet</p>
-      <p className="text-slate-400 text-[11px] mt-1">Run the data sync to populate.</p>
+      <p className="text-slate-500 dark:text-slate-400 font-semibold text-[13px]">No stock data yet</p>
+      <p className="text-slate-400 dark:text-slate-500 text-[11px] mt-1">Run the data sync to populate.</p>
     </div>
   )
 }

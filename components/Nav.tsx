@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import ThemeToggle from './ThemeToggle'
 import { EagleIcon, HomeIcon, GridIcon, SearchIcon, BookmarkIcon } from './Icons'
 import { getSupabaseClient } from '@/lib/supabase'
 
@@ -54,13 +55,13 @@ export default function Nav() {
   const iconActive =
     sentiment === 'bull'    ? 'text-emerald-400' :
     sentiment === 'bear'    ? 'text-rose-400'    :
-    sentiment === 'neutral' ? 'text-slate-400'   :
-                              'text-slate-400'    // loading
+    sentiment === 'neutral' ? 'text-slate-400 dark:text-slate-500'   :
+                              'text-slate-400 dark:text-slate-500'    // loading
 
   const mobileActive =
-    sentiment === 'bull'    ? 'text-emerald-600' :
-    sentiment === 'bear'    ? 'text-rose-500'    :
-                              'text-slate-500'
+    sentiment === 'bull'    ? 'text-emerald-600 dark:text-emerald-400' :
+    sentiment === 'bear'    ? 'text-rose-500 dark:text-rose-400'    :
+                              'text-slate-500 dark:text-slate-400'
 
   const mobileDot =
     sentiment === 'bull'
@@ -75,16 +76,16 @@ export default function Nav() {
       <nav className="nav-glass hidden sm:flex items-center justify-between px-6 xl:px-8 py-3 sticky top-0 z-40">
         <div className="flex items-center">
           <Link href="/" className="flex items-center gap-2.5 mr-5 group">
-            <div className="p-1.5 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 border border-white/80 shadow-sm group-hover:scale-105 transition-transform">
-              <EagleIcon size={17} className="text-slate-800" />
+            <div className="p-1.5 rounded-xl bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 border border-white/80 dark:border-white/10 shadow-sm group-hover:scale-105 transition-transform">
+              <EagleIcon size={17} className="text-slate-800 dark:text-slate-200" />
             </div>
             {/* No purple anywhere — hover stays in slate family */}
-            <span className="font-extrabold tracking-tight text-[15px] bg-gradient-to-r from-slate-900 to-slate-600 bg-clip-text text-transparent group-hover:from-slate-700 group-hover:to-slate-500 transition-all">
+            <span className="font-extrabold tracking-tight text-[15px] bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent group-hover:from-slate-700 group-hover:to-slate-500 dark:group-hover:from-slate-200 dark:group-hover:to-slate-500 transition-all">
               Eagleview
             </span>
           </Link>
 
-          <div className="h-5 w-px bg-slate-200/70 mr-4" />
+          <div className="h-5 w-px bg-slate-200/70 dark:bg-white/20 mr-4" />
 
           <div className="flex items-center gap-1">
             {TABS.map(({ href, label, Icon }) => {
@@ -95,11 +96,11 @@ export default function Nav() {
                   href={href}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-semibold transition-all duration-250 ${
                     active
-                      ? 'bg-slate-900 text-white shadow-[0_4px_12px_rgba(15,23,42,0.18)] ring-1 ring-slate-900/10'
-                      : 'text-slate-500 hover:text-slate-900 hover:bg-white/70 hover:shadow-sm'
+                      ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-[0_4px_12px_rgba(15,23,42,0.18)] ring-1 ring-slate-900/10 dark:ring-slate-100/20'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/70 dark:hover:bg-slate-900/70 hover:shadow-sm'
                   }`}
                 >
-                  <Icon size={13} className={active ? iconActive : 'text-slate-400'} />
+                  <Icon size={13} className={active ? iconActive : 'text-slate-400 dark:text-slate-500'} />
                   {label}
                 </Link>
               )
@@ -107,9 +108,12 @@ export default function Nav() {
           </div>
         </div>
 
-        <span className="text-[10px] font-bold text-slate-400 bg-slate-100/60 px-2.5 py-1 rounded-full border border-slate-200/50 tracking-widest">
-          V4.4.10
-        </span>
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100/60 dark:bg-white/10 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-white/20 tracking-widest">
+            V4.4.11
+          </span>
+        </div>
       </nav>
 
       {/* ── Mobile — frosted bottom bar ───────────── */}
@@ -121,7 +125,7 @@ export default function Nav() {
               key={href}
               href={href}
               className={`relative flex-1 flex flex-col items-center justify-center gap-1 py-2.5 transition-all duration-200 ${
-                active ? `${mobileActive} -translate-y-0.5` : 'text-slate-400 hover:text-slate-600'
+                active ? `${mobileActive} -translate-y-0.5` : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400'
               }`}
             >
               <Icon size={18} className={active ? 'drop-shadow-sm' : ''} />
@@ -133,6 +137,13 @@ export default function Nav() {
           )
         })}
       </nav>
+
+      {/* ── Mobile — floating toggle, top-right corner ─────────
+          The bottom bar is full (4 primary nav tabs), so the toggle
+          lives here instead: small, out of the way, always reachable. */}
+      <div className="sm:hidden fixed top-3 right-3 z-50 nav-glass rounded-full p-1.5 shadow-sm">
+        <ThemeToggle />
+      </div>
     </>
   )
 }

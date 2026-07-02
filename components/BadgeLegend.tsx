@@ -20,7 +20,7 @@ export default function BadgeLegend({ showHot, showRising, showFalling, showGold
       label: 'Rising', def: 'Climbed 5+ ranks since the last sync.',
     },
     showFalling && {
-      key: 'falling', Icon: TrendingDownIcon, iconClass: 'text-rose-500',
+      key: 'falling', Icon: TrendingDownIcon, iconClass: 'text-rose-500 dark:text-rose-400',
       label: 'Falling', def: 'Dropped 5+ ranks since the last sync.',
     },
     showGold && {
@@ -28,7 +28,7 @@ export default function BadgeLegend({ showHot, showRising, showFalling, showGold
       label: 'Gold', def: 'Beats the S&P 500 across 1M, 3M, 6M, and YTD — sustained outperformance.',
     },
     showSilver && {
-      key: 'silver', Icon: AwardIcon, iconClass: 'text-slate-400',
+      key: 'silver', Icon: AwardIcon, iconClass: 'text-slate-400 dark:text-slate-500',
       label: 'Silver', def: 'Beats the S&P 500 in 3 of 4 medium-to-long-term timeframes.',
     },
     showBronze && {
@@ -40,13 +40,13 @@ export default function BadgeLegend({ showHot, showRising, showFalling, showGold
   if (terms.length === 0) return null
 
   return (
-    <div className="mt-8 pt-4 border-t border-slate-200/60">
+    <div className="mt-8 pt-4 border-t border-slate-200/60 dark:border-white/20">
       <div className="flex flex-wrap gap-x-5 gap-y-2">
         {terms.map(({ key, Icon, iconClass, label, def }) => (
           <p key={key} className="flex items-baseline gap-1.5 text-[11px] leading-snug">
             <Icon size={11} className={`shrink-0 translate-y-[1px] ${iconClass}`} />
-            <span className="font-bold text-slate-500">{label}</span>
-            <span className="text-slate-400">{def}</span>
+            <span className="font-bold text-slate-500 dark:text-slate-400">{label}</span>
+            <span className="text-slate-400 dark:text-slate-500">{def}</span>
           </p>
         ))}
       </div>

@@ -5,6 +5,7 @@ import { createPortal }                  from 'react-dom'
 import type { SectorHolding }            from '@/lib/types'
 import { formatPrice }                   from '@/lib/types'
 import { CloseIcon }                     from './Icons'
+import { useTheme }                      from './ThemeProvider'
 import type { TickerInfo }               from '@/app/api/ticker-info/[symbol]/route'
 
 interface Props {
@@ -22,17 +23,34 @@ const clientCache = new Map<string, TickerInfo>()
 
 /* ── Tile palette — consistent with HeatmapClient ──────────────────────── */
 type Pal = { bg: string; text: string; muted: string }
-function pal(pct: number | null): Pal {
-  if (pct === null)             return { bg: '#f8fafc', text: '#94a3b8', muted: '#cbd5e1' }
-  if (pct > -0.5 && pct < 0.5) return { bg: '#f1f5f9', text: '#475569', muted: '#94a3b8' }
+function pal(pct: number | null, isDark: boolean): Pal {
+  if (!isDark) {
+    if (pct === null)             return { bg: '#f8fafc', text: '#94a3b8', muted: '#cbd5e1' }
+    if (pct > -0.5 && pct < 0.5) return { bg: '#f1f5f9', text: '#475569', muted: '#94a3b8' }
+    if (pct >= 20)  return { bg: '#14532d', text: '#ffffff', muted: '#86efac' }
+    if (pct >= 10)  return { bg: '#15803d', text: '#ffffff', muted: '#d1fae5' }
+    if (pct >=  3)  return { bg: '#22c55e', text: '#ffffff', muted: '#dcfce7' }
+    if (pct >= 0.5) return { bg: '#bbf7d0', text: '#14532d', muted: '#166534' }
+    if (pct <= -20) return { bg: '#7f1d1d', text: '#ffffff', muted: '#fca5a5' }
+    if (pct <= -10) return { bg: '#b91c1c', text: '#ffffff', muted: '#fecaca' }
+    if (pct <=  -3) return { bg: '#ef4444', text: '#ffffff', muted: '#fecdd3' }
+    return                 { bg: '#fecdd3', text: '#7f1d1d', muted: '#e11d48' }
+  }
+  // Dark mode — the strong tiers below already look great as-is (deeply
+  // saturated fills with white text render fine on any background). Only
+  // the 4 weak/neutral tiers change: light pastels become dark, low-alpha
+  // tinted surfaces with bright readable text instead of standing out as
+  // jarring bright squares against the dark modal.
+  if (pct === null)             return { bg: '#171c27', text: '#64748b', muted: '#475569' }
+  if (pct > -0.5 && pct < 0.5) return { bg: '#1c2230', text: '#94a3b8', muted: '#64748b' }
   if (pct >= 20)  return { bg: '#14532d', text: '#ffffff', muted: '#86efac' }
   if (pct >= 10)  return { bg: '#15803d', text: '#ffffff', muted: '#d1fae5' }
   if (pct >=  3)  return { bg: '#22c55e', text: '#ffffff', muted: '#dcfce7' }
-  if (pct >= 0.5) return { bg: '#bbf7d0', text: '#14532d', muted: '#166534' }
+  if (pct >= 0.5) return { bg: '#14291d', text: '#4ade80', muted: '#22c55e' }
   if (pct <= -20) return { bg: '#7f1d1d', text: '#ffffff', muted: '#fca5a5' }
   if (pct <= -10) return { bg: '#b91c1c', text: '#ffffff', muted: '#fecaca' }
   if (pct <=  -3) return { bg: '#ef4444', text: '#ffffff', muted: '#fecdd3' }
-  return                 { bg: '#fecdd3', text: '#7f1d1d', muted: '#e11d48' }
+  return                 { bg: '#2d1417', text: '#fb7185', muted: '#f43f5e' }
 }
 
 function fmt(v: number | null, digits = 1) {
@@ -58,6 +76,8 @@ const TILES: { label: string; key: keyof SectorHolding }[] = [
 
 /* ── Component ─────────────────────────────────────────────────────────── */
 export default function TickerModal({ holding, sectorName, onClose }: Props) {
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
   const [mounted,  setMounted]  = useState(false)
   const [info,     setInfo]     = useState<TickerInfo | null>(null)
   const [loading,  setLoading]  = useState(true)
@@ -118,7 +138,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
       style={{ zIndex: 10001 }}
       onClick={e => { if (e.target === overlayRef.current) onClose() }}
     >
-      <div className="modal-sheet w-full sm:max-w-lg sm:rounded-[28px] rounded-t-[28px] flex flex-col overflow-hidden bg-white">
+      <div className="modal-sheet w-full sm:max-w-lg sm:rounded-[28px] rounded-t-[28px] flex flex-col overflow-hidden bg-white dark:bg-slate-900">
 
         {/* ── Gradient header ── */}
         <div className="shrink-0" style={{ background: headerBg }}>
@@ -127,10 +147,10 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
             <div className={`w-10 h-1 rounded-full ${neutral ? 'bg-slate-300/50' : pos ? 'bg-emerald-300/50' : 'bg-rose-300/50'}`} />
           </div>
 
-          <div className="px-5 pt-4 sm:pt-5 pb-4 border-b border-slate-100/80 relative">
+          <div className="px-5 pt-4 sm:pt-5 pb-4 border-b border-slate-100/80 dark:border-white/10 relative">
             <button
               onClick={onClose}
-              className="absolute right-4 top-4 w-8 h-8 bg-white/80 hover:bg-white flex items-center justify-center rounded-full text-slate-400 hover:text-slate-800 transition-colors shadow-sm"
+              className="absolute right-4 top-4 w-8 h-8 bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-900 flex items-center justify-center rounded-full text-slate-400 dark:text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 transition-colors shadow-sm"
               aria-label="Close"
             >
               <CloseIcon size={13} />
@@ -138,17 +158,17 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
 
             <div className="flex items-center gap-3 pr-10">
               <span className={`font-mono text-[13px] font-black px-2.5 py-1.5 rounded-[9px] shrink-0 border ${
-                neutral ? 'bg-slate-50/80  text-slate-600  border-slate-100'
-                    : pos ? 'bg-emerald-50/80 text-emerald-700 border-emerald-100'
-                    : 'bg-rose-50/80    text-rose-700    border-rose-100'
+                neutral ? 'bg-slate-50/80 dark:bg-white/5  text-slate-600 dark:text-slate-400  border-slate-100 dark:border-white/10'
+                    : pos ? 'bg-emerald-50/80 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 dark:text-emerald-300 border-emerald-100 dark:border-emerald-500/25'
+                    : 'bg-rose-50/80 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 dark:text-rose-300 border-rose-100 dark:border-rose-500/25'
               }`}>
                 {holding.ticker}
               </span>
               <div className="min-w-0">
-                <p className="text-[16px] font-black text-slate-900 leading-snug truncate">
+                <p className="text-[16px] font-black text-slate-900 dark:text-slate-100 leading-snug truncate">
                   {holding.company_name}
                 </p>
-                <p className="text-[11px] text-slate-400 font-medium mt-0.5">
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">
                   {sectorName}{price !== '—' ? <> · <span className="font-mono">{price}</span></> : ''}
                 </p>
               </div>
@@ -161,14 +181,14 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
 
           {/* Performance heatmap */}
           <div className="px-5 pt-5 pb-4">
-            <p className="text-[8px] font-black tracking-[0.22em] uppercase text-slate-400 mb-3">
+            <p className="text-[8px] font-black tracking-[0.22em] uppercase text-slate-400 dark:text-slate-500 mb-3">
               Performance
             </p>
             <div className="grid grid-cols-3 gap-2">
               {TILES.map(({ label, key }) => {
                 const v       = holding[key] as number | null
                 const pending = v === null
-                const p       = pal(v)
+                const p       = pal(v, isDark)
                 const formatted = fmt(v)
                 // Shrink font for large numbers (>6 chars) to prevent overflow
                 const numSize = formatted.length > 7 ? 'text-[13px]' : formatted.length > 5 ? 'text-[15px]' : 'text-[17px]'
@@ -183,10 +203,10 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
                         border: '1.5px dashed rgba(148,163,184,0.35)',
                       }}
                     >
-                      <span className="text-[8px] font-black tracking-[0.18em] uppercase mb-2 leading-none text-slate-400">
+                      <span className="text-[8px] font-black tracking-[0.18em] uppercase mb-2 leading-none text-slate-400 dark:text-slate-500">
                         {label}
                       </span>
-                      <span className="text-[12px] font-bold text-slate-300 leading-none">
+                      <span className="text-[12px] font-bold text-slate-300 dark:text-slate-600 leading-none">
                         N/A
                       </span>
                     </div>
@@ -220,45 +240,45 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
 
           {/* About section */}
           <div className="px-5 pb-5">
-            <div className="h-px bg-slate-100 mb-4" />
-            <p className="text-[8px] font-black tracking-[0.22em] uppercase text-slate-400 mb-3">
+            <div className="h-px bg-slate-100 dark:bg-white/10 mb-4" />
+            <p className="text-[8px] font-black tracking-[0.22em] uppercase text-slate-400 dark:text-slate-500 mb-3">
               About
             </p>
 
             {loading ? (
               /* Skeleton */
               <div className="space-y-2 animate-pulse">
-                <div className="h-3 bg-slate-100 rounded-full w-full" />
-                <div className="h-3 bg-slate-100 rounded-full w-[95%]" />
-                <div className="h-3 bg-slate-100 rounded-full w-[88%]" />
-                <div className="h-3 bg-slate-100 rounded-full w-[70%] mt-1" />
+                <div className="h-3 bg-slate-100 dark:bg-white/10 rounded-full w-full" />
+                <div className="h-3 bg-slate-100 dark:bg-white/10 rounded-full w-[95%]" />
+                <div className="h-3 bg-slate-100 dark:bg-white/10 rounded-full w-[88%]" />
+                <div className="h-3 bg-slate-100 dark:bg-white/10 rounded-full w-[70%] mt-1" />
               </div>
             ) : info?.description ? (
               <>
-                <p className="text-[13px] text-slate-600 leading-relaxed font-medium">
+                <p className="text-[13px] text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
                   {info.description}
                 </p>
                 {/* Chips row */}
                 <div className="flex flex-wrap gap-2 mt-3">
                   {info.industry && (
-                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100/80 px-2.5 py-1 rounded-full border border-slate-200/60">
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100/80 dark:bg-white/10 px-2.5 py-1 rounded-full border border-slate-200/60 dark:border-white/20">
                       {info.industry}
                     </span>
                   )}
                   {info.country && (
-                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100/80 px-2.5 py-1 rounded-full border border-slate-200/60">
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100/80 dark:bg-white/10 px-2.5 py-1 rounded-full border border-slate-200/60 dark:border-white/20">
                       {info.country}
                     </span>
                   )}
                   {fmtEmployees(info.employees) && (
-                    <span className="text-[10px] font-bold text-slate-500 bg-slate-100/80 px-2.5 py-1 rounded-full border border-slate-200/60">
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100/80 dark:bg-white/10 px-2.5 py-1 rounded-full border border-slate-200/60 dark:border-white/20">
                       {fmtEmployees(info.employees)}
                     </span>
                   )}
                 </div>
               </>
             ) : (
-              <p className="text-[12px] text-slate-400 italic">
+              <p className="text-[12px] text-slate-400 dark:text-slate-500 italic">
                 Company info unavailable for {holding.ticker}.
               </p>
             )}
@@ -266,16 +286,16 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 border-t border-slate-100 bg-white/90 shrink-0 flex items-center justify-between">
-          <p className="text-[10px] text-slate-400">
-            Eagleview v4.4.10
+        <div className="px-5 py-3 border-t border-slate-100 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 shrink-0 flex items-center justify-between">
+          <p className="text-[10px] text-slate-400 dark:text-slate-500">
+            Eagleview v4.4.11
           </p>
           {info?.website && (
             <a
               href={info.website}
               target="_blank"
               rel="noopener noreferrer"
-              className="text-[10px] text-slate-400 hover:text-slate-700 underline underline-offset-2 transition-colors"
+              className="text-[10px] text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 underline underline-offset-2 transition-colors"
             >
               Website ↗
             </a>

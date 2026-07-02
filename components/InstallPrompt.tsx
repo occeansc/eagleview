@@ -90,22 +90,22 @@ export default function InstallPrompt() {
       aria-label="Install Eagleview"
     >
       <div className="modal-sheet rounded-[20px] p-4 flex items-start gap-3">
-        <div className="shrink-0 p-2 rounded-[14px] bg-gradient-to-br from-slate-100 to-slate-200 border border-white/80 shadow-sm">
-          <EagleIcon size={20} className="text-slate-800" />
+        <div className="shrink-0 p-2 rounded-[14px] bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-700 border border-white/80 dark:border-white/10 shadow-sm">
+          <EagleIcon size={20} className="text-slate-800 dark:text-slate-200" />
         </div>
 
         <div className="flex-1 min-w-0">
-          <p className="text-[13px] font-bold text-slate-800 mb-0.5">Install Eagleview</p>
+          <p className="text-[13px] font-bold text-slate-800 dark:text-slate-200 mb-0.5">Install Eagleview</p>
 
           {platform === 'ios' ? (
-            <p className="text-[11px] text-slate-500 leading-snug">
-              Tap <ShareIcon size={11} className="inline -mt-0.5 mx-0.5 text-slate-400" />
-              then <span className="font-semibold text-slate-600">Add to Home Screen</span>
-              <PlusSquareIcon size={11} className="inline -mt-0.5 mx-0.5 text-slate-400" />
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
+              Tap <ShareIcon size={11} className="inline -mt-0.5 mx-0.5 text-slate-400 dark:text-slate-500" />
+              then <span className="font-semibold text-slate-600 dark:text-slate-400">Add to Home Screen</span>
+              <PlusSquareIcon size={11} className="inline -mt-0.5 mx-0.5 text-slate-400 dark:text-slate-500" />
               for a faster, full-screen experience.
             </p>
           ) : (
-            <p className="text-[11px] text-slate-500 leading-snug">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
               Add to your home screen for a faster, full-screen experience — no app store needed.
             </p>
           )}
@@ -113,7 +113,7 @@ export default function InstallPrompt() {
           {platform !== 'ios' && deferred && (
             <button
               onClick={handleInstall}
-              className="mt-2.5 px-3.5 py-1.5 rounded-[10px] bg-slate-900 text-white text-[11px] font-bold hover:bg-slate-700 transition-colors"
+              className="mt-2.5 px-3.5 py-1.5 rounded-[10px] bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-[11px] font-bold hover:bg-slate-700 dark:hover:bg-slate-300 transition-colors"
             >
               Install
             </button>
@@ -122,7 +122,7 @@ export default function InstallPrompt() {
 
         <button
           onClick={dismiss}
-          className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-slate-300 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+          className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full text-slate-300 dark:text-slate-600 hover:text-slate-600 dark:hover:text-slate-400 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors"
           aria-label="Dismiss"
         >
           <CloseIcon size={13} />

@@ -62,14 +62,14 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
 
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-[22px] font-black tracking-tight text-slate-900 mb-1">
+        <h2 className="text-[22px] font-black tracking-tight text-slate-900 dark:text-slate-100 mb-1">
           Stock Screener
         </h2>
-        <p className="text-[12px] text-slate-400">
+        <p className="text-[12px] text-slate-400 dark:text-slate-500">
           {filtered.length.toLocaleString()} stocks ·{' '}
-          <span className="text-emerald-600 font-bold">{posCount} positive</span>
+          <span className="text-emerald-600 dark:text-emerald-400 font-bold">{posCount} positive</span>
           {' '}
-          <span className="text-rose-500 font-bold">{filtered.length - posCount} negative</span>
+          <span className="text-rose-500 dark:text-rose-400 font-bold">{filtered.length - posCount} negative</span>
           {' '}· {PERIOD_LABELS[period]}
         </p>
       </div>
@@ -78,20 +78,20 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       <div
         className="rounded-[22px] p-4 mb-5 space-y-3"
         style={{
-          background: '#ffffff',
-          border: '1px solid rgba(226,232,240,0.55)',
-          boxShadow: '0 1px 0 rgba(255,255,255,1) inset, 0 1px 3px rgba(0,0,0,0.035), 0 2px 8px rgba(0,0,0,0.025)',
+          background: 'var(--bg-surface-1)',
+          border: '1px solid var(--border-subtle)',
+          boxShadow: 'var(--shadow-glass)',
         }}
       >
         {/* Search */}
         <div className="relative">
-          <SearchIcon size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+          <SearchIcon size={14} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
           <input
             type="text"
             placeholder="Search ticker or company…"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 text-[13px] bg-slate-50/80 border border-slate-200/60 rounded-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-300/50 focus:border-indigo-300 transition-all placeholder:text-slate-400"
+            className="w-full pl-10 pr-4 py-2.5 text-[13px] bg-slate-50/80 dark:bg-white/5 border border-slate-200/60 dark:border-white/20 rounded-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-300/50 focus:border-indigo-300 transition-all placeholder:text-slate-400 dark:text-slate-500"
           />
         </div>
 
@@ -120,15 +120,15 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                   className={`period-pill flex items-center gap-1 ${
                     direction === d
                       ? d === 'positive'
-                        ? 'period-pill-active !bg-emerald-50 !text-emerald-700 !border-emerald-200/80 !shadow-none'
+                        ? 'period-pill-active !bg-emerald-50 dark:!bg-emerald-500/10 !text-emerald-700 dark:text-emerald-300 dark:!text-emerald-300 !border-emerald-200/80 dark:!border-emerald-500/25 !shadow-none'
                         : d === 'negative'
-                        ? 'period-pill-active !bg-rose-50 !text-rose-700 !border-rose-200/80 !shadow-none'
+                        ? 'period-pill-active !bg-rose-50 dark:!bg-rose-500/10 !text-rose-700 dark:text-rose-300 dark:!text-rose-300 !border-rose-200/80 dark:!border-rose-500/25 !shadow-none'
                         : 'period-pill-active'
                       : ''
                   }`}
                 >
-                  {d === 'positive' && <TrendingUpIcon size={10} className={direction === 'positive' ? 'text-emerald-600' : ''} />}
-                  {d === 'negative' && <TrendingDownIcon size={10} className={direction === 'negative' ? 'text-rose-600' : ''} />}
+                  {d === 'positive' && <TrendingUpIcon size={10} className={direction === 'positive' ? 'text-emerald-600 dark:text-emerald-400' : ''} />}
+                  {d === 'negative' && <TrendingDownIcon size={10} className={direction === 'negative' ? 'text-rose-600 dark:text-rose-400' : ''} />}
                   {d === 'all' ? 'All' : d.charAt(0).toUpperCase() + d.slice(1)}
                 </button>
               ))}
@@ -140,7 +140,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
         <select
           value={sector}
           onChange={e => setSector(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-          className="w-full text-[13px] bg-slate-50/80 border border-slate-200/60 rounded-[12px] px-3 py-2.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-300/50 transition-all"
+          className="w-full text-[13px] bg-slate-50/80 dark:bg-white/5 border border-slate-200/60 dark:border-white/20 rounded-[12px] px-3 py-2.5 text-slate-700 dark:text-slate-300 focus:outline-none focus:ring-2 focus:ring-indigo-300/50 transition-all"
         >
           <option value="all">All sectors</option>
           {sectors.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
@@ -151,42 +151,42 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       <div
         className="rounded-[22px] overflow-hidden"
         style={{
-          background: '#ffffff',
-          border: '1px solid rgba(226,232,240,0.55)',
-          boxShadow: '0 1px 0 rgba(255,255,255,1) inset, 0 2px 12px rgba(0,0,0,0.04)',
+          background: 'var(--bg-surface-1)',
+          border: '1px solid var(--border-subtle)',
+          boxShadow: 'var(--shadow-glass)',
         }}
       >
         {/* ── Desktop table (sm+) — full overflow-x-auto with all columns ── */}
         <div className="hidden sm:block overflow-x-auto">
           <div style={{ minWidth: '800px' }}>
-            <div className="grid grid-cols-[28px_64px_minmax(140px,260px)_64px_50px_50px_50px_50px_50px_50px_50px_50px] gap-x-2 text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-4 py-3 bg-slate-50/70 border-b border-slate-100">
+            <div className="grid grid-cols-[28px_64px_minmax(140px,260px)_64px_50px_50px_50px_50px_50px_50px_50px_50px] gap-x-2 text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 dark:text-slate-500 px-4 py-3 bg-slate-50/70 dark:bg-white/5 border-b border-slate-100 dark:border-white/10">
               <span>#</span>
               <span>Ticker</span>
               <span>Company</span>
               <span className="text-right">Price</span>
-              <span className={`text-right ${period === '1D'  ? 'text-slate-700' : ''}`}>1D</span>
-              <span className={`text-right ${period === '1W'  ? 'text-slate-700' : ''}`}>1W</span>
-              <span className={`text-right ${period === '1M'  ? 'text-slate-700' : ''}`}>1M</span>
-              <span className={`text-right ${period === '3M'  ? 'text-slate-700' : ''}`}>3M</span>
-              <span className={`text-right ${period === '6M'  ? 'text-slate-700' : ''}`}>6M</span>
-              <span className={`text-right ${period === 'YTD' ? 'text-slate-700' : ''}`}>YTD</span>
-              <span className={`text-right ${period === '1Y'  ? 'text-slate-700' : ''}`}>1Y</span>
-              <span className={`text-right ${period === '5Y'  ? 'text-slate-700' : ''}`}>5Y</span>
+              <span className={`text-right ${period === '1D'  ? 'text-slate-700 dark:text-slate-300' : ''}`}>1D</span>
+              <span className={`text-right ${period === '1W'  ? 'text-slate-700 dark:text-slate-300' : ''}`}>1W</span>
+              <span className={`text-right ${period === '1M'  ? 'text-slate-700 dark:text-slate-300' : ''}`}>1M</span>
+              <span className={`text-right ${period === '3M'  ? 'text-slate-700 dark:text-slate-300' : ''}`}>3M</span>
+              <span className={`text-right ${period === '6M'  ? 'text-slate-700 dark:text-slate-300' : ''}`}>6M</span>
+              <span className={`text-right ${period === 'YTD' ? 'text-slate-700 dark:text-slate-300' : ''}`}>YTD</span>
+              <span className={`text-right ${period === '1Y'  ? 'text-slate-700 dark:text-slate-300' : ''}`}>1Y</span>
+              <span className={`text-right ${period === '5Y'  ? 'text-slate-700 dark:text-slate-300' : ''}`}>5Y</span>
             </div>
             {shown.length === 0 ? (
               <div className="text-center py-16">
-                <SearchIcon size={28} className="mx-auto mb-3 text-slate-200" />
-                <p className="text-slate-500 font-semibold text-[13px]">No stocks match</p>
+                <SearchIcon size={28} className="mx-auto mb-3 text-slate-200 dark:text-slate-700" />
+                <p className="text-slate-500 dark:text-slate-400 font-semibold text-[13px]">No stocks match</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-50">
+              <div className="divide-y divide-slate-50 dark:divide-white/5">
                 {shown.map((h, i) => {
                   const sectorName = h.sectors?.name ?? ''
                   const val   = getPeriodValue(h, period)
                   const isPos = val !== null && val >= 0
                   const Chip = () => (
                     <span className={`font-mono text-[11px] font-black px-1.5 py-1 rounded-[8px] text-center inline-block shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
-                      isPos ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
+                      isPos ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/25' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 dark:text-rose-300 border border-rose-100 dark:border-rose-500/25'
                     }`}>
                       {h.ticker}
                     </span>
@@ -197,7 +197,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                     const bold = p === period
                     return (
                       <span className={`font-mono text-right tabular-nums ${
-                        bold ? `text-[13px] font-extrabold ${pos ? 'text-emerald-600' : 'text-rose-600'}`
+                        bold ? `text-[13px] font-extrabold ${pos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`
                              : `text-[11px] ${pos ? 'text-emerald-400' : 'text-rose-300'}`
                       }`}>
                         {v !== null ? `${pos ? '+' : ''}${v.toFixed(1)}%` : '—'}
@@ -208,15 +208,15 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                     <div key={`${h.ticker}-${h.sector_id}`}
                       onClick={() => setSelectedTicker(h)}
                       className={`grid grid-cols-[28px_64px_minmax(140px,260px)_64px_50px_50px_50px_50px_50px_50px_50px_50px] gap-x-2 items-center px-4 py-2.5 transition-colors cursor-pointer ${
-                        isPos ? 'hover:bg-emerald-50/40' : 'hover:bg-rose-50/40'
+                        isPos ? 'hover:bg-emerald-50/40 dark:hover:bg-emerald-500/10' : 'hover:bg-rose-50/40 dark:hover:bg-rose-500/10'
                       }`}>
-                      <span className="text-[11px] text-slate-300 tabular-nums font-mono">{i + 1}</span>
+                      <span className="text-[11px] text-slate-300 dark:text-slate-600 tabular-nums font-mono">{i + 1}</span>
                       <Chip />
                       <div className="min-w-0 px-2">
-                        <p className="text-[13px] font-semibold text-slate-800 truncate leading-tight">{h.company_name}</p>
-                        <p className="text-[10px] text-slate-400 truncate">{sectorName}</p>
+                        <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight">{h.company_name}</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{sectorName}</p>
                       </div>
-                      <span className="font-mono text-[11px] text-slate-400 text-right tabular-nums">
+                      <span className="font-mono text-[11px] text-slate-400 dark:text-slate-500 text-right tabular-nums">
                         {formatPrice(h.price ?? null)}
                       </span>
                       <Cell p="1D" />
@@ -239,21 +239,21 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
         <div className="sm:hidden overflow-x-auto">
           {/* No minWidth — columns size naturally so selected period fits without scrolling */}
           <div>
-            <div className="grid grid-cols-[24px_52px_1fr_60px_64px_52px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 px-3 py-2.5 bg-slate-50/70 border-b border-slate-100">
+            <div className="grid grid-cols-[24px_52px_1fr_60px_64px_52px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 dark:text-slate-500 px-3 py-2.5 bg-slate-50/70 dark:bg-white/5 border-b border-slate-100 dark:border-white/10">
               <span>#</span>
               <span>Ticker</span>
               <span>Company · Sector</span>
               <span className="text-right">Price</span>
-              <span className="text-right text-slate-700">{period}</span>
+              <span className="text-right text-slate-700 dark:text-slate-300">{period}</span>
               <span className="text-right">1W</span>
             </div>
             {shown.length === 0 ? (
               <div className="text-center py-16">
-                <SearchIcon size={28} className="mx-auto mb-3 text-slate-200" />
-                <p className="text-slate-500 font-semibold text-[13px]">No stocks match</p>
+                <SearchIcon size={28} className="mx-auto mb-3 text-slate-200 dark:text-slate-700" />
+                <p className="text-slate-500 dark:text-slate-400 font-semibold text-[13px]">No stocks match</p>
               </div>
             ) : (
-              <div className="divide-y divide-slate-50">
+              <div className="divide-y divide-slate-50 dark:divide-white/5">
                 {shown.map((h, i) => {
                   const sectorName = h.sectors?.name ?? ''
                   const val   = getPeriodValue(h, period)
@@ -264,22 +264,22 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                     <div key={`${h.ticker}-${h.sector_id}-m`}
                       onClick={() => setSelectedTicker(h)}
                       className={`grid grid-cols-[24px_52px_1fr_60px_64px_52px] items-center px-3 py-2.5 transition-colors cursor-pointer ${
-                        isPos ? 'hover:bg-emerald-50/40' : 'hover:bg-rose-50/40'
+                        isPos ? 'hover:bg-emerald-50/40 dark:hover:bg-emerald-500/10' : 'hover:bg-rose-50/40 dark:hover:bg-rose-500/10'
                       }`}>
-                      <span className="text-[11px] text-slate-300 tabular-nums font-mono">{i + 1}</span>
+                      <span className="text-[11px] text-slate-300 dark:text-slate-600 tabular-nums font-mono">{i + 1}</span>
                       <span className={`font-mono text-[10px] font-black px-1 py-1 rounded-[7px] text-center inline-block ${
-                        isPos ? 'bg-emerald-50 text-emerald-700 border border-emerald-100' : 'bg-rose-50 text-rose-700 border border-rose-100'
+                        isPos ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/25' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 dark:text-rose-300 border border-rose-100 dark:border-rose-500/25'
                       }`}>
                         {h.ticker}
                       </span>
                       <div className="min-w-0 px-1.5">
-                        <p className="text-[12px] font-semibold text-slate-800 truncate leading-tight">{h.company_name}</p>
-                        <p className="text-[10px] text-slate-400 truncate">{sectorName}</p>
+                        <p className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight">{h.company_name}</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{sectorName}</p>
                       </div>
-                      <span className="font-mono text-[10px] text-slate-400 text-right tabular-nums">
+                      <span className="font-mono text-[10px] text-slate-400 dark:text-slate-500 text-right tabular-nums">
                         {formatPrice(h.price ?? null)}
                       </span>
-                      <span className={`font-mono text-[13px] font-extrabold text-right tabular-nums ${isPos ? 'text-emerald-600' : 'text-rose-600'}`}>
+                      <span className={`font-mono text-[13px] font-extrabold text-right tabular-nums ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                         {val !== null ? `${isPos ? '+' : ''}${val.toFixed(1)}%` : '—'}
                       </span>
                       <span className={`font-mono text-[11px] text-right tabular-nums ${isPosW ? 'text-emerald-400' : 'text-rose-300'}`}>
@@ -299,15 +299,15 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
         <div className="text-center mt-6">
           <button
             onClick={() => setLimit(l => l + 100)}
-            className="px-7 py-3 bg-slate-900 text-white text-[13px] font-bold rounded-[14px] hover:bg-slate-700 transition-all shadow-[0_4px_12px_rgba(15,23,42,0.18)] hover:shadow-[0_6px_20px_rgba(15,23,42,0.24)] active:scale-95"
+            className="px-7 py-3 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-[13px] font-bold rounded-[14px] hover:bg-slate-700 dark:hover:bg-slate-300 transition-all shadow-[0_4px_12px_rgba(15,23,42,0.18)] hover:shadow-[0_6px_20px_rgba(15,23,42,0.24)] active:scale-95"
           >
             Show more ({filtered.length - limit} remaining)
           </button>
         </div>
       )}
 
-      <p className="text-center text-[10px] text-slate-300 mt-5 tracking-widest">
-        EAGLEVIEW V4.4.10 · EQUAL-WEIGHTED BASKETS
+      <p className="text-center text-[10px] text-slate-300 dark:text-slate-600 mt-5 tracking-widest">
+        EAGLEVIEW V4.4.11 · EQUAL-WEIGHTED BASKETS
       </p>
 
       {selectedTicker && (

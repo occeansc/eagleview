@@ -33,7 +33,7 @@ export default function SectorCard({
   const isFalling  = !isHot && !isRising && rankChange !== null && rankChange <= -5
   const streak     = sector.streak ?? 0
 
-  const pctColor    = positive ? 'text-emerald-600' : negative ? 'text-rose-500' : 'text-slate-400'
+  const pctColor    = positive ? 'text-emerald-600 dark:text-emerald-400' : negative ? 'text-rose-500 dark:text-rose-400' : 'text-slate-400 dark:text-slate-500'
   const glowRgb     = positive ? '16,185,129' : negative ? '244,63,94' : '148,163,184'
   const borderHover = positive ? 'hover:border-emerald-200/60' : negative ? 'hover:border-rose-200/60' : ''
 
@@ -65,20 +65,20 @@ export default function SectorCard({
       {(isHot || isRising || isFalling) && (
         <div className={`w-full px-3.5 py-2 rounded-t-[22px] border-b flex items-center gap-2 relative z-10 ${
           isHot
-            ? 'bg-gradient-to-r from-orange-100 via-orange-50 to-rose-50 border-orange-200/70'
+            ? 'bg-gradient-to-r from-orange-100 via-orange-50 to-rose-50 border-orange-200/70 dark:from-orange-500/10 dark:via-orange-500/5 dark:to-rose-500/10 dark:border-orange-500/20'
             : isRising
-              ? 'bg-gradient-to-r from-sky-100 via-sky-50 to-indigo-50 border-sky-200/70'
-              : 'bg-gradient-to-r from-rose-100 via-rose-50 to-pink-50 border-rose-200/70'
+              ? 'bg-gradient-to-r from-sky-100 via-sky-50 to-indigo-50 border-sky-200/70 dark:from-sky-500/10 dark:via-sky-500/5 dark:to-indigo-500/10 dark:border-sky-500/20'
+              : 'bg-gradient-to-r from-rose-100 via-rose-50 to-pink-50 border-rose-200/70 dark:from-rose-500/10 dark:via-rose-500/5 dark:to-pink-500/10 dark:border-rose-500/20'
         }`}>
           {isHot ? (
             <FlameIcon size={12} className="hot-badge shrink-0 text-orange-500" />
           ) : isRising ? (
             <TrendingUpIcon size={12} className="rising-badge shrink-0 text-sky-500" />
           ) : (
-            <TrendingDownIcon size={12} className="shrink-0 text-rose-500" />
+            <TrendingDownIcon size={12} className="shrink-0 text-rose-500 dark:text-rose-400" />
           )}
           <span className={`text-[10px] font-black uppercase tracking-[0.22em] ${
-            isHot ? 'text-orange-700' : isRising ? 'text-sky-700' : 'text-rose-700'
+            isHot ? 'text-orange-700 dark:text-orange-400' : isRising ? 'text-sky-700 dark:text-sky-400' : 'text-rose-700 dark:text-rose-300'
           }`}>
             {isHot ? 'Hot' : isRising ? 'Rising' : 'Falling'}
           </span>
@@ -91,7 +91,7 @@ export default function SectorCard({
         {/* Rank row */}
         <div className="flex items-center gap-1.5 mb-3">
           {/* Rank chip */}
-          <span className="flex items-center justify-center font-bold font-mono text-[11px] w-[26px] h-[26px] rounded-[8px] bg-slate-50 text-slate-500 border border-slate-100 shadow-[inset_0_2px_4px_rgba(0,0,0,0.025)] shrink-0 group-hover:bg-white transition-colors">
+          <span className="flex items-center justify-center font-bold font-mono text-[11px] w-[26px] h-[26px] rounded-[8px] bg-slate-50 dark:bg-white/5 text-slate-500 dark:text-slate-400 border border-slate-100 dark:border-white/10 shadow-[inset_0_2px_4px_rgba(0,0,0,0.025)] shrink-0 group-hover:bg-white dark:group-hover:bg-slate-900 transition-colors">
             {rank}
           </span>
 
@@ -99,8 +99,8 @@ export default function SectorCard({
           {rankChange !== null && rankChange !== 0 && (
             <span className={`rank-change text-[9px] font-black tracking-tight px-1.5 py-[2px] rounded-[5px] ${
               rankChange > 0
-                ? 'text-emerald-700 bg-emerald-50 border border-emerald-100'
-                : 'text-rose-600 bg-rose-50 border border-rose-100'
+                ? 'text-emerald-700 dark:text-emerald-300 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-100 dark:border-emerald-500/25'
+                : 'text-rose-600 dark:text-rose-400 dark:text-rose-300 bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/25'
             }`}>
               {rankChange > 0 ? `▲${rankChange}` : `▼${Math.abs(rankChange)}`}
             </span>
@@ -109,17 +109,17 @@ export default function SectorCard({
           {/* Right side: scorecard + streak + pin */}
           <div className="ml-auto flex items-center gap-1.5">
             {scorecard === 'gold' && (
-              <span className="flex items-center gap-0.5 text-[9px] font-bold scorecard-gold border border-amber-200/50 bg-amber-50/50 px-1.5 py-0.5 rounded-full">
+              <span className="flex items-center gap-0.5 text-[9px] font-bold scorecard-gold border border-amber-200/50 dark:border-amber-500/25 bg-amber-50/50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded-full">
                 <AwardIcon size={8} className="text-amber-500" /> GOLD
               </span>
             )}
             {scorecard === 'silver' && (
-              <span className="flex items-center gap-0.5 text-[9px] font-bold scorecard-silver bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded-full">
+              <span className="flex items-center gap-0.5 text-[9px] font-bold scorecard-silver bg-slate-50 dark:bg-white/5 border border-slate-200 dark:border-white/20 px-1.5 py-0.5 rounded-full">
                 <AwardIcon size={8} /> SLV
               </span>
             )}
             {scorecard === 'bronze' && (
-              <span className="flex items-center gap-0.5 text-[9px] font-bold scorecard-bronze bg-orange-50/60 border border-orange-200/50 px-1.5 py-0.5 rounded-full">
+              <span className="flex items-center gap-0.5 text-[9px] font-bold scorecard-bronze bg-orange-50/60 dark:bg-orange-500/10 border border-orange-200/50 dark:border-orange-500/25 px-1.5 py-0.5 rounded-full">
                 <AwardIcon size={8} className="text-orange-400/80" /> BRZ
               </span>
             )}
@@ -133,8 +133,8 @@ export default function SectorCard({
               onClick={e => { e.stopPropagation(); onTogglePin(e) }}
               className={`w-6 h-6 flex items-center justify-center rounded-full transition-all ${
                 isPinned
-                  ? 'bg-amber-100/70 text-amber-500'
-                  : 'text-slate-300 hover:text-slate-500 hover:bg-slate-50'
+                  ? 'bg-amber-100/70 dark:bg-amber-500/15 text-amber-500 dark:text-amber-400'
+                  : 'text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'
               }`}
               aria-label="Pin"
             >
@@ -144,7 +144,7 @@ export default function SectorCard({
         </div>
 
         {/* Sector name */}
-        <p className="font-bold text-slate-800 text-[14px] leading-snug tracking-tight mb-2">
+        <p className="font-bold text-slate-800 dark:text-slate-200 text-[14px] leading-snug tracking-tight mb-2">
           {sector.name}
         </p>
 
@@ -157,7 +157,7 @@ export default function SectorCard({
                 {value !== null ? Math.abs(value).toFixed(1) + '%' : ''}
               </>
             ) : (
-              <span className="text-slate-300 text-sm font-medium">No data</span>
+              <span className="text-slate-300 dark:text-slate-600 text-sm font-medium">No data</span>
             )}
           </p>
           {snapshots.length >= 2 && (
@@ -169,16 +169,16 @@ export default function SectorCard({
       </div>
 
       {/* ── Footer canvas ─────────────────────────── */}
-      <div className="px-4 pt-3 pb-3.5 border-t border-slate-100/80 relative z-10">
+      <div className="px-4 pt-3 pb-3.5 border-t border-slate-100/80 dark:border-white/10 relative z-10">
         {breadth !== null && (
           <div className="mb-2.5">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[9px] uppercase font-bold tracking-[0.18em] text-slate-400">Breadth</span>
+              <span className="text-[9px] uppercase font-bold tracking-[0.18em] text-slate-400 dark:text-slate-500">Breadth</span>
               <span className={`text-[11px] font-mono font-bold tabular-nums ${
-                breadth >= 60 ? 'text-emerald-600' : breadth >= 40 ? 'text-amber-600' : 'text-rose-500'
+                breadth >= 60 ? 'text-emerald-600 dark:text-emerald-400' : breadth >= 40 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-500 dark:text-rose-400'
               }`}>{breadth}%</span>
             </div>
-            <div className="h-1.5 bg-slate-100 rounded-full breadth-track overflow-hidden">
+            <div className="h-1.5 bg-slate-100 dark:bg-white/10 rounded-full breadth-track overflow-hidden">
               <div
                 className={`breadth-bar h-full rounded-full ${
                   breadth >= 60 ? 'bg-gradient-to-r from-emerald-400 to-emerald-500'
@@ -191,11 +191,11 @@ export default function SectorCard({
           </div>
         )}
         <div className="flex items-center justify-between">
-          <span className="text-[11px] text-slate-400 font-medium">
+          <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">
             {sector.stock_count ?? '—'} <span className="opacity-75 font-normal">assets</span>
           </span>
           <span className={`text-[10px] tracking-widest font-bold uppercase opacity-50 group-hover:opacity-100 transition-opacity ${
-            positive ? 'text-emerald-600' : negative ? 'text-rose-500' : 'text-slate-400'
+            positive ? 'text-emerald-600 dark:text-emerald-400' : negative ? 'text-rose-500 dark:text-rose-400' : 'text-slate-400 dark:text-slate-500'
           }`}>
             View →
           </span>

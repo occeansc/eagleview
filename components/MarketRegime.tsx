@@ -2,6 +2,7 @@
 
 import { Sector, RegimeType, computeRegime } from '@/lib/types'
 import { TrendingUpIcon, TrendingDownIcon } from './Icons'
+import { useTheme } from './ThemeProvider'
 
 const CONFIG: Record<RegimeType, {
   label:  string
@@ -15,43 +16,49 @@ const CONFIG: Record<RegimeType, {
     label:  'Risk-ON',
     sub:    'Growth sectors leading',
     dot:    'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.7)]',
-    pill:   'bg-emerald-50/90 border-emerald-200/60',
-    text:   'text-emerald-800',
+    pill:   'bg-emerald-50/90 dark:bg-emerald-500/10 border-emerald-200/60 dark:border-emerald-500/25',
+    text:   'text-emerald-800 dark:text-emerald-300',
     accent: 'text-emerald-500',
   },
   'risk-off': {
     label:  'Risk-OFF',
     sub:    'Defensive rotation',
     dot:    'bg-rose-400 shadow-[0_0_8px_rgba(251,113,133,0.7)]',
-    pill:   'bg-rose-50/90 border-rose-200/60',
-    text:   'text-rose-800',
-    accent: 'text-rose-500',
+    pill:   'bg-rose-50/90 dark:bg-rose-500/10 border-rose-200/60 dark:border-rose-500/25',
+    text:   'text-rose-800 dark:text-rose-300',
+    accent: 'text-rose-500 dark:text-rose-400',
   },
   'mixed': {
     label:  'Mixed',
     sub:    'No clear leadership',
     dot:    'bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)]',
-    pill:   'bg-amber-50/90 border-amber-200/60',
-    text:   'text-amber-800',
+    pill:   'bg-amber-50/90 dark:bg-amber-500/10 border-amber-200/60 dark:border-amber-500/25',
+    text:   'text-amber-800 dark:text-amber-300',
     accent: 'text-amber-500',
   },
   'loading': {
     label:  '—',
     sub:    '',
     dot:    'bg-slate-300',
-    pill:   'bg-slate-50/60 border-slate-200/40',
-    text:   'text-slate-400',
-    accent: 'text-slate-300',
+    pill:   'bg-slate-50/60 dark:bg-white/5 border-slate-200/40 dark:border-white/20',
+    text:   'text-slate-400 dark:text-slate-500',
+    accent: 'text-slate-300 dark:text-slate-600',
   },
 }
 
 export default function MarketRegime({ sectors }: { sectors: Sector[] }) {
   const regime = computeRegime(sectors)
   const cfg    = CONFIG[regime]
+  const { theme } = useTheme()
+  const isDark = theme === 'dark'
 
   return (
     <div className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border backdrop-blur-sm ${cfg.pill}`}
-      style={{ boxShadow: '0 1px 0 rgba(255,255,255,0.7) inset, 0 1px 4px rgba(0,0,0,0.04)' }}
+      style={{
+        boxShadow: isDark
+          ? '0 1px 0 rgba(255,255,255,0.04) inset, 0 1px 4px rgba(0,0,0,0.3)'
+          : '0 1px 0 rgba(255,255,255,0.7) inset, 0 1px 4px rgba(0,0,0,0.04)',
+      }}
     >
       {/* Pulsing dot */}
       <span className="relative flex items-center justify-center w-2 h-2">
