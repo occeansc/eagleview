@@ -111,7 +111,7 @@ export default function Nav() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100/60 dark:bg-white/10 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-white/20 tracking-widest">
-            V4.4.11
+            V4.4.12
           </span>
         </div>
       </nav>
@@ -140,8 +140,21 @@ export default function Nav() {
 
       {/* ── Mobile — floating toggle, top-right corner ─────────
           The bottom bar is full (4 primary nav tabs), so the toggle
-          lives here instead: small, out of the way, always reachable. */}
-      <div className="sm:hidden fixed top-3 right-3 z-50 nav-glass rounded-full p-1.5 shadow-sm">
+          lives here instead: small, out of the way, always reachable.
+          Uses a dedicated glass pill (not .nav-glass, which is built for
+          a full-width bar with a one-sided border — wrong shape entirely
+          for a small floating circular control). */}
+      <div
+        className="sm:hidden fixed top-3 right-3 z-50 inline-flex rounded-full"
+        style={{
+          padding: 3,
+          background: 'var(--glass-bg)',
+          backdropFilter: 'var(--glass-blur-nav)',
+          WebkitBackdropFilter: 'var(--glass-blur-nav)',
+          border: '1px solid var(--border-subtle)',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.18)',
+        }}
+      >
         <ThemeToggle />
       </div>
     </>

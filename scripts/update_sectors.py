@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.4.11 — Data Updater
+Eagleview v4.4.12 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -419,11 +419,33 @@ def calc_returns(series: pd.Series) -> dict:
         return {}
     current = float(series.iloc[-1])
 
+    # Sanity thresholds for SHORT periods only — genuine day-over-day or
+    # week-over-week moves beyond these are exceedingly rare for any real
+    # company (even a volatile penny stock) and almost always indicate a
+    # stale pre-split "previous close" rather than real price action. A
+    # 1-for-N reverse split produces a false jump of ~(N-1)*100%, and an
+    # N-for-1 forward split produces a false drop of ~(1-1/N)*100% — both
+    # land far outside these thresholds while leaving legitimate huge
+    # multi-month/YTD moves (already confirmed real elsewhere in this
+    # universe) completely untouched.
+    SHORT_PERIOD_CAPS = {1: 100.0, 5: 150.0}  # {days: max abs % swing}
+
     def pct(days: int):
         if len(series) <= days:
             return None
         past = float(series.iloc[-(days + 1)])
-        return round((current - past) / past * 100, 2) if past else None
+        if not past:
+            return None
+        value = round((current - past) / past * 100, 2)
+        cap = SHORT_PERIOD_CAPS.get(days)
+        if cap is not None and abs(value) > cap:
+            log.warning(
+                f"    ⚠ Suspicious {days}-day return {value:+.1f}% "
+                f"(|{value:.1f}%| > {cap:.0f}% cap) — likely stale pre-split "
+                f"price, discarding as bad data"
+            )
+            return None
+        return value
 
     year  = datetime.now().year
     ytd_s = series[series.index.year == year]
@@ -470,7 +492,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.4.11 Data Sync ══")
+    log.info("══ Eagleview v4.4.12 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")

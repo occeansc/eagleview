@@ -200,7 +200,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
         <div className="overflow-y-auto flex-1 overscroll-contain bg-white dark:bg-slate-900" ref={scrollRef}>
 
           {/* vs Market */}
-          <div className="px-6 py-5 bg-[#FCFCFD] border-b border-slate-100 dark:border-white/10">
+          <div className="px-6 py-5 bg-[#FCFCFD] dark:bg-white/[0.02] border-b border-slate-100 dark:border-white/10">
             <p className="text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 dark:text-slate-500 mb-4">
               vs Market
             </p>
@@ -294,7 +294,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
         {/* Footer */}
         <div className="px-6 py-3 border-t border-slate-100 dark:border-white/10 bg-white dark:bg-slate-900 shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400 dark:text-slate-500">
-            Eagleview v4.4.11 · Yahoo Finance
+            Eagleview v4.4.12 · Yahoo Finance
           </p>
           <p className="text-[10px] text-slate-300 dark:text-slate-600 tabular-nums">
             Last sync: {formatSyncTime(sector.updated_at)}
