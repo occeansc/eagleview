@@ -11,7 +11,7 @@ export function EagleIcon({ size = 24, className, style, ...p }: IconProps) {
     <svg
       width={size}
       height={size}
-      viewBox="0 0 24 24"
+      viewBox="0 0.85 24 19"
       fill="currentColor"
       className={className}
       style={style}
