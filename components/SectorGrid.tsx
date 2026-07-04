@@ -95,7 +95,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
     <div className="max-w-6xl mx-auto px-3 sm:px-6 py-6">
 
       {/* ── Header ─────────────────────────────── */}
-      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
+      <div className="dashboard-header-row flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
         <div>
           <div className="flex items-center gap-2.5 mb-1.5">
             <EagleIcon size={22} className="text-slate-800 dark:text-slate-200 shrink-0" />
@@ -140,7 +140,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
               This is the architectural fix: active-state box-shadows are never
               clipped by the scroll container's overflow. */}
           <div className="period-filter-group">
-            <div className="w-px h-5 self-center mr-1 bg-slate-300/50" />
+            <div className="w-px h-5 self-center ml-0.5 mr-1 bg-slate-300/50 dark:bg-white/15" />
 
             <button
               onClick={() => toggleFilter('hot')}

@@ -39,7 +39,7 @@ const CONFIG: Record<RegimeType, {
   'loading': {
     label:  '—',
     sub:    '',
-    dot:    'bg-slate-300',
+    dot:    'bg-slate-300 dark:bg-slate-600',
     pill:   'bg-slate-50/60 dark:bg-white/5 border-slate-200/40 dark:border-white/20',
     text:   'text-slate-400 dark:text-slate-500',
     accent: 'text-slate-300 dark:text-slate-600',

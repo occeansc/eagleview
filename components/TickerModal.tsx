@@ -144,7 +144,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
         <div className="shrink-0" style={{ background: headerBg }}>
           {/* Drag handle */}
           <div className="sm:hidden flex justify-center pt-3 pb-1">
-            <div className={`w-10 h-1 rounded-full ${neutral ? 'bg-slate-300/50' : pos ? 'bg-emerald-300/50' : 'bg-rose-300/50'}`} />
+            <div className={`w-10 h-1 rounded-full ${neutral ? 'bg-slate-300/50 dark:bg-slate-600/60' : pos ? 'bg-emerald-300/50 dark:bg-emerald-400/50' : 'bg-rose-300/50 dark:bg-rose-400/50'}`} />
           </div>
 
           <div className="px-5 pt-4 sm:pt-5 pb-4 border-b border-slate-100/80 dark:border-white/10 relative">
@@ -288,7 +288,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
         {/* Footer */}
         <div className="px-5 py-3 border-t border-slate-100 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400 dark:text-slate-500">
-            Eagleview v4.4.13
+            Eagleview v4.4.15
           </p>
           {info?.website && (
             <a

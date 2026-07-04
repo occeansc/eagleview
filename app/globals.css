@@ -193,7 +193,7 @@
 .period-control-inner {
   display: flex;
   gap: 4px;
-  padding: 4px;
+  padding: 4px 9px 4px 4px;
   min-width: max-content;
 }
 
@@ -207,7 +207,7 @@
   flex-shrink: 0;
 }
 .period-pill {
-  /* Mobile: compact so 6 periods (1D→YTD) fit without scrolling */
+  /* Mobile: compact so all 8 periods (1D→5Y) fit without scrolling */
   padding: 5px 7px;
   border-radius: 10px;
   font-weight: 600;
@@ -466,5 +466,23 @@
   /* MarketRegime subtitle: hide in landscape — keeps badge compact */
   .regime-sub {
     display: none !important;
+  }
+  /* Header row: Tailwind's sm: breakpoint (640px width) incorrectly treats
+     a landscape phone as "desktop" width, forcing the title block and the
+     period-bar into a side-by-side row with nowhere near enough combined
+     width for both. Force the same stacked layout already proven to work
+     on narrow mobile portrait — this isn't new behavior, just correctly
+     extending it to also cover landscape phones. */
+  .dashboard-header-row {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+  }
+  /* Status badge (Risk-ON/OFF/Mixed): never let its own text wrap
+     internally, and never let it be compressed by a tight flex row —
+     it's a small, important indicator that should hold its natural size. */
+  .tagline-block > div {
+    flex-shrink: 0 !important;
+    white-space: nowrap !important;
   }
 }
