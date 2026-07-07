@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.4.15 — Data Updater
+Eagleview v4.4.17 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -64,6 +64,7 @@ SECTOR_STOCKS = [
     ("AI & Machine Learning", [
         ("PLTR","Palantir"), ("AI","C3.ai"), ("BBAI","BigBear.ai"),
         ("SOUN","SoundHound AI"), ("GOOG","Alphabet"), ("META","Meta Platforms"),
+        ("AAPL","Apple"),
         ("IBM","IBM"), ("AMBA","Ambarella"), ("PEGA","Pegasystems"),
         ("NICE","NICE Systems"), ("SDGR","Schrodinger"),
         ("RXRX","Recursion Pharma"), ("TEM","Tempus AI"), ("APP","AppLovin"),
@@ -196,6 +197,7 @@ SECTOR_STOCKS = [
         ("JD","JD.com"), ("PDD","PDD Holdings"), ("DKNG","DraftKings"),
         ("PENN","PENN Entertainment"), ("DASH","DoorDash"),
         ("MCD","McDonald's"), ("SBUX","Starbucks"), ("CMG","Chipotle Mexican Grill"),
+        ("YUM","Yum! Brands"), ("DPZ","Domino's Pizza"), ("ELF","e.l.f. Beauty"),
     ]),
     ("Traditional Finance", [
         ("JPM","JPMorgan Chase"), ("BAC","Bank of America"), ("WFC","Wells Fargo"),
@@ -205,6 +207,8 @@ SECTOR_STOCKS = [
         ("SYF","Synchrony Financial"), ("ALLY","Ally Financial"), ("FITB","Fifth Third"),
         ("KEY","KeyCorp"), ("RF","Regions Financial"), ("CFG","Citizens Financial"),
         ("HBAN","Huntington Bancshares"), ("PNC","PNC Financial"),
+        ("PGR","Progressive"), ("TRV","Travelers"), ("ALL","Allstate"),
+        ("MET","MetLife"), ("PRU","Prudential Financial"),
     ]),
     ("Real Estate & REITs", [
         ("AMT","American Tower"), ("PLD","Prologis"), ("EQIX","Equinix"),
@@ -214,6 +218,8 @@ SECTOR_STOCKS = [
         ("IIPR","Innovative Industrial"), ("REXR","Rexford Industrial"),
         ("EXR","Extra Space Storage"), ("CUBE","CubeSmart"), ("IRM","Iron Mountain"),
         ("COLD","Americold Realty"), ("DLR","Digital Realty"), ("SBAC","SBA Communications"),
+        ("DHI","D.R. Horton"), ("LEN","Lennar"), ("PHM","PulteGroup"),
+        ("NVR","NVR Inc"), ("TOL","Toll Brothers"),
     ]),
     ("Travel & Hospitality", [
         ("DAL","Delta Air Lines"), ("UAL","United Airlines"), ("AAL","American Airlines"),
@@ -291,6 +297,16 @@ SECTOR_STOCKS = [
         ("VZ","Verizon Communications"), ("TMUS","T-Mobile US"), ("CHTR","Charter Communications"),
         ("SPOT","Spotify Technology"), ("LYV","Live Nation Entertainment"), ("ROKU","Roku"),
         ("FOXA","Fox Corporation"), ("SIRI","Sirius XM Holdings"),
+        ("EA","Electronic Arts"), ("TTWO","Take-Two Interactive"), ("RBLX","Roblox"),
+    ]),
+
+    # NEW: Digital Health & Telehealth
+    # DTC subscription health platforms and telehealth/insurance disruptors —
+    # a distinct business model (consumer-facing, subscription/marketplace)
+    # from the big pharma manufacturers and device makers in Pharma & MedTech.
+    ("Digital Health & Telehealth", [
+        ("HIMS","Hims & Hers Health"), ("TDOC","Teladoc Health"), ("OSCR","Oscar Health"),
+        ("GDRX","GoodRx Holdings"), ("DOCS","Doximity"), ("PGNY","Progyny"),
     ]),
 ]
 
@@ -492,7 +508,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.4.15 Data Sync ══")
+    log.info("══ Eagleview v4.4.17 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")

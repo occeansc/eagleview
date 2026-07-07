@@ -120,6 +120,30 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
     return () => window.removeEventListener('keydown', handler)
   }, [onClose])
 
+  // Lock body scroll — position:fixed (not just overflow:hidden) because
+  // iOS Safari can still scroll the background via touch gestures with
+  // overflow:hidden alone; fixing position genuinely removes the body
+  // from document flow, which iOS respects correctly.
+  useEffect(() => {
+    const scrollY = window.scrollY
+    const body = document.body
+    const prev = {
+      position: body.style.position, top: body.style.top,
+      width: body.style.width, overflow: body.style.overflow,
+    }
+    body.style.position = 'fixed'
+    body.style.top      = `-${scrollY}px`
+    body.style.width    = '100%'
+    body.style.overflow = 'hidden'
+    return () => {
+      body.style.position = prev.position
+      body.style.top      = prev.top
+      body.style.width    = prev.width
+      body.style.overflow = prev.overflow
+      window.scrollTo(0, scrollY)
+    }
+  }, [])
+
   if (!mounted) return null
 
   const hasYtd   = holding.ytd_pct !== null
@@ -288,7 +312,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
         {/* Footer */}
         <div className="px-5 py-3 border-t border-slate-100 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400 dark:text-slate-500">
-            Eagleview v4.4.15
+            Eagleview v4.4.17
           </p>
           {info?.website && (
             <a

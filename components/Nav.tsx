@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import ThemeToggle from './ThemeToggle'
 import { EagleIcon, HomeIcon, GridIcon, SearchIcon, BookmarkIcon } from './Icons'
 import { getSupabaseClient } from '@/lib/supabase'
@@ -22,8 +22,29 @@ const CACHE_TTL  = 900_000 // 15 min — aligns with revalidate = 900
 type Sentiment = 'bull' | 'bear' | 'neutral' | null
 
 export default function Nav() {
-  const path = usePathname()
+  const path   = usePathname()
+  const router = useRouter()
   const [sentiment, setSentiment] = useState<Sentiment>(null)
+
+  // Re-fetch fresh server data whenever the app becomes visible again —
+  // covers both switching back to an installed iOS home-screen app and
+  // returning to a backgrounded browser tab. iOS Safari's standalone mode
+  // is known to cache page responses more aggressively than a normal tab,
+  // on top of this app's 15-minute ISR window (app/page.tsx revalidate),
+  // so without this, "reopen the app" doesn't reliably pull the latest
+  // sync — this makes that the explicit trigger instead of leaving it to
+  // passive HTTP cache behavior iOS doesn't always respect consistently.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') router.refresh()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    window.addEventListener('pageshow', onVisible)
+    return () => {
+      document.removeEventListener('visibilitychange', onVisible)
+      window.removeEventListener('pageshow', onVisible)
+    }
+  }, [router])
 
   useEffect(() => {
     try {
@@ -111,7 +132,7 @@ export default function Nav() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100/60 dark:bg-white/10 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-white/20 tracking-widest">
-            V4.4.15
+            V4.4.17
           </span>
         </div>
       </nav>

@@ -6,10 +6,10 @@ import { ThemeProvider } from '@/components/ThemeProvider'
 import './globals.css'
 
 const inter = Inter({
-  subsets: ['latin'], variable: '--font-inter', display: 'swap',
+  subsets: ['latin'], variable: '--font-inter', display: 'optional',
 })
 const mono = JetBrains_Mono({
-  subsets: ['latin'], variable: '--font-mono', display: 'swap',
+  subsets: ['latin'], variable: '--font-mono', display: 'optional',
 })
 
 export const metadata: Metadata = {
