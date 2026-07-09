@@ -14,3 +14,16 @@ CREATE TABLE IF NOT EXISTS ticker_earnings (
 );
 
 CREATE INDEX IF NOT EXISTS idx_ticker_earnings_date ON ticker_earnings (earnings_date);
+
+-- RLS: the Python sync writes via the service-role key, which bypasses RLS
+-- entirely — but the frontend reads via the public anon key, which is
+-- subject to RLS. A fresh table has zero policies by default, meaning the
+-- sync can succeed perfectly while the frontend still gets zero rows back.
+-- This grants the same public read access this app's other tables rely on.
+ALTER TABLE ticker_earnings ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public read access" ON ticker_earnings;
+CREATE POLICY "Public read access" ON ticker_earnings
+  FOR SELECT
+  TO anon, authenticated
+  USING (true);

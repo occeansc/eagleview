@@ -11,16 +11,8 @@ const TABS = [
   { href: '/',          label: 'Dashboard', Icon: HomeIcon     },
   { href: '/heatmap',   label: 'Heatmap',   Icon: GridIcon     },
   { href: '/screener',  label: 'Screener',  Icon: SearchIcon   },
+  { href: '/earnings',  label: 'Earnings',  Icon: CalendarIcon },
   { href: '/watchlist', label: 'Watchlist', Icon: BookmarkIcon },
-]
-
-// Desktop-only addition — Earnings has no place in the mobile bottom bar
-// (already full at 4 tabs), so it's appended only for the desktop nav,
-// which is visible on tablet, desktop, AND landscape mobile (sm: breakpoint
-// is width-based, and a landscape phone is comfortably past 640px).
-const DESKTOP_TABS = [
-  ...TABS,
-  { href: '/earnings', label: 'Earnings', Icon: CalendarIcon },
 ]
 
 const CACHE_KEY  = 'eagleview-sentiment'
@@ -118,7 +110,7 @@ export default function Nav() {
           <div className="h-5 w-px bg-slate-200/70 dark:bg-white/20 mr-4" />
 
           <div className="flex items-center gap-1">
-            {DESKTOP_TABS.map(({ href, label, Icon }) => {
+            {TABS.map(({ href, label, Icon }) => {
               const active = path === href
               return (
                 <Link
@@ -141,7 +133,7 @@ export default function Nav() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100/60 dark:bg-white/10 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-white/20 tracking-widest">
-            V4.4.18
+            V4.4.19
           </span>
         </div>
       </nav>
@@ -154,12 +146,12 @@ export default function Nav() {
             <Link
               key={href}
               href={href}
-              className={`relative flex-1 flex flex-col items-center justify-center gap-1 py-2.5 transition-all duration-200 ${
+              className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 min-w-0 transition-all duration-200 ${
                 active ? `${mobileActive} -translate-y-0.5` : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400'
               }`}
             >
-              <Icon size={18} className={active ? 'drop-shadow-sm' : ''} />
-              <span className="text-[10px] font-bold tracking-wide">{label}</span>
+              <Icon size={17} className={active ? 'drop-shadow-sm' : ''} />
+              <span className="text-[9px] font-bold whitespace-nowrap">{label}</span>
               {active && (
                 <span className={`absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full ${mobileDot}`} />
               )}
@@ -169,7 +161,7 @@ export default function Nav() {
       </nav>
 
       {/* ── Mobile — floating toggle, top-right corner ─────────
-          The bottom bar is full (4 primary nav tabs), so the toggle
+          The bottom bar is full (5 primary nav tabs), so the toggle
           lives here instead: small, out of the way, always reachable.
           Uses a dedicated glass pill (not .nav-glass, which is built for
           a full-width bar with a one-sided border — wrong shape entirely

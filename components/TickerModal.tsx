@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal }                  from 'react-dom'
 import type { SectorHolding }            from '@/lib/types'
 import { formatPrice }                   from '@/lib/types'
-import { CloseIcon }                     from './Icons'
+import { CloseIcon, SunIcon, MoonIcon }  from './Icons'
 import { useTheme }                      from './ThemeProvider'
 import type { TickerInfo }               from '@/app/api/ticker-info/[symbol]/route'
 
@@ -63,6 +63,10 @@ function fmtEmployees(n: number | null): string | null {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M employees`
   if (n >= 1_000)     return `${Math.round(n / 1_000)}K employees`
   return `${n} employees`
+}
+
+function fmtEarningsDate(iso: string): string {
+  return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 const TILES: { label: string; key: keyof SectorHolding }[] = [
@@ -262,6 +266,74 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
 
           </div>
 
+          {/* Key Stats section */}
+          {(loading || info?.marketCap || info?.peRatio || info?.week52High || info?.nextEarnings) && (
+            <div className="px-5 pb-5">
+              <div className="h-px bg-slate-100 dark:bg-white/10 mb-4" />
+              <p className="text-[8px] font-black tracking-[0.22em] uppercase text-slate-400 dark:text-slate-500 mb-3">
+                Key Stats
+              </p>
+
+              {loading ? (
+                <div className="grid grid-cols-2 gap-2.5 animate-pulse">
+                  {[0, 1, 2, 3].map(i => (
+                    <div key={i} className="h-14 rounded-[12px] bg-slate-100 dark:bg-white/5" />
+                  ))}
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="rounded-[12px] px-3 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
+                    <p className="text-[8px] font-black tracking-[0.14em] uppercase text-slate-400 dark:text-slate-500 mb-1">
+                      Market Cap
+                    </p>
+                    <p className="text-[14px] font-bold text-slate-800 dark:text-slate-200 tabular-nums">
+                      {info?.marketCap ?? '—'}
+                    </p>
+                  </div>
+
+                  <div className="rounded-[12px] px-3 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
+                    <p className="text-[8px] font-black tracking-[0.14em] uppercase text-slate-400 dark:text-slate-500 mb-1">
+                      P/E Ratio
+                    </p>
+                    <p className="text-[14px] font-bold text-slate-800 dark:text-slate-200 tabular-nums">
+                      {info?.peRatio != null ? `${info.peRatio}x` : '—'}
+                    </p>
+                  </div>
+
+                  <div className="rounded-[12px] px-3 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
+                    <p className="text-[8px] font-black tracking-[0.14em] uppercase text-slate-400 dark:text-slate-500 mb-1">
+                      52W High
+                    </p>
+                    <p className="text-[14px] font-bold text-slate-800 dark:text-slate-200 tabular-nums">
+                      {info?.week52High != null ? formatPrice(info.week52High) : '—'}
+                    </p>
+                  </div>
+
+                  <div className="rounded-[12px] px-3 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
+                    <p className="text-[8px] font-black tracking-[0.14em] uppercase text-slate-400 dark:text-slate-500 mb-1">
+                      Next Earnings
+                    </p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-[14px] font-bold text-slate-800 dark:text-slate-200 tabular-nums">
+                        {info?.nextEarnings ? fmtEarningsDate(info.nextEarnings) : '—'}
+                      </p>
+                      {info?.earningsTime === 'bmo' && (
+                        <span className="flex items-center gap-0.5 text-[8px] font-black bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/25 px-1.5 py-0.5 rounded-full shrink-0">
+                          <SunIcon size={8} /> BMO
+                        </span>
+                      )}
+                      {info?.earningsTime === 'amc' && (
+                        <span className="flex items-center gap-0.5 text-[8px] font-black bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-200/50 dark:border-sky-500/25 px-1.5 py-0.5 rounded-full shrink-0">
+                          <MoonIcon size={8} /> AMC
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* About section */}
           <div className="px-5 pb-5">
             <div className="h-px bg-slate-100 dark:bg-white/10 mb-4" />
@@ -312,7 +384,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
         {/* Footer */}
         <div className="px-5 py-3 border-t border-slate-100 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400 dark:text-slate-500">
-            Eagleview v4.4.18
+            Eagleview v4.4.19
           </p>
           {info?.website && (
             <a

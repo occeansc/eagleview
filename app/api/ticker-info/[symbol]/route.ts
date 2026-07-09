@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 export interface TickerInfo {
-  description: string | null
-  industry:    string | null
-  employees:   number | null
-  country:     string | null
-  website:     string | null
+  description:  string | null
+  industry:     string | null
+  employees:    number | null
+  country:      string | null
+  website:      string | null
+  marketCap:    string | null           // Yahoo's own pre-formatted string, e.g. "3.45T"
+  peRatio:      number | null           // trailing P/E, rounded to 1 decimal
+  week52High:   number | null           // raw price
+  nextEarnings: string | null           // ISO date, e.g. "2026-07-22"
+  earningsTime: 'bmo' | 'amc' | 'unspecified' | null
 }
 
 const warm = new Map<string, { payload: TickerInfo; at: number }>()
@@ -28,6 +33,29 @@ function trimToTwoSentences(text: string): string {
   return (text.match(/[^.!?]+[.!?]+\s*/g) ?? []).slice(0, 2).join('').trim()
 }
 
+/* Derives calendar date + BMO/AMC from a Unix-seconds earnings timestamp,
+   comparing the actual hour (converted to US/Eastern via Intl, no extra
+   timezone library needed) against the 9:30am–4:00pm regular session —
+   same technique used in scripts/update_earnings.py, kept independent
+   here so this card never depends on that separate daily sync/table. */
+function deriveEarningsTiming(unixSeconds: number): { date: string; time: 'bmo' | 'amc' | 'unspecified' } {
+  const d = new Date(unixSeconds * 1000)
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(d)
+  const get = (type: string) => parts.find(p => p.type === type)?.value ?? '0'
+  const minutesSinceMidnight = parseInt(get('hour'), 10) * 60 + parseInt(get('minute'), 10)
+
+  const time =
+    minutesSinceMidnight < 9 * 60 + 30 ? 'bmo' :
+    minutesSinceMidnight >= 16 * 60    ? 'amc' :
+    'unspecified'
+
+  return { date: `${get('year')}-${get('month')}-${get('day')}`, time }
+}
+
 /* ── Layer 1: Yahoo Finance quoteSummary — assetProfile + summaryProfile ──
    Combined into one request per host. assetProfile is the primary source
    (equities); summaryProfile is often populated when assetProfile is empty
@@ -37,7 +65,7 @@ async function fetchYahooAPI(symbol: string): Promise<Partial<TickerInfo> | null
   for (const host of ['query2.finance.yahoo.com', 'query1.finance.yahoo.com']) {
     try {
       const res = await fetch(
-        `https://${host}/v10/finance/quoteSummary/${symbol}?modules=assetProfile,summaryProfile`,
+        `https://${host}/v10/finance/quoteSummary/${symbol}?modules=assetProfile,summaryProfile,summaryDetail,calendarEvents`,
         {
           headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Eagleview/1.0)', 'Accept': 'application/json' },
           next: { revalidate: 86400 },
@@ -51,20 +79,51 @@ async function fetchYahooAPI(symbol: string): Promise<Partial<TickerInfo> | null
       const returnedSymbol = result?.symbol ?? ''
       if (returnedSymbol && returnedSymbol !== symbol) continue
 
-      const asset   = result.assetProfile
-      const summary = result.summaryProfile
-      const rawDesc = asset?.longBusinessSummary ?? summary?.longBusinessSummary
-      if (!rawDesc) continue
+      const asset    = result.assetProfile
+      const summary  = result.summaryProfile
+      const detail   = result.summaryDetail
+      const calendar = result.calendarEvents
 
-      const desc = trimToTwoSentences(rawDesc)
-      if (!isCompanyArticle(desc)) continue
+      // Numeric stats — extracted unconditionally, independent of whether
+      // the description below passes its quality gate. These are simple
+      // factual figures with nothing to do with description text quality.
+      const marketCap:  string | null = detail?.marketCap?.fmt ?? null
+      const peRatio:    number | null = typeof detail?.trailingPE?.raw === 'number'
+        ? Math.round(detail.trailingPE.raw * 10) / 10 : null
+      const week52High: number | null = typeof detail?.fiftyTwoWeekHigh?.raw === 'number'
+        ? detail.fiftyTwoWeekHigh.raw : null
+
+      let nextEarnings: string | null = null
+      let earningsTime: 'bmo' | 'amc' | 'unspecified' | null = null
+      const earningsDates = calendar?.earnings?.earningsDate
+      if (Array.isArray(earningsDates) && earningsDates.length > 0) {
+        const soonest = earningsDates
+          .map((e: any) => e?.raw)
+          .filter((ts: any) => typeof ts === 'number' && ts * 1000 >= Date.now())
+          .sort((a: number, b: number) => a - b)[0]
+        if (soonest) {
+          const derived = deriveEarningsTiming(soonest)
+          nextEarnings = derived.date
+          earningsTime = derived.time
+        }
+      }
+
+      // Description — the ONLY field subject to the quality gate below.
+      // A rejected description no longer discards the numeric stats above.
+      const rawDesc = asset?.longBusinessSummary ?? summary?.longBusinessSummary
+      let description: string | null = null
+      if (rawDesc) {
+        const candidate = trimToTwoSentences(rawDesc)
+        if (isCompanyArticle(candidate)) description = candidate
+      }
 
       return {
-        description: desc,
+        description,
         industry:    asset?.industry          ?? summary?.industry          ?? null,
         employees:   asset?.fullTimeEmployees  ?? summary?.fullTimeEmployees ?? null,
         country:     asset?.country            ?? summary?.country          ?? null,
         website:     asset?.website            ?? summary?.website          ?? null,
+        marketCap, peRatio, week52High, nextEarnings, earningsTime,
       }
     } catch { continue }
   }
@@ -157,10 +216,15 @@ export async function GET(req: NextRequest, { params }: { params: { symbol: stri
 
   const payload: TickerInfo = {
     description,
-    industry:    apiResult?.industry  ?? null,
-    employees:   apiResult?.employees ?? null,
-    country:     apiResult?.country   ?? null,
-    website:     apiResult?.website   ?? null,
+    industry:     apiResult?.industry     ?? null,
+    employees:    apiResult?.employees    ?? null,
+    country:      apiResult?.country      ?? null,
+    website:      apiResult?.website      ?? null,
+    marketCap:    apiResult?.marketCap    ?? null,
+    peRatio:      apiResult?.peRatio      ?? null,
+    week52High:   apiResult?.week52High   ?? null,
+    nextEarnings: apiResult?.nextEarnings ?? null,
+    earningsTime: apiResult?.earningsTime ?? null,
   }
 
   warm.set(symbol, { payload, at: Date.now() })
