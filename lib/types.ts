@@ -85,6 +85,16 @@ export interface SectorSnapshot {
   synced_at: string
 }
 
+export interface TickerEarnings {
+  ticker:        string
+  company_name:  string
+  sector_name:   string | null
+  earnings_date: string | null   // ISO date, e.g. "2026-07-22"
+  earnings_time: EarningsTime
+  updated_at:    string
+}
+
+export type EarningsTime  = 'bmo' | 'amc' | 'unspecified'
 export type Period         = '1D' | '1W' | '1M' | '3M' | '6M' | 'YTD' | '1Y' | '5Y'
 export type ScorecardLevel = 'gold' | 'silver' | 'bronze' | null
 export type RegimeType     = 'risk-on' | 'risk-off' | 'mixed' | 'loading'
