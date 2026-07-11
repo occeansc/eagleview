@@ -133,7 +133,7 @@ export default function Nav() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100/60 dark:bg-white/10 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-white/20 tracking-widest">
-            V4.4.19
+            V4.4.20
           </span>
         </div>
       </nav>
@@ -167,14 +167,13 @@ export default function Nav() {
           a full-width bar with a one-sided border — wrong shape entirely
           for a small floating circular control). */}
       <div
-        className="sm:hidden fixed top-3 right-3 z-50 inline-flex rounded-full"
+        className="sm:hidden fixed top-3 right-3 z-50 inline-flex rounded-full bg-white dark:bg-slate-900"
         style={{
           padding: 3,
-          background: 'var(--glass-bg)',
           backdropFilter: 'var(--glass-blur-nav)',
           WebkitBackdropFilter: 'var(--glass-blur-nav)',
-          border: '1px solid var(--border-subtle)',
-          boxShadow: '0 2px 10px rgba(0,0,0,0.18)',
+          border: '1px solid var(--border-default)',
+          boxShadow: '0 2px 12px rgba(0,0,0,0.25)',
         }}
       >
         <ThemeToggle />

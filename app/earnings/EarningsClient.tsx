@@ -1,11 +1,13 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import type { TickerEarnings } from '@/lib/types'
+import type { TickerEarnings, SectorHolding } from '@/lib/types'
 import { SearchIcon, SunIcon, MoonIcon, CalendarIcon } from '@/components/Icons'
+import TickerModal from '@/components/TickerModal'
 
 interface Props {
   earnings: TickerEarnings[]
+  holdings: (SectorHolding & { sectors: { name: string } })[]
 }
 
 function formatDateHeader(iso: string): string {
@@ -25,9 +27,16 @@ function formatDateSub(iso: string): string {
   return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
-export default function EarningsClient({ earnings }: Props) {
+export default function EarningsClient({ earnings, holdings }: Props) {
   const [query,  setQuery]  = useState('')
   const [sector, setSector] = useState<string>('all')
+  const [selectedTicker, setSelectedTicker] = useState<(SectorHolding & { sectors: { name: string } }) | null>(null)
+
+  const holdingByTicker = useMemo(() => {
+    const map = new Map<string, SectorHolding & { sectors: { name: string } }>()
+    for (const h of holdings) map.set(h.ticker, h)
+    return map
+  }, [holdings])
 
   const sectorNames = useMemo(() => {
     const set = new Set(earnings.map(e => e.sector_name).filter(Boolean) as string[])
@@ -43,6 +52,8 @@ export default function EarningsClient({ earnings }: Props) {
     })
   }, [earnings, query, sector])
 
+  const TIME_ORDER: Record<string, number> = { bmo: 0, unspecified: 1, amc: 2 }
+
   const grouped = useMemo(() => {
     const map = new Map<string, TickerEarnings[]>()
     for (const e of filtered) {
@@ -50,7 +61,14 @@ export default function EarningsClient({ earnings }: Props) {
       if (!map.has(e.earnings_date)) map.set(e.earnings_date, [])
       map.get(e.earnings_date)!.push(e)
     }
-    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b))
+    const entries = Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b))
+    // Within each date: BMO (pre-market) first, then unspecified, then AMC
+    // (after-close) last — matches the actual chronological order these
+    // releases happen in during a real trading day.
+    for (const [, rows] of entries) {
+      rows.sort((a, b) => (TIME_ORDER[a.earnings_time ?? 'unspecified'] ?? 1) - (TIME_ORDER[b.earnings_time ?? 'unspecified'] ?? 1))
+    }
+    return entries
   }, [filtered])
 
   const lastSynced = useMemo(() => {
@@ -128,31 +146,38 @@ export default function EarningsClient({ earnings }: Props) {
                   boxShadow: 'var(--shadow-glass)',
                 }}
               >
-                {rows.map(e => (
-                  <div key={e.ticker} className="flex items-center gap-3 px-4 py-3">
-                    <span className="font-mono text-[11px] font-black px-1.5 py-1 rounded-[8px] bg-slate-50 dark:bg-white/5 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/20 shrink-0">
-                      {e.ticker}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight">
-                        {e.company_name}
-                      </p>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
-                        {e.sector_name}
-                      </p>
+                {rows.map(e => {
+                  const holding = holdingByTicker.get(e.ticker)
+                  return (
+                    <div
+                      key={e.ticker}
+                      onClick={() => holding && setSelectedTicker(holding)}
+                      className={`flex items-center gap-3 px-4 py-3 transition-colors ${holding ? 'cursor-pointer hover:bg-slate-50/80 dark:hover:bg-white/5' : ''}`}
+                    >
+                      <span className="font-mono text-[11px] font-black px-1.5 py-1 rounded-[8px] bg-slate-50 dark:bg-white/5 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/20 shrink-0">
+                        {e.ticker}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight">
+                          {e.company_name}
+                        </p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                          {e.sector_name}
+                        </p>
+                      </div>
+                      {e.earnings_time === 'bmo' && (
+                        <span className="flex items-center gap-1 text-[9px] font-black tracking-wide bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/25 px-2 py-1 rounded-full shrink-0">
+                          <SunIcon size={9} /> BMO
+                        </span>
+                      )}
+                      {e.earnings_time === 'amc' && (
+                        <span className="flex items-center gap-1 text-[9px] font-black tracking-wide bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-200/50 dark:border-sky-500/25 px-2 py-1 rounded-full shrink-0">
+                          <MoonIcon size={9} /> AMC
+                        </span>
+                      )}
                     </div>
-                    {e.earnings_time === 'bmo' && (
-                      <span className="flex items-center gap-1 text-[9px] font-black tracking-wide bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/25 px-2 py-1 rounded-full shrink-0">
-                        <SunIcon size={9} /> BMO
-                      </span>
-                    )}
-                    {e.earnings_time === 'amc' && (
-                      <span className="flex items-center gap-1 text-[9px] font-black tracking-wide bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-200/50 dark:border-sky-500/25 px-2 py-1 rounded-full shrink-0">
-                        <MoonIcon size={9} /> AMC
-                      </span>
-                    )}
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           ))}
@@ -161,7 +186,7 @@ export default function EarningsClient({ earnings }: Props) {
 
       {/* Footer */}
       <div className="mt-6 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500">
-        <span>Eagleview v4.4.19</span>
+        <span>Eagleview v4.4.20</span>
         {lastSynced && (
           <span>
             Last sync: {new Date(lastSynced).toLocaleString('en-US', {
@@ -170,6 +195,14 @@ export default function EarningsClient({ earnings }: Props) {
           </span>
         )}
       </div>
+
+      {selectedTicker && (
+        <TickerModal
+          holding={selectedTicker}
+          sectorName={selectedTicker.sectors?.name ?? ''}
+          onClose={() => setSelectedTicker(null)}
+        />
+      )}
     </div>
   )
 }

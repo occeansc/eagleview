@@ -15,6 +15,12 @@ export interface TickerInfo {
 
 const warm = new Map<string, { payload: TickerInfo; at: number }>()
 const WARM_TTL = 4 * 60 * 60 * 1000
+// Bump this whenever TickerInfo's shape changes — a stale cache entry from
+// before a schema change would otherwise silently mask new fields for up
+// to WARM_TTL, exactly what happened when marketCap/peRatio/week52High/
+// nextEarnings/earningsTime were added but existing cached entries (keyed
+// only by symbol) kept being served without them.
+const SCHEMA_VERSION = 'v2'
 
 const COMPANY_SIGNALS = [
   'company','corporation','incorporated','founded','headquartered',
@@ -198,7 +204,7 @@ export async function GET(req: NextRequest, { params }: { params: { symbol: stri
   const symbol      = params.symbol.toUpperCase()
   const companyName = new URL(req.url).searchParams.get('company') ?? symbol
 
-  const cached = warm.get(symbol)
+  const cached = warm.get(`${symbol}:${SCHEMA_VERSION}`)
   if (cached && Date.now() - cached.at < WARM_TTL) {
     return NextResponse.json(cached.payload, { headers: { 'X-Cache': 'HIT' } })
   }
@@ -227,6 +233,6 @@ export async function GET(req: NextRequest, { params }: { params: { symbol: stri
     earningsTime: apiResult?.earningsTime ?? null,
   }
 
-  warm.set(symbol, { payload, at: Date.now() })
+  warm.set(`${symbol}:${SCHEMA_VERSION}`, { payload, at: Date.now() })
   return NextResponse.json(payload, { headers: { 'X-Cache': 'MISS' } })
 }
