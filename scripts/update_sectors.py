@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.4.22 — Data Updater
+Eagleview v4.4.23 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -33,45 +33,44 @@ log = logging.getLogger(__name__)
 SECTOR_STOCKS = [
     ("Semiconductors", [
         ("NVDA","NVIDIA"), ("AMD","Advanced Micro Devices"), ("AVGO","Broadcom"),
-        ("TSM","Taiwan Semiconductor"), ("QCOM","Qualcomm"), ("INTC","Intel"),
-        ("MU","Micron Technology"), ("AMAT","Applied Materials"), ("LRCX","Lam Research"),
-        ("KLAC","KLA Corp"), ("ASML","ASML Holding"), ("TXN","Texas Instruments"),
+        ("TSM","Taiwan Semiconductor"), ("ASML","ASML Holding"), ("SKHY","SK hynix ADR"),
+        ("ARM","Arm Holdings"), ("MU","Micron Technology"), ("INTC","Intel"),
+        ("QCOM","Qualcomm"), ("MRVL","Marvell Technology"), ("AMAT","Applied Materials"),
+        ("LRCX","Lam Research"), ("KLAC","KLA Corp"), ("TXN","Texas Instruments"),
         ("ADI","Analog Devices"), ("MCHP","Microchip Technology"), ("ON","ON Semiconductor"),
-        ("NXPI","NXP Semiconductors"), ("MRVL","Marvell Technology"), ("MPWR","Monolithic Power"),
-        ("ARM","ARM Holdings"), ("STX","Seagate Technology"),
-        ("WDC","Western Digital"), ("SNDK","SanDisk"),
-        ("ALAB","Astera Labs"), ("AXTI","AXT Inc"),
-        ("SWKS","Skyworks Solutions"), ("QRVO","Qorvo"), ("GFS","GlobalFoundries"),
+        ("NXPI","NXP Semiconductors"), ("MPWR","Monolithic Power Systems"), ("GFS","GlobalFoundries"),
+        ("ALAB","Astera Labs"), ("SWKS","Skyworks Solutions"), ("QRVO","Qorvo"),
+        ("STM","STMicroelectronics"),
     ]),
     ("Software & Cloud", [
-        ("MSFT","Microsoft"), ("CRM","Salesforce"), ("NOW","ServiceNow"),
-        ("SNOW","Snowflake"), ("DDOG","Datadog"), ("MDB","MongoDB"),
-        ("HUBS","HubSpot"), ("WDAY","Workday"), ("VEEV","Veeva Systems"),
-        ("TEAM","Atlassian"), ("GTLB","GitLab"), ("PATH","UiPath"),
-        ("TWLO","Twilio"), ("BILL","Bill.com"), ("DOCN","DigitalOcean"),
-        ("MSCI","MSCI Inc"), ("PCTY","Paylocity"), ("ESTC","Elastic"),
-        ("ORCL","Oracle"), ("ADBE","Adobe"),
+        ("MSFT","Microsoft"), ("ORCL","Oracle"), ("ADBE","Adobe"),
+        ("CRM","Salesforce"), ("NOW","ServiceNow"), ("SNOW","Snowflake"),
+        ("DDOG","Datadog"), ("MDB","MongoDB"), ("HUBS","HubSpot"),
+        ("WDAY","Workday"), ("VEEV","Veeva Systems"), ("TEAM","Atlassian"),
+        ("GTLB","GitLab"), ("PATH","UiPath"), ("TWLO","Twilio"),
+        ("BILL","BILL Holdings"), ("DOCN","DigitalOcean"), ("PCTY","Paylocity"),
+        ("ESTC","Elastic"), ("APPF","AppFolio"), ("PCOR","Procore Technologies"),
+        ("ZM","Zoom Communications"), ("U","Unity Software"), ("BOX","Box"),
     ]),
     ("Cybersecurity", [
         ("CRWD","CrowdStrike"), ("PANW","Palo Alto Networks"), ("ZS","Zscaler"),
         ("FTNT","Fortinet"), ("S","SentinelOne"), ("OKTA","Okta"),
         ("RBRK","Rubrik"), ("TENB","Tenable"), ("RPD","Rapid7"),
         ("QLYS","Qualys"), ("NET","Cloudflare"), ("CHKP","Check Point"),
-        ("BAH","Booz Allen Hamilton"), ("CACI","CACI International"), ("LDOS","Leidos"),
-        ("SAIC","SAIC"), ("CSCO","Cisco Systems"), ("DXC","DXC Technology"),
-        ("EPAM","EPAM Systems"), ("AKAM","Akamai Technologies"),
+        ("DT","Dynatrace"), ("GEN","Gen Digital"), ("VRNS","Varonis Systems"),
+        ("RDWR","Radware"), ("AKAM","Akamai Technologies"), ("CSCO","Cisco Systems"),
+        ("FFIV","F5"), ("FSLY","Fastly"), ("BB","BlackBerry"),
+        ("CACI","CACI International"), ("LDOS","Leidos"), ("BAH","Booz Allen Hamilton"),
     ]),
     ("AI & Machine Learning", [
         ("PLTR","Palantir"), ("AI","C3.ai"), ("BBAI","BigBear.ai"),
         ("SOUN","SoundHound AI"), ("GOOG","Alphabet"), ("META","Meta Platforms"),
-        ("AAPL","Apple"),
-        ("IBM","IBM"), ("AMBA","Ambarella"), ("PEGA","Pegasystems"),
-        ("NICE","NICE Systems"), ("SDGR","Schrodinger"),
-        ("RXRX","Recursion Pharma"), ("TEM","Tempus AI"), ("APP","AppLovin"),
-        ("AEVA","Aeva Technologies"), ("ORCL","Oracle"),
-        ("ASAN","Asana"), ("BRZE","Braze"), ("UPST","Upstart"),
-        ("NBIS","Nebius Group"), ("CRWV","CoreWeave"),
-        ("MSFT","Microsoft"),
+        ("AAPL","Apple"), ("IBM","IBM"), ("AMBA","Ambarella"),
+        ("PEGA","Pegasystems"), ("NICE","NICE Systems"), ("SDGR","Schrodinger"),
+        ("RXRX","Recursion Pharmaceuticals"), ("TEM","Tempus AI"), ("APP","AppLovin"),
+        ("AEVA","Aeva Technologies"), ("ASAN","Asana"), ("BRZE","Braze"),
+        ("UPST","Upstart"), ("NBIS","Nebius Group"), ("CRWV","CoreWeave"),
+        ("MSFT","Microsoft"), ("NVDA","NVIDIA"), ("ORCL","Oracle"),
     ]),
     ("Fintech & Insurtech", [
         ("XYZ","Block"), ("PYPL","PayPal"), ("HOOD","Robinhood"),
@@ -80,26 +79,28 @@ SECTOR_STOCKS = [
         ("RELY","Remitly"), ("TOST","Toast"), ("FLYW","Flywire"),
         ("DAVE","Dave"), ("NRDS","NerdWallet"), ("LC","LendingClub"),
         ("CLOV","Clover Health"), ("FICO","Fair Isaac"), ("WEX","WEX"),
-        ("FISV","Fiserv"), ("GPN","Global Payments"),
+        ("FIS","Fidelity National Information Services"), ("GPN","Global Payments"), ("QFIN","Qifu Technology"),
+        ("STNE","StoneCo"), ("PAGS","PagSeguro Digital"), ("FOUR","Shift4 Payments"),
     ]),
     ("Digital Assets & Crypto", [
         ("COIN","Coinbase"), ("MSTR","MicroStrategy"), ("MARA","Marathon Digital"),
         ("RIOT","Riot Platforms"), ("CLSK","CleanSpark"), ("HUT","Hut 8"),
-        ("BTBT","Bit Digital"), ("CIFR","Cipher Mining"),
-        ("IREN","Iris Energy"), ("WULF","TeraWulf"), ("CORZ","Core Scientific"),
-        ("CRCL","Circle Internet Group"), ("ASST","Strive"), ("BKKT","Bakkt"),
-        ("HIVE","HIVE Digital"), ("KEEL","Keel Infrastructure"),
+        ("BTBT","Bit Digital"), ("CIFR","Cipher Mining"), ("IREN","IREN"),
+        ("WULF","TeraWulf"), ("CORZ","Core Scientific"), ("CRCL","Circle Internet Group"),
+        ("BKKT","Bakkt"), ("HIVE","HIVE Digital"), ("BTDR","Bitdeer Technologies"),
+        ("BTCS","BTCS Inc"), ("CAN","Canaan"), ("EBON","Ebang International"),
+        ("APLD","Applied Digital"), ("GREE","Greenidge Generation"), ("ANY","Sphere 3D"),
+        ("LMFA","LM Funding America"), ("ARBK","Argo Blockchain"), ("GLXY","Galaxy Digital"),
     ]),
     ("Biotech & Genomics", [
         ("CRSP","CRISPR Therapeutics"), ("EDIT","Editas Medicine"), ("BEAM","Beam Therapeutics"),
-        ("NTLA","Intellia Therapeutics"), ("PRME","Prime Medicine"),
-        ("IONS","Ionis Pharmaceuticals"), ("ALNY","Alnylam Pharmaceuticals"), ("REGN","Regeneron"),
-        ("MRNA","Moderna"), ("BNTX","BioNTech"), ("VRTX","Vertex Pharmaceuticals"),
-        ("HALO","Halozyme Therapeutics"), ("ARWR","Arrowhead Pharma"),
-        ("INSM","Insmed"), ("RXRX","Recursion Pharma"), ("BMRN","BioMarin Pharma"),
-        ("ILMN","Illumina"), ("NTRA","Natera"),
-        ("TXG","10x Genomics"), ("PACB","Pacific Biosciences"),
-        ("GH","Guardant Health"),
+        ("NTLA","Intellia Therapeutics"), ("PRME","Prime Medicine"), ("IONS","Ionis Pharmaceuticals"),
+        ("ALNY","Alnylam Pharmaceuticals"), ("REGN","Regeneron"), ("MRNA","Moderna"),
+        ("BNTX","BioNTech"), ("VRTX","Vertex Pharmaceuticals"), ("HALO","Halozyme Therapeutics"),
+        ("ARWR","Arrowhead Pharmaceuticals"), ("INSM","Insmed"), ("RXRX","Recursion Pharmaceuticals"),
+        ("BMRN","BioMarin Pharmaceutical"), ("ILMN","Illumina"), ("NTRA","Natera"),
+        ("TXG","10x Genomics"), ("PACB","Pacific Biosciences"), ("GH","Guardant Health"),
+        ("DNA","Ginkgo Bioworks"), ("TWST","Twist Bioscience"), ("SANA","Sana Biotechnology"),
     ]),
     ("Pharma & MedTech", [
         ("JNJ","Johnson & Johnson"), ("PFE","Pfizer"), ("LLY","Eli Lilly"),
@@ -108,27 +109,28 @@ SECTOR_STOCKS = [
         ("MDT","Medtronic"), ("EW","Edwards Lifesciences"), ("SYK","Stryker"),
         ("BSX","Boston Scientific"), ("DXCM","Dexcom"), ("PODD","Insulet"),
         ("BDX","Becton Dickinson"), ("ZBH","Zimmer Biomet"), ("INMD","InMode"),
-        ("AMGN","Amgen"), ("GILD","Gilead Sciences"),
-        ("UNH","UnitedHealth Group"), ("ABT","Abbott Laboratories"),
+        ("AMGN","Amgen"), ("GILD","Gilead Sciences"), ("UNH","UnitedHealth Group"),
+        ("ABT","Abbott Laboratories"), ("TMO","Thermo Fisher Scientific"), ("DHR","Danaher"),
     ]),
     ("EV, Battery & Autonomy", [
-        ("TSLA","Tesla"), ("RIVN","Rivian"), ("LCID","Lucid Motors"),
+        ("TSLA","Tesla"), ("RIVN","Rivian"), ("LCID","Lucid Group"),
         ("NIO","NIO"), ("LI","Li Auto"), ("XPEV","XPeng"),
         ("QS","QuantumScape"), ("EVGO","EVgo"), ("BLNK","Blink Charging"),
-        ("ALB","Albemarle"), ("SQM","SQM"),
-        ("LAC","Lithium Americas"), ("ACHR","Archer Aviation"), ("SLI","Standard Lithium"),
-        ("MP","MP Materials"), ("LEA","Lear Corp"), ("MGA","Magna International"),
-        ("MBLY","Mobileye"), ("BYDDF","BYD Company"),
-        ("SLDP","Solid Power"), ("TOELY","Toyota Motor ADR"),
+        ("CHPT","ChargePoint"), ("ALB","Albemarle"), ("SQM","SQM"),
+        ("LAC","Lithium Americas"), ("SES","SES AI"), ("SLI","Standard Lithium"),
+        ("MP","MP Materials"), ("LEA","Lear"), ("MGA","Magna International"),
+        ("MBLY","Mobileye"), ("SLDP","Solid Power"), ("AUR","Aurora Innovation"),
+        ("ENVX","Enovix"), ("ACHR","Archer Aviation"), ("JOBY","Joby Aviation"),
     ]),
     ("Space & Satellites", [
         ("RKLB","Rocket Lab"), ("ASTS","AST SpaceMobile"), ("LUNR","Intuitive Machines"),
-        ("SPCE","Virgin Galactic"), ("KTOS","Kratos Defense"), ("RDW","Redwire"),
-        ("IRDM","Iridium"), ("VSAT","Viasat"), ("GSAT","Globalstar"),
-        ("BKSY","BlackSky"), ("SPIR","Spire Global"), ("PL","Planet Labs"),
-        ("HEI","HEICO"), ("TDY","Teledyne"), ("ATRO","Astronics"),
-        ("SATL","Satellogic"), ("MNTS","Momentus"), ("LHX","L3Harris"),
-        ("NOC","Northrop Grumman"), ("BA","Boeing"), ("SPCX","SpaceX"),
+        ("SPCE","Virgin Galactic"), ("RDW","Redwire"), ("IRDM","Iridium Communications"),
+        ("VSAT","Viasat"), ("GSAT","Globalstar"), ("BKSY","BlackSky Technology"),
+        ("SPIR","Spire Global"), ("PL","Planet Labs"), ("SATL","Satellogic"),
+        ("MNTS","Momentus"), ("KTOS","Kratos Defense"), ("LHX","L3Harris"),
+        ("NOC","Northrop Grumman"), ("BA","Boeing"), ("TDY","Teledyne"),
+        ("HEI","HEICO"), ("ATRO","Astronics"), ("GILT","Gilat Satellite Networks"),
+        ("SATS","EchoStar"), ("RCAT","Red Cat Holdings"), ("PDYN","Palladyne AI"),
     ]),
     ("Defense & Aerospace", [
         ("LMT","Lockheed Martin"), ("NOC","Northrop Grumman"), ("RTX","RTX Corp"),
@@ -136,27 +138,29 @@ SECTOR_STOCKS = [
         ("HII","Huntington Ingalls"), ("TDY","Teledyne"), ("KTOS","Kratos Defense"),
         ("HEI","HEICO"), ("LDOS","Leidos"), ("CACI","CACI International"),
         ("BAH","Booz Allen Hamilton"), ("SAIC","SAIC"), ("BWXT","BWX Technologies"),
-        ("AXON","Axon Enterprise"), ("SWBI","Smith & Wesson Brands"), ("AVAV","AeroVironment"),
-        ("DRS","Leonardo DRS"), ("MRCY","Mercury Systems"),
+        ("AXON","Axon Enterprise"), ("AVAV","AeroVironment"), ("DRS","Leonardo DRS"),
+        ("MRCY","Mercury Systems"), ("TXT","Textron"), ("CW","Curtiss-Wright"),
+        ("AIR","AAR Corp"), ("HWM","Howmet Aerospace"), ("OSK","Oshkosh"),
     ]),
     ("Robotics & Automation", [
-        ("ABBNY","ABB Ltd ADR"), ("TER","Teradyne"), ("AZTA","Azenta"),
-        ("NOVT","Novanta"), ("RRX","Rexnord"), ("EMR","Emerson Electric"),
-        ("ROK","Rockwell Automation"), ("PH","Parker Hannifin"), ("HON","Honeywell"),
-        ("IR","Ingersoll Rand"), ("FANUY","Fanuc"),
-        ("SYM","Symbotic"), ("TSLA","Tesla"), ("SERV","Serve Robotics"),
-        ("ACMR","ACM Research"), ("FORM","FormFactor"), ("COHU","Cohu"),
-        ("ONTO","Onto Innovation"), ("ENTG","Entegris"), ("AEIS","Advanced Energy Industries"),
+        ("TER","Teradyne"), ("AZTA","Azenta"), ("NOVT","Novanta"),
+        ("RRX","Regal Rexnord"), ("EMR","Emerson Electric"), ("ROK","Rockwell Automation"),
+        ("PH","Parker Hannifin"), ("HON","Honeywell"), ("IR","Ingersoll Rand"),
+        ("SYM","Symbotic"), ("SERV","Serve Robotics"), ("ACMR","ACM Research"),
+        ("FORM","FormFactor"), ("COHU","Cohu"), ("ONTO","Onto Innovation"),
+        ("ENTG","Entegris"), ("AEIS","Advanced Energy Industries"), ("CGNX","Cognex"),
+        ("ZBRA","Zebra Technologies"), ("IOT","Samsara"), ("KSCP","Knightscope"),
+        ("ISRG","Intuitive Surgical"), ("DE","Deere & Company"), ("AME","AMETEK"),
     ]),
     ("Photonics & Optical", [
-        ("COHR","Coherent Corp"), ("LITE","Lumentum"), ("VIAV","Viavi Solutions"),
-        ("LPTH","LightPath Technologies"), ("AAOI","Applied Optoelectronics"),
-        ("LSCC","Lattice Semiconductor"), ("INVZ","Innoviz Technologies"),
-        ("OUST","Ouster"), ("AEVA","Aeva Technologies"), ("MVIS","MicroVision"),
-        ("IPGP","IPG Photonics"), ("MTSI","MACOM Technology"), ("MKSI","MKS Instruments"),
-        ("CRUS","Cirrus Logic"), ("CIEN","Ciena"),
-        ("OSIS","OSI Systems"), ("HIMX","Himax Technologies"),
-        ("AXTI","AXT Inc"), ("POET","POET Technologies"),
+        ("COHR","Coherent"), ("LITE","Lumentum"), ("VIAV","Viavi Solutions"),
+        ("LPTH","LightPath Technologies"), ("AAOI","Applied Optoelectronics"), ("LSCC","Lattice Semiconductor"),
+        ("INVZ","Innoviz Technologies"), ("OUST","Ouster"), ("AEVA","Aeva Technologies"),
+        ("MVIS","MicroVision"), ("IPGP","IPG Photonics"), ("MTSI","MACOM Technology Solutions"),
+        ("MKSI","MKS Instruments"), ("CRUS","Cirrus Logic"), ("CIEN","Ciena"),
+        ("OSIS","OSI Systems"), ("HIMX","Himax Technologies"), ("AXTI","AXT Inc"),
+        ("POET","POET Technologies"), ("OLED","Universal Display"), ("GLW","Corning"),
+        ("APH","Amphenol"), ("TEL","TE Connectivity"), ("NVTS","Navitas Semiconductor"),
     ]),
     ("Nuclear & Uranium", [
         ("CCJ","Cameco"), ("NXE","NexGen Energy"), ("DNN","Denison Mines"),
@@ -165,28 +169,29 @@ SECTOR_STOCKS = [
         ("SMR","NuScale Power"), ("OKLO","Oklo"), ("CEG","Constellation Energy"),
         ("VST","Vistra"), ("ETR","Entergy"), ("EXC","Exelon"),
         ("GEV","GE Vernova"), ("LTBR","Lightbridge"), ("BHP","BHP Group"),
-        ("RIO","Rio Tinto"), ("PDN","Paladin Energy"),
+        ("RIO","Rio Tinto"), ("UROY","Uranium Royalty"), ("NNE","Nano Nuclear Energy"),
+        ("ASPI","ASP Isotopes"), ("TLN","Talen Energy"), ("NRG","NRG Energy"),
     ]),
     ("Clean Energy & Solar", [
         ("ENPH","Enphase Energy"), ("SEDG","SolarEdge"), ("FSLR","First Solar"),
-        ("RUN","Sunrun"), ("SPWR","SunPower"), ("ARRY","Array Technologies"),
-        ("CSIQ","Canadian Solar"), ("HASI","Hannon Armstrong"), ("NEE","NextEra Energy"),
-        ("CWEN","Clearway Energy"), ("BEPC","Brookfield Renewable"), ("ORA","Ormat Technologies"),
-        ("PLUG","Plug Power"), ("FCEL","FuelCell Energy"), ("BE","Bloom Energy"),
-        ("MAXN","Maxeon Solar"), ("SHLS","Shoals Technologies"), ("STEM","Stem Inc"),
-        ("FLNC","Fluence Energy"), ("BEP","Brookfield Renewable Partners"),
-        ("EOSE","Eos Energy Enterprises"),
+        ("RUN","Sunrun"), ("ARRY","Array Technologies"), ("CSIQ","Canadian Solar"),
+        ("HASI","HA Sustainable Infrastructure"), ("NEE","NextEra Energy"), ("CWEN","Clearway Energy"),
+        ("BEPC","Brookfield Renewable Corporation"), ("ORA","Ormat Technologies"), ("PLUG","Plug Power"),
+        ("FCEL","FuelCell Energy"), ("BE","Bloom Energy"), ("RNW","ReNew Energy Global"),
+        ("SHLS","Shoals Technologies"), ("STEM","Stem"), ("FLNC","Fluence Energy"),
+        ("BEP","Brookfield Renewable Partners"), ("EOSE","Eos Energy Enterprises"), ("SPRU","Spruce Power"),
+        ("NXT","Nextracker"), ("DQ","Daqo New Energy"), ("JKS","JinkoSolar"),
     ]),
     ("Power & Data Centers", [
-        ("VRT","Vertiv Holdings"), ("ETN","Eaton Corp"), ("HUBB","Hubbell"),
-        ("GEV","GE Vernova"), ("PWR","Quanta Services"), ("FIX","Comfort Systems"),
-        ("EQIX","Equinix"), ("DLR","Digital Realty"),
-        ("SMCI","Super Micro Computer"), ("CLS","Celestica"),
-        ("DELL","Dell Technologies"), ("HPE","Hewlett Packard Enterprise"),
-        ("TT","Trane Technologies"), ("CARR","Carrier Global"),
-        ("POWL","Powell Industries"), ("VST","Vistra"),
-        ("CEG","Constellation Energy"), ("ANET","Arista Networks"),
-        ("POWI","Power Integrations"), ("MYRG","MYR Group"),
+        ("VRT","Vertiv Holdings"), ("ETN","Eaton"), ("HUBB","Hubbell"),
+        ("GEV","GE Vernova"), ("PWR","Quanta Services"), ("FIX","Comfort Systems USA"),
+        ("EQIX","Equinix"), ("DLR","Digital Realty"), ("SMCI","Super Micro Computer"),
+        ("CLS","Celestica"), ("DELL","Dell Technologies"), ("HPE","Hewlett Packard Enterprise"),
+        ("TT","Trane Technologies"), ("CARR","Carrier Global"), ("POWL","Powell Industries"),
+        ("VST","Vistra"), ("CEG","Constellation Energy"), ("ANET","Arista Networks"),
+        ("POWI","Power Integrations"), ("MYRG","MYR Group"), ("TLN","Talen Energy"),
+        ("NRG","NRG Energy"), ("MOD","Modine Manufacturing"), ("JBL","Jabil"),
+        ("FLEX","Flex"),
     ]),
     ("Consumer & E-commerce", [
         ("AMZN","Amazon"), ("EBAY","eBay"), ("ETSY","Etsy"),
@@ -195,118 +200,102 @@ SECTOR_STOCKS = [
         ("MELI","MercadoLibre"), ("SE","Sea Limited"), ("CPNG","Coupang"),
         ("W","Wayfair"), ("CHWY","Chewy"), ("BABA","Alibaba"),
         ("JD","JD.com"), ("PDD","PDD Holdings"), ("DKNG","DraftKings"),
-        ("PENN","PENN Entertainment"), ("DASH","DoorDash"),
-        ("MCD","McDonald's"), ("SBUX","Starbucks"), ("CMG","Chipotle Mexican Grill"),
-        ("YUM","Yum! Brands"), ("DPZ","Domino's Pizza"), ("ELF","e.l.f. Beauty"),
+        ("DASH","DoorDash"), ("MCD","McDonald's"), ("SBUX","Starbucks"),
+        ("CMG","Chipotle Mexican Grill"), ("YUM","Yum! Brands"), ("DPZ","Domino's Pizza"),
+        ("ELF","e.l.f. Beauty"),
     ]),
     ("Traditional Finance", [
         ("JPM","JPMorgan Chase"), ("BAC","Bank of America"), ("WFC","Wells Fargo"),
         ("GS","Goldman Sachs"), ("MS","Morgan Stanley"), ("C","Citigroup"),
         ("BLK","BlackRock"), ("AXP","American Express"), ("V","Visa"),
         ("MA","Mastercard"), ("COF","Capital One"), ("SCHW","Charles Schwab"),
-        ("SYF","Synchrony Financial"), ("ALLY","Ally Financial"), ("FITB","Fifth Third"),
+        ("SYF","Synchrony Financial"), ("ALLY","Ally Financial"), ("FITB","Fifth Third Bancorp"),
         ("KEY","KeyCorp"), ("RF","Regions Financial"), ("CFG","Citizens Financial"),
-        ("HBAN","Huntington Bancshares"), ("PNC","PNC Financial"),
-        ("PGR","Progressive"), ("TRV","Travelers"), ("ALL","Allstate"),
-        ("MET","MetLife"), ("PRU","Prudential Financial"),
+        ("HBAN","Huntington Bancshares"), ("PNC","PNC Financial"), ("PGR","Progressive"),
+        ("TRV","Travelers"), ("ALL","Allstate"), ("MET","MetLife"),
+        ("PRU","Prudential Financial"),
     ]),
     ("Real Estate & REITs", [
         ("AMT","American Tower"), ("PLD","Prologis"), ("EQIX","Equinix"),
         ("CCI","Crown Castle"), ("SPG","Simon Property"), ("PSA","Public Storage"),
-        ("EQR","Equity Residential"), ("AVB","AvalonBay"), ("WELL","Welltower"),
+        ("EQR","Equity Residential"), ("AVB","AvalonBay Communities"), ("WELL","Welltower"),
         ("VTR","Ventas"), ("O","Realty Income"), ("STAG","STAG Industrial"),
-        ("IIPR","Innovative Industrial"), ("REXR","Rexford Industrial"),
-        ("EXR","Extra Space Storage"), ("CUBE","CubeSmart"), ("IRM","Iron Mountain"),
-        ("COLD","Americold Realty"), ("DLR","Digital Realty"), ("SBAC","SBA Communications"),
-        ("DHI","D.R. Horton"), ("LEN","Lennar"), ("PHM","PulteGroup"),
-        ("NVR","NVR Inc"), ("TOL","Toll Brothers"),
+        ("IIPR","Innovative Industrial Properties"), ("REXR","Rexford Industrial Realty"), ("EXR","Extra Space Storage"),
+        ("CUBE","CubeSmart"), ("IRM","Iron Mountain"), ("COLD","Americold Realty"),
+        ("DLR","Digital Realty"), ("SBAC","SBA Communications"), ("DHI","D.R. Horton"),
+        ("LEN","Lennar"), ("PHM","PulteGroup"), ("NVR","NVR"),
+        ("TOL","Toll Brothers"),
     ]),
     ("Travel & Hospitality", [
         ("DAL","Delta Air Lines"), ("UAL","United Airlines"), ("AAL","American Airlines"),
         ("LUV","Southwest Airlines"), ("ALK","Alaska Air"), ("JBLU","JetBlue"),
-        ("RYAAY","Ryanair"), ("EXPE","Expedia"), ("BKNG","Booking Holdings"),
-        ("ABNB","Airbnb"), ("MAR","Marriott"), ("HLT","Hilton"),
-        ("H","Hyatt"), ("IHG","IHG Hotels"), ("WH","Wyndham"),
-        ("TNL","Travel + Leisure"), ("VAC","Marriott Vacations"),
-        ("NCLH","Norwegian Cruise"), ("CCL","Carnival"), ("RCL","Royal Caribbean"),
+        ("RYAAY","Ryanair ADR"), ("EXPE","Expedia"), ("BKNG","Booking Holdings"),
+        ("ABNB","Airbnb"), ("MAR","Marriott International"), ("HLT","Hilton Worldwide"),
+        ("H","Hyatt Hotels"), ("IHG","IHG Hotels & Resorts"), ("WH","Wyndham Hotels"),
+        ("TNL","Travel + Leisure"), ("VAC","Marriott Vacations"), ("NCLH","Norwegian Cruise Line"),
+        ("CCL","Carnival"), ("RCL","Royal Caribbean"), ("CHH","Choice Hotels"),
+        ("WYNN","Wynn Resorts"), ("LVS","Las Vegas Sands"), ("MGM","MGM Resorts"),
+        ("TRIP","Tripadvisor"),
     ]),
     ("Quantum Computing", [
         ("IONQ","IonQ"), ("RGTI","Rigetti Computing"), ("QUBT","Quantum Computing Inc"),
-        ("ARQQ","Arqit Quantum"), ("QBTS","D-Wave Quantum"),
-        ("IBM","IBM"), ("GOOG","Alphabet"), ("HON","Honeywell"),
-        ("MSFT","Microsoft"), ("INTC","Intel"), ("AMZN","Amazon"), ("NVDA","NVIDIA"),
+        ("ARQQ","Arqit Quantum"), ("QBTS","D-Wave Quantum"), ("LAES","SEALSQ"),
+        ("QSI","Quantum-Si"), ("IBM","IBM"), ("GOOG","Alphabet"),
+        ("HON","Honeywell"), ("MSFT","Microsoft"), ("INTC","Intel"),
+        ("AMZN","Amazon"), ("NVDA","NVIDIA"), ("AMAT","Applied Materials"),
+        ("ACN","Accenture"),
     ]),
-
-    # NEW: Industrials & Materials
-    # Real-economy plays: construction, metals, chemicals, materials
-    # CENX, STRL, plus infrastructure/industrial names
     ("Industrials & Materials", [
-        ("CENX","Century Aluminum"),     # aluminum, energy-intensive metals
-        ("STRL","Sterling Infrastructure"), # infrastructure construction
-        ("CAT","Caterpillar"),           # heavy machinery
-        ("DE","Deere & Company"),        # agriculture/construction equipment
-        ("GE","GE Aerospace"),           # industrial conglomerate
-        ("ETN","Eaton Corp"),            # power management (crossover)
-        ("EMR","Emerson Electric"),      # industrial automation
-        ("DOW","Dow Inc"),               # chemicals & materials
-        ("LYB","LyondellBasell"),        # chemicals
-        ("NUE","Nucor"),                 # steel
-        ("STLD","Steel Dynamics"),       # steel
-        ("AA","Alcoa"),                  # aluminum
-        ("FCX","Freeport-McMoRan"),      # copper mining
-        ("NEM","Newmont"),               # gold/mining
-        ("CF","CF Industries"),          # nitrogen fertilizers
-        ("MOS","Mosaic Company"),        # phosphate/potash
-        ("APD","Air Products"),          # industrial gases
-                        # industrial gases (now Linde)
-        ("LIN","Linde"),                 # industrial gases
-        ("VMC","Vulcan Materials"),      # construction aggregates
+        ("CENX","Century Aluminum"), ("STRL","Sterling Infrastructure"), ("CAT","Caterpillar"),
+        ("DE","Deere & Company"), ("GE","GE Aerospace"), ("DOW","Dow"),
+        ("LYB","LyondellBasell"), ("NUE","Nucor"), ("STLD","Steel Dynamics"),
+        ("AA","Alcoa"), ("FCX","Freeport-McMoRan"), ("NEM","Newmont"),
+        ("CF","CF Industries"), ("MOS","Mosaic"), ("APD","Air Products and Chemicals"),
+        ("LIN","Linde"), ("VMC","Vulcan Materials"), ("MLM","Martin Marietta Materials"),
+        ("URI","United Rentals"), ("EXP","Eagle Materials"), ("CLF","Cleveland-Cliffs"),
+        ("MMM","3M"), ("DD","DuPont"), ("EMN","Eastman Chemical"),
     ]),
-
-    # NEW: Oil & Gas / Energy
-    # Traditional energy majors and infrastructure — a notable gap given the
-    # existing Nuclear, Clean Energy, and Power & Data Centers sectors cover
-    # alternative/infra energy but nothing in conventional oil & gas.
     ("Oil & Gas / Energy", [
-        ("XOM","ExxonMobil"), ("CVX","Chevron"), ("OXY","Occidental Petroleum"),
-        ("COP","ConocoPhillips"), ("SLB","SLB"), ("EOG","EOG Resources"),
-        ("MPC","Marathon Petroleum"), ("PSX","Phillips 66"), ("VLO","Valero Energy"),
-        ("WMB","Williams Companies"), ("KMI","Kinder Morgan"), ("HAL","Halliburton"),
-        ("BKR","Baker Hughes"), ("DVN","Devon Energy"), ("FANG","Diamondback Energy"),
-        ("TRGP","Targa Resources"), ("OKE","ONEOK"),
+        ("XOM","ExxonMobil"), ("CVX","Chevron"), ("SHEL","Shell ADR"),
+        ("TTE","TotalEnergies ADR"), ("BP","BP ADR"), ("COP","ConocoPhillips"),
+        ("EOG","EOG Resources"), ("OXY","Occidental Petroleum"), ("FANG","Diamondback Energy"),
+        ("DVN","Devon Energy"), ("EQT","EQT"), ("CNQ","Canadian Natural Resources"),
+        ("SU","Suncor Energy"), ("SLB","SLB"), ("HAL","Halliburton"),
+        ("BKR","Baker Hughes"), ("VLO","Valero Energy"), ("MPC","Marathon Petroleum"),
+        ("PSX","Phillips 66"), ("LNG","Cheniere Energy"), ("WMB","Williams Companies"),
+        ("KMI","Kinder Morgan"), ("TRGP","Targa Resources"), ("OKE","ONEOK"),
+        ("ENB","Enbridge"),
     ]),
-
-    # NEW: Mobility & Logistics
-    # Ride-hailing, delivery, and freight/logistics — a category with no
-    # current home; DASH already lives in Consumer & E-commerce, cross-listed
-    # here since delivery logistics is core to both themes.
     ("Mobility & Logistics", [
         ("UBER","Uber Technologies"), ("LYFT","Lyft"), ("GRAB","Grab Holdings"),
         ("DASH","DoorDash"), ("FDX","FedEx"), ("UPS","United Parcel Service"),
-        ("XPO","XPO Inc"), ("ODFL","Old Dominion Freight Line"), ("JBHT","J.B. Hunt Transport"),
-        ("CHRW","C.H. Robinson Worldwide"), ("KNX","Knight-Swift Transportation"),
-        ("SAIA","Saia Inc"), ("RXO","RXO Inc"), ("LSTR","Landstar System"),
+        ("XPO","XPO"), ("ODFL","Old Dominion Freight Line"), ("JBHT","J.B. Hunt"),
+        ("CHRW","C.H. Robinson"), ("KNX","Knight-Swift Transportation"), ("SAIA","Saia"),
+        ("RXO","RXO"), ("LSTR","Landstar System"), ("GXO","GXO Logistics"),
+        ("EXPD","Expeditors International"), ("SKYW","SkyWest"), ("JOBY","Joby Aviation"),
+        ("ACHR","Archer Aviation"), ("EVTL","Vertical Aerospace"), ("ULCC","Frontier Group"),
+        ("ALGT","Allegiant Travel"), ("HTZ","Hertz Global"), ("CAR","Avis Budget Group"),
     ]),
-
-    # NEW: Media, Telecom & Entertainment
-    # Streaming, broadcast, and telecom infrastructure — covers the
-    # content/distribution layer with no current sector representation.
     ("Media, Telecom & Entertainment", [
         ("DIS","Walt Disney"), ("NFLX","Netflix"), ("WBD","Warner Bros Discovery"),
         ("PSKY","Paramount Skydance"), ("CMCSA","Comcast"), ("T","AT&T"),
-        ("VZ","Verizon Communications"), ("TMUS","T-Mobile US"), ("CHTR","Charter Communications"),
+        ("VZ","Verizon"), ("TMUS","T-Mobile US"), ("CHTR","Charter Communications"),
         ("SPOT","Spotify Technology"), ("LYV","Live Nation Entertainment"), ("ROKU","Roku"),
-        ("FOXA","Fox Corporation"), ("SIRI","Sirius XM Holdings"),
-        ("EA","Electronic Arts"), ("TTWO","Take-Two Interactive"), ("RBLX","Roblox"),
+        ("FOXA","Fox"), ("SIRI","Sirius XM"), ("EA","Electronic Arts"),
+        ("TTWO","Take-Two Interactive"), ("RBLX","Roblox"), ("PINS","Pinterest"),
+        ("SNAP","Snap"), ("TKO","TKO Group"), ("NWSA","News Corp"),
+        ("NYT","New York Times"), ("WMG","Warner Music Group"), ("IMAX","IMAX"),
+        ("MTCH","Match Group"),
     ]),
-
-    # NEW: Digital Health & Telehealth
-    # DTC subscription health platforms and telehealth/insurance disruptors —
-    # a distinct business model (consumer-facing, subscription/marketplace)
-    # from the big pharma manufacturers and device makers in Pharma & MedTech.
     ("Digital Health & Telehealth", [
         ("HIMS","Hims & Hers Health"), ("TDOC","Teladoc Health"), ("OSCR","Oscar Health"),
-        ("GDRX","GoodRx Holdings"), ("DOCS","Doximity"), ("PGNY","Progyny"),
+        ("GDRX","GoodRx"), ("DOCS","Doximity"), ("PGNY","Progyny"),
+        ("AMWL","American Well"), ("LFST","LifeStance Health"), ("EVH","Evolent Health"),
+        ("OM","Outset Medical"), ("HCAT","Health Catalyst"), ("HQY","HealthEquity"),
+        ("CLOV","Clover Health"), ("ALHC","Alignment Healthcare"), ("TEM","Tempus AI"),
+        ("NTRA","Natera"), ("GH","Guardant Health"), ("RMD","ResMed"),
+        ("DXCM","Dexcom"), ("PODD","Insulet"), ("RXRX","Recursion Pharmaceuticals"),
+        ("SDGR","Schrodinger"), ("CERT","Certara"), ("VEEV","Veeva Systems"),
     ]),
 ]
 
@@ -508,7 +497,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.4.22 Data Sync ══")
+    log.info("══ Eagleview v4.4.23 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
