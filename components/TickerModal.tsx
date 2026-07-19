@@ -20,6 +20,11 @@ interface Props {
    the same cached object with zero additional requests. GC'd automatically
    when the user navigates away. No TTL logic needed at this layer.          */
 const clientCache = new Map<string, TickerInfo>()
+// Same schema-version fix as the server-side warm cache — this Map has no
+// expiration for the lifetime of the browser session, so a ticker viewed
+// before this change would otherwise stay permanently stuck with an old,
+// incomplete cached shape no matter what the server now returns.
+const CLIENT_CACHE_VERSION = 'v2'
 
 /* ── Tile palette — consistent with HeatmapClient ──────────────────────── */
 type Pal = { bg: string; text: string; muted: string }
@@ -93,8 +98,9 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
   /* Fetch company info — check client cache first */
   useEffect(() => {
     const ticker = holding.ticker
-    if (clientCache.has(ticker)) {
-      setInfo(clientCache.get(ticker)!)
+    const cacheKey = `${ticker}:${CLIENT_CACHE_VERSION}`
+    if (clientCache.has(cacheKey)) {
+      setInfo(clientCache.get(cacheKey)!)
       setLoading(false)
       return
     }
@@ -107,7 +113,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
     fetch(`/api/ticker-info/${ticker}?company=${encodeURIComponent(holding.company_name)}`, { signal: abortRef.current.signal })
       .then(r => r.json())
       .then((data: TickerInfo) => {
-        clientCache.set(ticker, data)   // warm the module-level cache
+        clientCache.set(cacheKey, data)   // warm the module-level cache
         setInfo(data)
         setLoading(false)
       })
@@ -384,7 +390,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
         {/* Footer */}
         <div className="px-5 py-3 border-t border-slate-100 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400 dark:text-slate-500">
-            Eagleview v4.4.20
+            Eagleview v4.4.21
           </p>
           {info?.website && (
             <a

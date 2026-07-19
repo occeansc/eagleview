@@ -62,60 +62,62 @@ function deriveEarningsTiming(unixSeconds: number): { date: string; time: 'bmo' 
   return { date: `${get('year')}-${get('month')}-${get('day')}`, time }
 }
 
-/* ── Layer 1: Yahoo Finance quoteSummary — assetProfile + summaryProfile ──
-   Combined into one request per host. assetProfile is the primary source
-   (equities); summaryProfile is often populated when assetProfile is empty
-   (common for ETFs, trusts, and some foreign-domiciled ADRs). Trying both
-   in a single call avoids a second round-trip.                            */
-async function fetchYahooAPI(symbol: string): Promise<Partial<TickerInfo> | null> {
+/* ── Layer 1a: assetProfile + summaryProfile + summaryDetail ─────────────────
+   The stable, historically-reliable module combo — this worked fine before
+   calendarEvents was ever added. Kept together since none of these three
+   have shown any of the "works once then fails" behavior calendarEvents
+   exhibits (see fetchYahooCalendar below). */
+async function fetchYahooProfile(symbol: string): Promise<{
+  description: string | null; industry: string | null; employees: number | null
+  country: string | null; website: string | null
+  marketCap: string | null; peRatio: number | null; week52High: number | null
+} | null> {
   for (const host of ['query2.finance.yahoo.com', 'query1.finance.yahoo.com']) {
     try {
       const res = await fetch(
-        `https://${host}/v10/finance/quoteSummary/${symbol}?modules=assetProfile,summaryProfile,summaryDetail,calendarEvents`,
+        `https://${host}/v10/finance/quoteSummary/${symbol}?modules=assetProfile,summaryProfile,summaryDetail`,
         {
           headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Eagleview/1.0)', 'Accept': 'application/json' },
           next: { revalidate: 86400 },
         },
       )
-      if (!res.ok) continue
-      const json = await res.json().catch(() => null)
+      if (!res.ok) {
+        console.warn(`[ticker-info:${symbol}] ${host} profile fetch not OK — status ${res.status}`)
+        continue
+      }
+      const json = await res.json().catch((e) => {
+        console.warn(`[ticker-info:${symbol}] ${host} profile JSON parse failed — ${e}`)
+        return null
+      })
       const result = json?.quoteSummary?.result?.[0]
-      if (!result) continue
+      if (!result) {
+        console.warn(`[ticker-info:${symbol}] ${host} profile: no result in response. Raw error field: ${JSON.stringify(json?.quoteSummary?.error)}`)
+        continue
+      }
 
       const returnedSymbol = result?.symbol ?? ''
-      if (returnedSymbol && returnedSymbol !== symbol) continue
+      if (returnedSymbol && returnedSymbol !== symbol) {
+        console.warn(`[ticker-info:${symbol}] ${host} profile: symbol mismatch, got "${returnedSymbol}"`)
+        continue
+      }
 
-      const asset    = result.assetProfile
-      const summary  = result.summaryProfile
-      const detail   = result.summaryDetail
-      const calendar = result.calendarEvents
+      const asset   = result.assetProfile
+      const summary = result.summaryProfile
+      const detail  = result.summaryDetail
 
-      // Numeric stats — extracted unconditionally, independent of whether
-      // the description below passes its quality gate. These are simple
-      // factual figures with nothing to do with description text quality.
+      console.log(`[ticker-info:${symbol}] ${host} profile: assetProfile=${!!asset} summaryProfile=${!!summary} summaryDetail=${!!detail}`)
+      if (detail) {
+        console.log(`[ticker-info:${symbol}] summaryDetail keys: ${Object.keys(detail).join(',')}`)
+      }
+
       const marketCap:  string | null = detail?.marketCap?.fmt ?? null
       const peRatio:    number | null = typeof detail?.trailingPE?.raw === 'number'
         ? Math.round(detail.trailingPE.raw * 10) / 10 : null
       const week52High: number | null = typeof detail?.fiftyTwoWeekHigh?.raw === 'number'
         ? detail.fiftyTwoWeekHigh.raw : null
 
-      let nextEarnings: string | null = null
-      let earningsTime: 'bmo' | 'amc' | 'unspecified' | null = null
-      const earningsDates = calendar?.earnings?.earningsDate
-      if (Array.isArray(earningsDates) && earningsDates.length > 0) {
-        const soonest = earningsDates
-          .map((e: any) => e?.raw)
-          .filter((ts: any) => typeof ts === 'number' && ts * 1000 >= Date.now())
-          .sort((a: number, b: number) => a - b)[0]
-        if (soonest) {
-          const derived = deriveEarningsTiming(soonest)
-          nextEarnings = derived.date
-          earningsTime = derived.time
-        }
-      }
+      console.log(`[ticker-info:${symbol}] extracted: marketCap=${marketCap} peRatio=${peRatio} week52High=${week52High}`)
 
-      // Description — the ONLY field subject to the quality gate below.
-      // A rejected description no longer discards the numeric stats above.
       const rawDesc = asset?.longBusinessSummary ?? summary?.longBusinessSummary
       let description: string | null = null
       if (rawDesc) {
@@ -125,15 +127,68 @@ async function fetchYahooAPI(symbol: string): Promise<Partial<TickerInfo> | null
 
       return {
         description,
-        industry:    asset?.industry          ?? summary?.industry          ?? null,
-        employees:   asset?.fullTimeEmployees  ?? summary?.fullTimeEmployees ?? null,
-        country:     asset?.country            ?? summary?.country          ?? null,
-        website:     asset?.website            ?? summary?.website          ?? null,
-        marketCap, peRatio, week52High, nextEarnings, earningsTime,
+        industry:  asset?.industry         ?? summary?.industry         ?? null,
+        employees: asset?.fullTimeEmployees ?? summary?.fullTimeEmployees ?? null,
+        country:   asset?.country           ?? summary?.country          ?? null,
+        website:   asset?.website           ?? summary?.website          ?? null,
+        marketCap, peRatio, week52High,
       }
-    } catch { continue }
+    } catch (e) {
+      console.error(`[ticker-info:${symbol}] ${host} profile: exception — ${e}`)
+      continue
+    }
   }
+  console.warn(`[ticker-info:${symbol}] profile: both hosts exhausted, returning null`)
   return null
+}
+
+/* ── Layer 1b: calendarEvents — fully isolated, independent request ──────────
+   This module has shown a distinct "works the first call, then consistently
+   fails on every subsequent call" pattern in production — a signature much
+   more consistent with Yahoo requiring stricter session/crumb handling for
+   this specific module than with a plain code bug. Kept completely separate
+   from fetchYahooProfile above so that if/when this fails, it only costs
+   the "Next Earnings" stat — market cap, P/E, and 52-week high keep working
+   regardless of what calendarEvents does. */
+async function fetchYahooCalendar(symbol: string): Promise<{ nextEarnings: string | null; earningsTime: 'bmo' | 'amc' | 'unspecified' | null }> {
+  for (const host of ['query2.finance.yahoo.com', 'query1.finance.yahoo.com']) {
+    try {
+      const res = await fetch(
+        `https://${host}/v10/finance/quoteSummary/${symbol}?modules=calendarEvents`,
+        {
+          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Eagleview/1.0)', 'Accept': 'application/json' },
+          next: { revalidate: 86400 },
+        },
+      )
+      if (!res.ok) {
+        console.warn(`[ticker-info:${symbol}] ${host} calendar fetch not OK — status ${res.status}`)
+        continue
+      }
+      const json = await res.json().catch((e) => {
+        console.warn(`[ticker-info:${symbol}] ${host} calendar JSON parse failed — ${e}`)
+        return null
+      })
+      const result = json?.quoteSummary?.result?.[0]
+      const calendar = result?.calendarEvents
+      const earningsDates = calendar?.earnings?.earningsDate
+      console.log(`[ticker-info:${symbol}] ${host} calendar: result=${!!result} calendarEvents=${!!calendar} earningsDate=${JSON.stringify(earningsDates)}`)
+      if (!Array.isArray(earningsDates) || earningsDates.length === 0) continue
+
+      const soonest = earningsDates
+        .map((e: any) => e?.raw)
+        .filter((ts: any) => typeof ts === 'number' && ts * 1000 >= Date.now())
+        .sort((a: number, b: number) => a - b)[0]
+      if (!soonest) continue
+
+      const derived = deriveEarningsTiming(soonest)
+      return { nextEarnings: derived.date, earningsTime: derived.time }
+    } catch (e) {
+      console.error(`[ticker-info:${symbol}] ${host} calendar: exception — ${e}`)
+      continue
+    }
+  }
+  console.warn(`[ticker-info:${symbol}] calendar: both hosts exhausted or no upcoming date`)
+  return { nextEarnings: null, earningsTime: null }
 }
 
 /* ── Layer 2: Yahoo Finance webpage — og:description meta tag ──────────────
@@ -210,8 +265,11 @@ export async function GET(req: NextRequest, { params }: { params: { symbol: stri
   }
 
   // Waterfall: Yahoo structured API → Yahoo webpage meta → Wikipedia
-  const apiResult = await fetchYahooAPI(symbol)
-  let description = apiResult?.description ?? null
+  const [profileResult, calendarResult] = await Promise.all([
+    fetchYahooProfile(symbol),
+    fetchYahooCalendar(symbol),
+  ])
+  let description = profileResult?.description ?? null
 
   if (!description) {
     description = await fetchYahooPageMeta(symbol)
@@ -222,15 +280,15 @@ export async function GET(req: NextRequest, { params }: { params: { symbol: stri
 
   const payload: TickerInfo = {
     description,
-    industry:     apiResult?.industry     ?? null,
-    employees:    apiResult?.employees    ?? null,
-    country:      apiResult?.country      ?? null,
-    website:      apiResult?.website      ?? null,
-    marketCap:    apiResult?.marketCap    ?? null,
-    peRatio:      apiResult?.peRatio      ?? null,
-    week52High:   apiResult?.week52High   ?? null,
-    nextEarnings: apiResult?.nextEarnings ?? null,
-    earningsTime: apiResult?.earningsTime ?? null,
+    industry:     profileResult?.industry     ?? null,
+    employees:    profileResult?.employees    ?? null,
+    country:      profileResult?.country      ?? null,
+    website:      profileResult?.website      ?? null,
+    marketCap:    profileResult?.marketCap    ?? null,
+    peRatio:      profileResult?.peRatio      ?? null,
+    week52High:   profileResult?.week52High   ?? null,
+    nextEarnings: calendarResult?.nextEarnings ?? null,
+    earningsTime: calendarResult?.earningsTime ?? null,
   }
 
   warm.set(`${symbol}:${SCHEMA_VERSION}`, { payload, at: Date.now() })
