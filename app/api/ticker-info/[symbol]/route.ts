@@ -20,7 +20,7 @@ const WARM_TTL = 4 * 60 * 60 * 1000
 // to WARM_TTL, exactly what happened when marketCap/peRatio/week52High/
 // nextEarnings/earningsTime were added but existing cached entries (keyed
 // only by symbol) kept being served without them.
-const SCHEMA_VERSION = 'v2'
+const SCHEMA_VERSION = 'v3'
 
 const COMPANY_SIGNALS = [
   'company','corporation','incorporated','founded','headquartered',
@@ -37,6 +37,106 @@ function isCompanyArticle(text: string): boolean {
 
 function trimToTwoSentences(text: string): string {
   return (text.match(/[^.!?]+[.!?]+\s*/g) ?? []).slice(0, 2).join('').trim()
+}
+
+
+const YAHOO_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0 Safari/537.36'
+const YAHOO_SESSION_TTL = 55 * 60 * 1000
+let yahooSession: { crumb: string; cookie: string; at: number } | null = null
+
+function cookieHeaderFromSetCookie(headers: Headers): string {
+  // Node/undici exposes comma-joined Set-Cookie through get('set-cookie') in
+  // this runtime. We only need the first name=value pair from each cookie.
+  const raw = headers.get('set-cookie') ?? ''
+  return raw
+    .split(/,(?=\s*[^;,=]+=[^;,]+)/g)
+    .map(part => part.trim().split(';')[0])
+    .filter(Boolean)
+    .join('; ')
+}
+
+async function getYahooSession(forceRefresh = false): Promise<{ crumb: string; cookie: string } | null> {
+  if (!forceRefresh && yahooSession && Date.now() - yahooSession.at < YAHOO_SESSION_TTL) {
+    return yahooSession
+  }
+
+  try {
+    // fc.yahoo.com intentionally returns 404, but it reliably sets Yahoo's A3
+    // cookie with small headers. finance.yahoo.com pages can trigger undici
+    // header-overflow errors because Yahoo sends very large response headers.
+    const landing = await fetch('https://fc.yahoo.com', {
+      headers: { 'User-Agent': YAHOO_UA, 'Accept': '*/*' },
+      cache: 'no-store',
+    })
+    const cookie = cookieHeaderFromSetCookie(landing.headers)
+    if (!cookie) {
+      console.warn('[ticker-info] Yahoo session bootstrap returned no cookies')
+      return null
+    }
+
+    const crumbRes = await fetch('https://query1.finance.yahoo.com/v1/test/getcrumb', {
+      headers: { 'User-Agent': YAHOO_UA, 'Accept': '*/*', 'Cookie': cookie },
+      cache: 'no-store',
+    })
+    if (!crumbRes.ok) {
+      console.warn(`[ticker-info] Yahoo crumb fetch not OK — status ${crumbRes.status}`)
+      return null
+    }
+
+    const crumb = (await crumbRes.text()).trim()
+    if (!crumb || crumb.includes('<')) {
+      console.warn('[ticker-info] Yahoo crumb fetch returned invalid crumb')
+      return null
+    }
+
+    yahooSession = { crumb, cookie, at: Date.now() }
+    return yahooSession
+  } catch (e) {
+    console.warn(`[ticker-info] Yahoo session bootstrap exception — ${e}`)
+    return null
+  }
+}
+
+async function fetchYahooQuoteSummary(symbol: string, modules: string, label: string): Promise<any | null> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    const session = await getYahooSession(attempt > 0)
+    if (!session) return null
+
+    for (const host of ['query2.finance.yahoo.com', 'query1.finance.yahoo.com']) {
+      try {
+        const url = `https://${host}/v10/finance/quoteSummary/${encodeURIComponent(symbol)}?modules=${encodeURIComponent(modules)}&crumb=${encodeURIComponent(session.crumb)}`
+        const res = await fetch(url, {
+          headers: {
+            'User-Agent': YAHOO_UA,
+            'Accept': 'application/json',
+            'Cookie': session.cookie,
+          },
+          next: { revalidate: 86400 },
+        })
+        if (res.status === 401 || res.status === 403) {
+          console.warn(`[ticker-info:${symbol}] ${host} ${label} fetch auth rejected — status ${res.status}`)
+          yahooSession = null
+          break
+        }
+        if (!res.ok) {
+          console.warn(`[ticker-info:${symbol}] ${host} ${label} fetch not OK — status ${res.status}`)
+          continue
+        }
+        const json = await res.json().catch((e) => {
+          console.warn(`[ticker-info:${symbol}] ${host} ${label} JSON parse failed — ${e}`)
+          return null
+        })
+        const result = json?.quoteSummary?.result?.[0]
+        if (result) return result
+        console.warn(`[ticker-info:${symbol}] ${host} ${label}: no result in response. Raw error field: ${JSON.stringify(json?.quoteSummary?.error)}`)
+      } catch (e) {
+        console.error(`[ticker-info:${symbol}] ${host} ${label}: exception — ${e}`)
+      }
+    }
+  }
+
+  console.warn(`[ticker-info:${symbol}] ${label}: Yahoo quoteSummary exhausted, returning null`)
+  return null
 }
 
 /* Derives calendar date + BMO/AMC from a Unix-seconds earnings timestamp,
@@ -72,74 +172,36 @@ async function fetchYahooProfile(symbol: string): Promise<{
   country: string | null; website: string | null
   marketCap: string | null; peRatio: number | null; week52High: number | null
 } | null> {
-  for (const host of ['query2.finance.yahoo.com', 'query1.finance.yahoo.com']) {
-    try {
-      const res = await fetch(
-        `https://${host}/v10/finance/quoteSummary/${symbol}?modules=assetProfile,summaryProfile,summaryDetail`,
-        {
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Eagleview/1.0)', 'Accept': 'application/json' },
-          next: { revalidate: 86400 },
-        },
-      )
-      if (!res.ok) {
-        console.warn(`[ticker-info:${symbol}] ${host} profile fetch not OK — status ${res.status}`)
-        continue
-      }
-      const json = await res.json().catch((e) => {
-        console.warn(`[ticker-info:${symbol}] ${host} profile JSON parse failed — ${e}`)
-        return null
-      })
-      const result = json?.quoteSummary?.result?.[0]
-      if (!result) {
-        console.warn(`[ticker-info:${symbol}] ${host} profile: no result in response. Raw error field: ${JSON.stringify(json?.quoteSummary?.error)}`)
-        continue
-      }
+  const result = await fetchYahooQuoteSummary(symbol, 'assetProfile,summaryProfile,summaryDetail', 'profile')
+  if (!result) return null
 
-      const returnedSymbol = result?.symbol ?? ''
-      if (returnedSymbol && returnedSymbol !== symbol) {
-        console.warn(`[ticker-info:${symbol}] ${host} profile: symbol mismatch, got "${returnedSymbol}"`)
-        continue
-      }
+  const asset   = result.assetProfile
+  const summary = result.summaryProfile
+  const detail  = result.summaryDetail
 
-      const asset   = result.assetProfile
-      const summary = result.summaryProfile
-      const detail  = result.summaryDetail
+  console.log(`[ticker-info:${symbol}] profile: assetProfile=${!!asset} summaryProfile=${!!summary} summaryDetail=${!!detail}`)
 
-      console.log(`[ticker-info:${symbol}] ${host} profile: assetProfile=${!!asset} summaryProfile=${!!summary} summaryDetail=${!!detail}`)
-      if (detail) {
-        console.log(`[ticker-info:${symbol}] summaryDetail keys: ${Object.keys(detail).join(',')}`)
-      }
+  const marketCap:  string | null = detail?.marketCap?.fmt ?? null
+  const peRatio:    number | null = typeof detail?.trailingPE?.raw === 'number'
+    ? Math.round(detail.trailingPE.raw * 10) / 10 : null
+  const week52High: number | null = typeof detail?.fiftyTwoWeekHigh?.raw === 'number'
+    ? detail.fiftyTwoWeekHigh.raw : null
 
-      const marketCap:  string | null = detail?.marketCap?.fmt ?? null
-      const peRatio:    number | null = typeof detail?.trailingPE?.raw === 'number'
-        ? Math.round(detail.trailingPE.raw * 10) / 10 : null
-      const week52High: number | null = typeof detail?.fiftyTwoWeekHigh?.raw === 'number'
-        ? detail.fiftyTwoWeekHigh.raw : null
-
-      console.log(`[ticker-info:${symbol}] extracted: marketCap=${marketCap} peRatio=${peRatio} week52High=${week52High}`)
-
-      const rawDesc = asset?.longBusinessSummary ?? summary?.longBusinessSummary
-      let description: string | null = null
-      if (rawDesc) {
-        const candidate = trimToTwoSentences(rawDesc)
-        if (isCompanyArticle(candidate)) description = candidate
-      }
-
-      return {
-        description,
-        industry:  asset?.industry         ?? summary?.industry         ?? null,
-        employees: asset?.fullTimeEmployees ?? summary?.fullTimeEmployees ?? null,
-        country:   asset?.country           ?? summary?.country          ?? null,
-        website:   asset?.website           ?? summary?.website          ?? null,
-        marketCap, peRatio, week52High,
-      }
-    } catch (e) {
-      console.error(`[ticker-info:${symbol}] ${host} profile: exception — ${e}`)
-      continue
-    }
+  const rawDesc = asset?.longBusinessSummary ?? summary?.longBusinessSummary
+  let description: string | null = null
+  if (rawDesc) {
+    const candidate = trimToTwoSentences(rawDesc)
+    if (isCompanyArticle(candidate)) description = candidate
   }
-  console.warn(`[ticker-info:${symbol}] profile: both hosts exhausted, returning null`)
-  return null
+
+  return {
+    description,
+    industry:  asset?.industry          ?? summary?.industry          ?? null,
+    employees: asset?.fullTimeEmployees ?? summary?.fullTimeEmployees ?? null,
+    country:   asset?.country           ?? summary?.country           ?? null,
+    website:   asset?.website           ?? summary?.website           ?? null,
+    marketCap, peRatio, week52High,
+  }
 }
 
 /* ── Layer 1b: calendarEvents — fully isolated, independent request ──────────
@@ -151,44 +213,22 @@ async function fetchYahooProfile(symbol: string): Promise<{
    the "Next Earnings" stat — market cap, P/E, and 52-week high keep working
    regardless of what calendarEvents does. */
 async function fetchYahooCalendar(symbol: string): Promise<{ nextEarnings: string | null; earningsTime: 'bmo' | 'amc' | 'unspecified' | null }> {
-  for (const host of ['query2.finance.yahoo.com', 'query1.finance.yahoo.com']) {
-    try {
-      const res = await fetch(
-        `https://${host}/v10/finance/quoteSummary/${symbol}?modules=calendarEvents`,
-        {
-          headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Eagleview/1.0)', 'Accept': 'application/json' },
-          next: { revalidate: 86400 },
-        },
-      )
-      if (!res.ok) {
-        console.warn(`[ticker-info:${symbol}] ${host} calendar fetch not OK — status ${res.status}`)
-        continue
-      }
-      const json = await res.json().catch((e) => {
-        console.warn(`[ticker-info:${symbol}] ${host} calendar JSON parse failed — ${e}`)
-        return null
-      })
-      const result = json?.quoteSummary?.result?.[0]
-      const calendar = result?.calendarEvents
-      const earningsDates = calendar?.earnings?.earningsDate
-      console.log(`[ticker-info:${symbol}] ${host} calendar: result=${!!result} calendarEvents=${!!calendar} earningsDate=${JSON.stringify(earningsDates)}`)
-      if (!Array.isArray(earningsDates) || earningsDates.length === 0) continue
-
-      const soonest = earningsDates
-        .map((e: any) => e?.raw)
-        .filter((ts: any) => typeof ts === 'number' && ts * 1000 >= Date.now())
-        .sort((a: number, b: number) => a - b)[0]
-      if (!soonest) continue
-
-      const derived = deriveEarningsTiming(soonest)
-      return { nextEarnings: derived.date, earningsTime: derived.time }
-    } catch (e) {
-      console.error(`[ticker-info:${symbol}] ${host} calendar: exception — ${e}`)
-      continue
-    }
+  const result = await fetchYahooQuoteSummary(symbol, 'calendarEvents', 'calendar')
+  const calendar = result?.calendarEvents
+  const earningsDates = calendar?.earnings?.earningsDate
+  console.log(`[ticker-info:${symbol}] calendar: result=${!!result} calendarEvents=${!!calendar} earningsDate=${JSON.stringify(earningsDates)}`)
+  if (!Array.isArray(earningsDates) || earningsDates.length === 0) {
+    return { nextEarnings: null, earningsTime: null }
   }
-  console.warn(`[ticker-info:${symbol}] calendar: both hosts exhausted or no upcoming date`)
-  return { nextEarnings: null, earningsTime: null }
+
+  const soonest = earningsDates
+    .map((e: any) => e?.raw)
+    .filter((ts: any) => typeof ts === 'number' && ts * 1000 >= Date.now())
+    .sort((a: number, b: number) => a - b)[0]
+  if (!soonest) return { nextEarnings: null, earningsTime: null }
+
+  const derived = deriveEarningsTiming(soonest)
+  return { nextEarnings: derived.date, earningsTime: derived.time }
 }
 
 /* ── Layer 2: Yahoo Finance webpage — og:description meta tag ──────────────
@@ -198,7 +238,7 @@ async function fetchYahooCalendar(symbol: string): Promise<{ nextEarnings: strin
    fails silently and falls through if Yahoo changes their markup.        */
 async function fetchYahooPageMeta(symbol: string): Promise<string | null> {
   try {
-    const res = await fetch(`https://finance.yahoo.com/quote/${symbol}/profile/`, {
+    const res = await fetch(`https://finance.yahoo.com/quote/${symbol}`, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Eagleview/1.0)' },
       next: { revalidate: 604800 },
     })
