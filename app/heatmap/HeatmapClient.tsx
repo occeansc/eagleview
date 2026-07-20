@@ -82,7 +82,7 @@ function fmt(v: number | null): string {
 export default function HeatmapClient({ sectors, benchmarks }: Props) {
   const { theme } = useTheme()
   const isDark = theme === 'dark'
-  const [period, setPeriod] = useState<Period>('YTD')
+  const [period, setPeriod] = useState<Period>('1D')
   const [active, setActive] = useState<Sector | null>(null)
 
   const spx    = benchmarks.find(b => b.ticker === '^GSPC')

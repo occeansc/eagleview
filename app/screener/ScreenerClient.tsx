@@ -18,7 +18,7 @@ interface Props {
 }
 
 export default function ScreenerClient({ holdings, sectors }: Props) {
-  const [period,    setPeriod]    = useState<Period>('YTD')
+  const [period,    setPeriod]    = useState<Period>('1D')
   const [query,     setQuery]     = useState('')
   const [sector,    setSector]    = useState<number | 'all'>('all')
   const [direction, setDirection] = useState<'all' | 'positive' | 'negative'>('all')
@@ -335,7 +335,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       )}
 
       <p className="text-center text-[10px] text-slate-300 dark:text-slate-600 mt-5 tracking-widest">
-        EAGLEVIEW V4.4.26 · EQUAL-WEIGHTED BASKETS
+        EAGLEVIEW V4.4.27 · EQUAL-WEIGHTED BASKETS
       </p>
 
       {selectedTicker && (

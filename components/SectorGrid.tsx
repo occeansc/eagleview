@@ -25,7 +25,7 @@ const RISING_THRESHOLD  =  5
 const FALLING_THRESHOLD = -5
 
 export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
-  const [period, setPeriod]         = useState<Period>('YTD')
+  const [period, setPeriod]         = useState<Period>('1D')
   const [filterMode, setFilterMode] = useState<FilterMode>('all')
   const [selected, setSelected]     = useState<Sector | null>(null)
 

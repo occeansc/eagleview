@@ -23,19 +23,30 @@ const cardStyle = {
 export default function WatchlistPage() {
   const [holdings, setHoldings] = useState<WatchlistHolding[]>([])
   const [selectedTicker, setSelectedTicker] = useState<WatchlistHolding | null>(null)
-  const [period, setPeriod] = useState<Period>('YTD')
+  const [period, setPeriod] = useState<Period>('1D')
   const [loading, setLoading] = useState(true)
   const { pinnedTickers, toggle, isPinned, ready } = useWatchlist()
+  const pinnedKey = useMemo(() => pinnedTickers.slice().sort().join(','), [pinnedTickers])
 
   useEffect(() => {
+    if (!ready) return
+    const symbols = pinnedKey ? pinnedKey.split(',') : []
+    if (symbols.length === 0) {
+      setHoldings([])
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
     getSupabaseClient()
       .from('sector_holdings')
       .select('*, sectors(name)')
+      .in('ticker', symbols)
       .then(({ data }) => {
         setHoldings((data ?? []) as WatchlistHolding[])
         setLoading(false)
       })
-  }, [])
+  }, [ready, pinnedKey])
 
   const rows = useMemo(() => {
     if (!ready || pinnedTickers.length === 0) return []
@@ -66,9 +77,9 @@ export default function WatchlistPage() {
   }
 
   return (
-    <div className="max-w-5xl mx-auto px-3 sm:px-6 py-6">
-      <div className="flex items-start justify-between mb-6 gap-3">
-        <div>
+    <div className="max-w-5xl mx-auto px-3 sm:px-6 pt-5 pb-8 sm:py-6">
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-5 sm:mb-6 gap-3 sm:gap-4">
+        <div className="pr-14 sm:pr-0">
           <h2 className="text-[22px] font-black tracking-tight text-slate-900 dark:text-slate-100">Watchlist</h2>
           <p className="text-[12px] text-slate-400 dark:text-slate-500 mt-0.5">
             {rows.length === 0
@@ -78,7 +89,7 @@ export default function WatchlistPage() {
         </div>
 
         {rows.length > 0 && (
-          <div className="period-control shrink-0" style={{ maxWidth: '100%' }}>
+          <div className="period-control sm:shrink-0 w-full sm:w-auto" style={{ maxWidth: '100%' }}>
             <div className="period-control-inner">
               {WATCHLIST_PERIODS.map(p => (
                 <button
@@ -140,7 +151,7 @@ export default function WatchlistPage() {
             </div>
           </div>
 
-          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2 sm:gap-3">
             {WATCHLIST_PERIODS.map(p => {
               const rets = rows.map(s => getPeriodValue(s, p)).filter((v): v is number => v !== null)
               const avg = rets.length ? rets.reduce((a,b) => a+b,0) / rets.length : null
@@ -151,7 +162,7 @@ export default function WatchlistPage() {
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
-                  className="rounded-[20px] p-3 sm:p-4 text-left transition-all duration-200"
+                  className="rounded-[18px] sm:rounded-[20px] p-3 sm:p-4 text-left transition-colors duration-150 min-w-0"
                   style={active ? {
                     background: avg === null ? '#0f172a' : pos ? '#052e16' : '#4c0519',
                     border: `1px solid ${avg === null ? '#0f172a' : pos ? '#14532d' : '#881337'}`,
@@ -161,7 +172,7 @@ export default function WatchlistPage() {
                   <p className="text-[9px] font-black tracking-[0.18em] uppercase mb-2 text-slate-400 dark:text-slate-500">
                     {p} Avg
                   </p>
-                  <p className={`font-mono text-[18px] sm:text-[22px] font-extrabold leading-none tabular-nums mb-2 ${
+                  <p className={`font-mono text-[18px] sm:text-[22px] font-extrabold leading-none tabular-nums mb-2 truncate ${
                     avg === null ? 'text-slate-300 dark:text-slate-600'
                       : pos ? (active ? 'text-emerald-400' : 'text-emerald-600 dark:text-emerald-400')
                       : (active ? 'text-rose-400' : 'text-rose-600 dark:text-rose-400')
@@ -185,7 +196,7 @@ export default function WatchlistPage() {
       )}
 
       <p className="text-center text-[10px] text-slate-300 dark:text-slate-600 mt-5 tracking-widest">
-        EAGLEVIEW V4.4.26 · TICKER WATCHLIST
+        EAGLEVIEW V4.4.27 · TICKER WATCHLIST
       </p>
 
       {selectedTicker && (

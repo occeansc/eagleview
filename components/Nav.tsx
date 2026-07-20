@@ -18,6 +18,8 @@ const TABS = [
 const CACHE_KEY  = 'eagleview-sentiment'
 const CACHE_TIME = 'eagleview-sentiment-time'
 const CACHE_TTL  = 900_000 // 15 min — aligns with revalidate = 900
+const REFRESH_KEY = 'eagleview-last-visibility-refresh'
+const REFRESH_TTL = 300_000 // avoid a forced refresh on every app open/page resume
 
 // Tri-state: null = loading, bull/bear/neutral = resolved
 type Sentiment = 'bull' | 'bear' | 'neutral' | null
@@ -27,17 +29,25 @@ export default function Nav() {
   const router = useRouter()
   const [sentiment, setSentiment] = useState<Sentiment>(null)
 
-  // Re-fetch fresh server data whenever the app becomes visible again —
-  // covers both switching back to an installed iOS home-screen app and
-  // returning to a backgrounded browser tab. iOS Safari's standalone mode
-  // is known to cache page responses more aggressively than a normal tab,
-  // on top of this app's 15-minute ISR window (app/page.tsx revalidate),
-  // so without this, "reopen the app" doesn't reliably pull the latest
-  // sync — this makes that the explicit trigger instead of leaving it to
-  // passive HTTP cache behavior iOS doesn't always respect consistently.
+  // Warm route bundles after first paint so switching tabs feels instant.
+  useEffect(() => {
+    TABS.forEach(({ href }) => {
+      if (href !== path) router.prefetch(href)
+    })
+  }, [path, router])
+
+  // Re-fetch fresh server data when the app becomes visible again, but throttle
+  // it. Refreshing on every iOS pageshow made the app feel like it was dragging
+  // even when the user was simply switching pages or briefly reopening it.
   useEffect(() => {
     const onVisible = () => {
-      if (document.visibilityState === 'visible') router.refresh()
+      if (document.visibilityState !== 'visible') return
+      try {
+        const last = Number(sessionStorage.getItem(REFRESH_KEY) || '0')
+        if (Date.now() - last < REFRESH_TTL) return
+        sessionStorage.setItem(REFRESH_KEY, String(Date.now()))
+      } catch { /* sessionStorage unavailable: still refresh */ }
+      router.refresh()
     }
     document.addEventListener('visibilitychange', onVisible)
     window.addEventListener('pageshow', onVisible)
@@ -133,7 +143,7 @@ export default function Nav() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100/60 dark:bg-white/10 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-white/20 tracking-widest">
-            V4.4.26
+            V4.4.27
           </span>
         </div>
       </nav>
@@ -167,7 +177,7 @@ export default function Nav() {
           a full-width bar with a one-sided border — wrong shape entirely
           for a small floating circular control). */}
       <div
-        className="sm:hidden fixed top-3 right-3 z-50 inline-flex rounded-full bg-white dark:bg-slate-900"
+        className="sm:hidden fixed top-[calc(env(safe-area-inset-top,0px)+8px)] right-2.5 z-50 inline-flex rounded-full bg-white/95 dark:bg-slate-900/95"
         style={{
           padding: 3,
           backdropFilter: 'var(--glass-blur-nav)',
