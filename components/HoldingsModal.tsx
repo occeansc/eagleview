@@ -7,7 +7,8 @@ import {
   getPeriodValue, getMomentumDelta, getBreadth, getRankChange, formatPrice, PERIOD_LABELS,
 } from '@/lib/types'
 import { getSupabaseClient } from '@/lib/supabase'
-import { CloseIcon, ZapIcon, ChevronDownIcon } from './Icons'
+import { BookmarkIcon, CloseIcon, ZapIcon, ChevronDownIcon } from './Icons'
+import { useWatchlist } from '@/lib/watchlist'
 import TickerModal from './TickerModal'
 
 interface Props {
@@ -40,6 +41,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
   const [dropdownOpen, setDropdownOpen] = useState<'return' | 'ranked' | null>(null)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const scrollRef   = useRef<HTMLDivElement>(null)
+  const { toggle, isPinned } = useWatchlist()
 
   useEffect(() => {
     getSupabaseClient()
@@ -259,6 +261,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
             {!loading && sorted.length > 0 && (
               <div className="flex items-center gap-2 px-6 pt-3 pb-1">
                 <span className="w-5 shrink-0" />
+                <span className="w-7 shrink-0" />
                 <span className="text-[9px] font-black tracking-widest uppercase text-slate-300 dark:text-slate-600 w-12 text-center shrink-0">Ticker</span>
                 <span className="flex-1 text-[9px] font-black tracking-widest uppercase text-slate-300 dark:text-slate-600">Company</span>
                 <span className="text-[9px] font-black tracking-widest uppercase text-slate-300 dark:text-slate-600 w-16 text-right shrink-0">Price</span>
@@ -284,6 +287,18 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
                       <span className="text-[11px] text-slate-300 dark:text-slate-600 w-5 text-right shrink-0 font-mono tabular-nums">
                         {i + 1}
                       </span>
+                      <button
+                        onClick={e => { e.stopPropagation(); toggle(h.ticker) }}
+                        className={`w-7 h-7 flex items-center justify-center rounded-full shrink-0 transition-all ${
+                          isPinned(h.ticker)
+                            ? 'text-amber-400 hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10'
+                            : 'text-slate-300 dark:text-slate-600 hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10'
+                        }`}
+                        aria-label={isPinned(h.ticker) ? 'Remove from watchlist' : 'Add to watchlist'}
+                        aria-pressed={isPinned(h.ticker)}
+                      >
+                        <BookmarkIcon size={13} filled={isPinned(h.ticker)} />
+                      </button>
                       <span className={`font-mono text-[11px] font-bold px-1.5 py-1 rounded-[8px] shrink-0 w-12 text-center group-hover:opacity-80 transition-opacity ${
                         isPos ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 dark:text-emerald-300' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 dark:text-rose-300'
                       }`}>
@@ -311,7 +326,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
         {/* Footer */}
         <div className="px-6 py-3 border-t border-slate-100 dark:border-white/10 bg-white dark:bg-slate-900 shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400 dark:text-slate-500">
-            Eagleview v4.4.23 · Yahoo Finance
+            Eagleview v4.4.25 · Yahoo Finance
           </p>
           <p className="text-[10px] text-slate-300 dark:text-slate-600 tabular-nums">
             Last sync: {formatSyncTime(sector.updated_at)}

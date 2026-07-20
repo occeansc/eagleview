@@ -2,16 +2,17 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import {
-  Sector, Benchmark, Period, PERIOD_LABELS,
-  getPeriodValue, computeScorecard,
+  SectorHolding, Period, PERIOD_LABELS,
+  getPeriodValue, formatPrice,
 } from '@/lib/types'
 import { useWatchlist } from '@/lib/watchlist'
 import { getSupabaseClient } from '@/lib/supabase'
 import { BookmarkIcon, TrendingUpIcon, TrendingDownIcon } from '@/components/Icons'
-import HoldingsModal from '@/components/HoldingsModal'
+import TickerModal from '@/components/TickerModal'
 
-// Watchlist shows all 5 periods including 1D — consistent with Dashboard/Heatmap/Screener
 const WATCHLIST_PERIODS: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '5Y']
+
+type WatchlistHolding = SectorHolding & { sectors?: { name: string } }
 
 const cardStyle = {
   background:  'var(--bg-surface-1)',
@@ -20,37 +21,43 @@ const cardStyle = {
 }
 
 export default function WatchlistPage() {
-  const [sectors,    setSectors]    = useState<Sector[]>([])
-  const [benchmarks, setBenchmarks] = useState<Benchmark[]>([])
-  const [selected,   setSelected]   = useState<Sector | null>(null)
-  const [period,     setPeriod]     = useState<Period>('YTD')
-  const [loading,    setLoading]    = useState(true)
-  const { pinnedIds, toggle, isPinned, ready } = useWatchlist()
+  const [holdings, setHoldings] = useState<WatchlistHolding[]>([])
+  const [selectedTicker, setSelectedTicker] = useState<WatchlistHolding | null>(null)
+  const [period, setPeriod] = useState<Period>('YTD')
+  const [loading, setLoading] = useState(true)
+  const { pinnedTickers, toggle, isPinned, ready } = useWatchlist()
 
   useEffect(() => {
-    const sb = getSupabaseClient()
-    Promise.all([sb.from('sectors').select('*'), sb.from('benchmarks').select('*')])
-      .then(([s, b]) => {
-        setSectors((s.data ?? []) as Sector[])
-        setBenchmarks((b.data ?? []) as Benchmark[])
+    getSupabaseClient()
+      .from('sector_holdings')
+      .select('*, sectors(name)')
+      .then(({ data }) => {
+        setHoldings((data ?? []) as WatchlistHolding[])
         setLoading(false)
       })
   }, [])
 
-  const spx    = benchmarks.find(b => b.ticker === '^GSPC')
-  const pinned = useMemo(() =>
-    ready ? sectors.filter(s => pinnedIds.includes(s.id)) : [],
-    [sectors, pinnedIds, ready]
-  )
-  const sorted = useMemo(() =>
-    [...pinned].sort((a, b) =>
+  const rows = useMemo(() => {
+    if (!ready || pinnedTickers.length === 0) return []
+    const selected = new Set(pinnedTickers)
+    const byTicker: Record<string, WatchlistHolding> = {}
+    for (const h of holdings) {
+      if (!selected.has(h.ticker.toUpperCase())) continue
+      const current = byTicker[h.ticker]
+      const value = getPeriodValue(h, period) ?? -Infinity
+      const currentValue = current ? getPeriodValue(current, period) ?? -Infinity : -Infinity
+      if (!current || value > currentValue) byTicker[h.ticker] = h
+    }
+    return Object.values(byTicker).sort((a, b) =>
       (getPeriodValue(b, period) ?? -Infinity) - (getPeriodValue(a, period) ?? -Infinity)
-    ), [pinned, period]
-  )
+    )
+  }, [holdings, period, pinnedTickers, ready])
+
+  const posCount = rows.filter(h => (getPeriodValue(h, period) ?? 0) >= 0).length
 
   if (loading) {
     return (
-      <div className="max-w-4xl mx-auto px-3 sm:px-6 py-6 space-y-3">
+      <div className="max-w-5xl mx-auto px-3 sm:px-6 py-6 space-y-3">
         {[1,2,3].map(i => (
           <div key={i} className="animate-pulse h-16 rounded-[20px] bg-white/70 dark:bg-slate-900/70 border border-slate-100 dark:border-white/10" />
         ))}
@@ -59,21 +66,18 @@ export default function WatchlistPage() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-3 sm:px-6 py-6">
-
-      {/* Header */}
+    <div className="max-w-5xl mx-auto px-3 sm:px-6 py-6">
       <div className="flex items-start justify-between mb-6 gap-3">
         <div>
           <h2 className="text-[22px] font-black tracking-tight text-slate-900 dark:text-slate-100">Watchlist</h2>
           <p className="text-[12px] text-slate-400 dark:text-slate-500 mt-0.5">
-            {sorted.length === 0
-              ? 'Pin sectors from the dashboard to track them here'
-              : `${sorted.length} sector${sorted.length !== 1 ? 's' : ''} pinned`}
+            {rows.length === 0
+              ? 'Tap the bookmark icon on any stock to track it here'
+              : `${rows.length} stock${rows.length !== 1 ? 's' : ''} · ${PERIOD_LABELS[period]}`}
           </p>
         </div>
 
-        {/* Period pills — 8 periods, scroll-safe on narrow screens */}
-        {sorted.length > 0 && (
+        {rows.length > 0 && (
           <div className="period-control shrink-0" style={{ maxWidth: '100%' }}>
             <div className="period-control-inner">
               {WATCHLIST_PERIODS.map(p => (
@@ -90,99 +94,68 @@ export default function WatchlistPage() {
         )}
       </div>
 
-      {sorted.length === 0 ? (
-        <EmptyState sectors={sectors} pinnedIds={pinnedIds} toggle={toggle} />
+      {rows.length === 0 ? (
+        <EmptyState />
       ) : (
         <>
-          {/* Comparison table */}
           <div className="rounded-[22px] overflow-hidden mb-5" style={cardStyle}>
-            <div className="overflow-x-auto">
-              <div style={{ minWidth: '620px' }}>
-                <div className="grid grid-cols-[minmax(150px,280px)_repeat(8,48px)_44px] gap-x-2 text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 dark:text-slate-500 px-5 py-3 bg-slate-50/70 dark:bg-white/5 border-b border-slate-100 dark:border-white/10">
-                  <span>Sector</span>
+            <div className="hidden sm:block overflow-x-auto">
+              <div style={{ minWidth: '800px' }}>
+                <div className="grid grid-cols-[36px_72px_minmax(160px,280px)_72px_repeat(8,54px)] gap-x-2 text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 dark:text-slate-500 px-4 py-3 bg-slate-50/70 dark:bg-white/5 border-b border-slate-100 dark:border-white/10">
+                  <span />
+                  <span>Ticker</span>
+                  <span>Company</span>
+                  <span className="text-right">Price</span>
                   {WATCHLIST_PERIODS.map(p => (
                     <span key={p} className={`text-right ${p === period ? 'text-slate-700 dark:text-slate-300' : ''}`}>{p}</span>
                   ))}
-                  <span />
                 </div>
 
-                {sorted.map(sector => {
-                  const sc = computeScorecard(sector, spx)
-                  return (
-                    <div
-                      key={sector.id}
-                      onClick={() => setSelected(sector)}
-                      className="grid grid-cols-[minmax(150px,280px)_repeat(8,48px)_44px] gap-x-2 items-center px-5 py-3.5 hover:bg-slate-50/80 dark:hover:bg-white/5 transition-colors border-b border-slate-50 dark:border-white/5 last:border-0 cursor-pointer"
-                    >
-                      <div className="min-w-0 pr-3">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-[13px] font-bold text-slate-800 dark:text-slate-200">{sector.name}</p>
-                          {sc === 'gold' && (
-                            <span className="text-[8px] font-black tracking-widest bg-amber-50 dark:bg-amber-500/10 border border-amber-200/70 dark:border-amber-500/25 text-amber-600 dark:text-amber-400 dark:text-amber-400 px-1.5 py-0.5 rounded-full uppercase">Gold</span>
-                          )}
-                          {sc === 'silver' && (
-                            <span className="text-[8px] font-black tracking-widest bg-slate-100 dark:bg-white/10 text-slate-500 dark:text-slate-400 px-1.5 py-0.5 rounded-full uppercase">Silver</span>
-                          )}
-                          {sc === 'bronze' && (
-                            <span className="text-[8px] font-black tracking-widest bg-orange-50/70 dark:bg-orange-500/10 text-orange-600/90 dark:text-orange-400 px-1.5 py-0.5 rounded-full uppercase">Bronze</span>
-                          )}
-                        </div>
-                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 truncate">
-                          {sector.stock_count} assets
-                          {sector.breadth_ytd != null && ` · ${sector.breadth_ytd}% br. YTD`}
-                        </p>
-                      </div>
-
-                      {WATCHLIST_PERIODS.map(p => {
-                        const val  = getPeriodValue(sector, p)
-                        const pos  = val !== null && val >= 0
-                        const bold = p === period
-                        return (
-                          <span key={p} className={`font-mono text-right tabular-nums ${bold ? 'font-extrabold' : 'font-semibold'} ${
-                            val === null ? 'text-slate-300 dark:text-slate-600'
-                              : pos ? (bold ? 'text-emerald-600 dark:text-emerald-400' : 'text-emerald-400')
-                              : (bold ? 'text-rose-600 dark:text-rose-400' : 'text-rose-300')
-                          } ${bold ? 'text-[13px]' : 'text-[11px]'}`}>
-                            {val !== null ? `${pos ? '+' : ''}${val.toFixed(1)}%` : '—'}
-                          </span>
-                        )
-                      })}
-
-                      <button
-                        onClick={e => { e.stopPropagation(); toggle(sector.id) }}
-                        className="flex justify-center items-center w-8 h-8 rounded-full text-amber-400 hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all"
-                        title="Remove"
-                      >
-                        <BookmarkIcon size={14} filled />
-                      </button>
-                    </div>
-                  )
-                })}
+                <div className="divide-y divide-slate-50 dark:divide-white/5">
+                  {rows.map(h => (
+                    <WatchlistRow
+                      key={h.ticker}
+                      holding={h}
+                      period={period}
+                      onSelect={() => setSelectedTicker(h)}
+                      onToggle={e => { e.stopPropagation(); toggle(h.ticker) }}
+                      isPinned={isPinned(h.ticker)}
+                    />
+                  ))}
+                </div>
               </div>
+            </div>
+
+            <div className="sm:hidden divide-y divide-slate-50 dark:divide-white/5">
+              {rows.map(h => (
+                <WatchlistMobileRow
+                  key={`${h.ticker}-m`}
+                  holding={h}
+                  period={period}
+                  onSelect={() => setSelectedTicker(h)}
+                  onToggle={e => { e.stopPropagation(); toggle(h.ticker) }}
+                  isPinned={isPinned(h.ticker)}
+                />
+              ))}
             </div>
           </div>
 
-          {/* Stats grid — one card per period */}
           <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 sm:gap-3">
             {WATCHLIST_PERIODS.map(p => {
-              const rets     = sorted.map(s => getPeriodValue(s, p)).filter((v): v is number => v !== null)
-              const avg      = rets.length ? rets.reduce((a,b) => a+b,0) / rets.length : null
-              const posCount = rets.filter(v => v >= 0).length
-              const pos      = avg !== null && avg >= 0
-              const active   = p === period
+              const rets = rows.map(s => getPeriodValue(s, p)).filter((v): v is number => v !== null)
+              const avg = rets.length ? rets.reduce((a,b) => a+b,0) / rets.length : null
+              const periodPosCount = rets.filter(v => v >= 0).length
+              const pos = avg !== null && avg >= 0
+              const active = p === period
               return (
                 <button
                   key={p}
                   onClick={() => setPeriod(p)}
                   className="rounded-[20px] p-3 sm:p-4 text-left transition-all duration-200"
                   style={active ? {
-                    background: avg === null ? '#0f172a'
-                      : pos ? '#052e16'
-                      :        '#4c0519',
+                    background: avg === null ? '#0f172a' : pos ? '#052e16' : '#4c0519',
                     border: `1px solid ${avg === null ? '#0f172a' : pos ? '#14532d' : '#881337'}`,
-                    boxShadow: pos
-                      ? '0 4px 16px rgba(5,46,22,0.35)'
-                      : '0 4px 16px rgba(76,5,25,0.35)',
+                    boxShadow: pos ? '0 4px 16px rgba(5,46,22,0.35)' : '0 4px 16px rgba(76,5,25,0.35)',
                   } : cardStyle}
                 >
                   <p className="text-[9px] font-black tracking-[0.18em] uppercase mb-2 text-slate-400 dark:text-slate-500">
@@ -197,11 +170,11 @@ export default function WatchlistPage() {
                   </p>
                   <div className="flex items-center gap-1.5">
                     {pos
-                      ? <TrendingUpIcon  size={11} className={active ? 'text-emerald-400' : 'text-emerald-500'} />
-                      : <TrendingDownIcon size={11} className={active ? 'text-rose-400'   : 'text-rose-400'}   />
+                      ? <TrendingUpIcon size={11} className={active ? 'text-emerald-400' : 'text-emerald-500'} />
+                      : <TrendingDownIcon size={11} className={active ? 'text-rose-400' : 'text-rose-400'} />
                     }
                     <span className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
-                      {rets.length > 0 ? `${posCount}/${rets.length} +ve` : 'No data'}
+                      {rets.length > 0 ? `${periodPosCount}/${rets.length} +ve` : 'No data'}
                     </span>
                   </div>
                 </button>
@@ -211,67 +184,124 @@ export default function WatchlistPage() {
         </>
       )}
 
-      {selected && (
-        <HoldingsModal
-          sector={selected}
-          period={period}
-          benchmarks={benchmarks}
-          onClose={() => setSelected(null)}
+      <p className="text-center text-[10px] text-slate-300 dark:text-slate-600 mt-5 tracking-widest">
+        EAGLEVIEW V4.4.25 · TICKER WATCHLIST
+      </p>
+
+      {selectedTicker && (
+        <TickerModal
+          holding={selectedTicker}
+          sectorName={selectedTicker.sectors?.name ?? ''}
+          onClose={() => setSelectedTicker(null)}
         />
       )}
     </div>
   )
 }
 
-function EmptyState({ sectors, pinnedIds, toggle }: {
-  sectors: Sector[]; pinnedIds: number[]; toggle: (id: number) => void
-}) {
-  const top = sectors
-    .filter(s => s.ytd_pct !== null)
-    .sort((a, b) => (b.ytd_pct ?? 0) - (a.ytd_pct ?? 0))
-    .slice(0, 6)
+function WatchlistToggle({ active, onClick, size = 14 }: { active: boolean; onClick: (e: React.MouseEvent) => void; size?: number }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`flex items-center justify-center rounded-full transition-all ${
+        active
+          ? 'text-amber-400 hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10'
+          : 'text-slate-300 dark:text-slate-600 hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10'
+      }`}
+      aria-label={active ? 'Remove from watchlist' : 'Add to watchlist'}
+      aria-pressed={active}
+    >
+      <BookmarkIcon size={size} filled={active} />
+    </button>
+  )
+}
 
+function WatchlistRow({ holding, period, onSelect, onToggle, isPinned }: {
+  holding: WatchlistHolding; period: Period; onSelect: () => void; onToggle: (e: React.MouseEvent) => void; isPinned: boolean
+}) {
+  const val = getPeriodValue(holding, period)
+  const isPos = val !== null && val >= 0
+  const sectorName = holding.sectors?.name ?? ''
+  return (
+    <div
+      onClick={onSelect}
+      className={`grid grid-cols-[36px_72px_minmax(160px,280px)_72px_repeat(8,54px)] gap-x-2 items-center px-4 py-2.5 transition-colors cursor-pointer ${
+        isPos ? 'hover:bg-emerald-50/40 dark:hover:bg-emerald-500/10' : 'hover:bg-rose-50/40 dark:hover:bg-rose-500/10'
+      }`}
+    >
+      <WatchlistToggle active={isPinned} onClick={onToggle} />
+      <span className={`font-mono text-[11px] font-black px-1.5 py-1 rounded-[8px] text-center inline-block shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
+        isPos ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/25' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-100 dark:border-rose-500/25'
+      }`}>
+        {holding.ticker}
+      </span>
+      <div className="min-w-0 px-2">
+        <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight">{holding.company_name}</p>
+        <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{sectorName}</p>
+      </div>
+      <span className="font-mono text-[11px] text-slate-400 dark:text-slate-500 text-right tabular-nums">
+        {formatPrice(holding.price ?? null)}
+      </span>
+      {WATCHLIST_PERIODS.map(p => {
+        const v = getPeriodValue(holding, p)
+        const pos = v !== null && v >= 0
+        const bold = p === period
+        return (
+          <span key={p} className={`font-mono text-right tabular-nums ${
+            bold ? `text-[13px] font-extrabold ${pos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`
+                 : `text-[11px] ${pos ? 'text-emerald-400' : 'text-rose-300'}`
+          }`}>
+            {v !== null ? `${pos ? '+' : ''}${v.toFixed(1)}%` : '—'}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
+function WatchlistMobileRow({ holding, period, onSelect, onToggle, isPinned }: {
+  holding: WatchlistHolding; period: Period; onSelect: () => void; onToggle: (e: React.MouseEvent) => void; isPinned: boolean
+}) {
+  const val = getPeriodValue(holding, period)
+  const isPos = val !== null && val >= 0
+  const sectorName = holding.sectors?.name ?? ''
+  return (
+    <div
+      onClick={onSelect}
+      className={`grid grid-cols-[32px_58px_1fr_66px_64px] gap-x-2 items-center px-3 py-2.5 transition-colors cursor-pointer ${
+        isPos ? 'hover:bg-emerald-50/40 dark:hover:bg-emerald-500/10' : 'hover:bg-rose-50/40 dark:hover:bg-rose-500/10'
+      }`}
+    >
+      <WatchlistToggle active={isPinned} onClick={onToggle} size={13} />
+      <span className={`font-mono text-[10px] font-black px-1 py-1 rounded-[7px] text-center inline-block ${
+        isPos ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/25' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-100 dark:border-rose-500/25'
+      }`}>
+        {holding.ticker}
+      </span>
+      <div className="min-w-0 px-1.5">
+        <p className="text-[12px] font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight">{holding.company_name}</p>
+        <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{sectorName}</p>
+      </div>
+      <span className="font-mono text-[10px] text-slate-400 dark:text-slate-500 text-right tabular-nums">
+        {formatPrice(holding.price ?? null)}
+      </span>
+      <span className={`font-mono text-[13px] font-extrabold text-right tabular-nums ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+        {val !== null ? `${isPos ? '+' : ''}${val.toFixed(1)}%` : '—'}
+      </span>
+    </div>
+  )
+}
+
+function EmptyState() {
   return (
     <div className="text-center py-12">
       <div className="w-14 h-14 rounded-[18px] bg-slate-50 dark:bg-white/5 border border-slate-100 dark:border-white/10 flex items-center justify-center mx-auto mb-4 shadow-sm">
         <BookmarkIcon size={24} className="text-slate-200 dark:text-slate-700" />
       </div>
-      <p className="text-slate-700 dark:text-slate-300 font-bold text-[15px] mb-1.5">Nothing pinned yet</p>
-      <p className="text-slate-400 dark:text-slate-500 text-[12px] mb-8 max-w-xs mx-auto leading-relaxed">
-        Tap the bookmark icon on any sector card from the Dashboard to start tracking it here.
+      <p className="text-slate-700 dark:text-slate-300 font-bold text-[15px] mb-1.5">Nothing saved yet</p>
+      <p className="text-slate-400 dark:text-slate-500 text-[12px] max-w-xs mx-auto leading-relaxed">
+        Tap the bookmark icon on any stock from Holdings or Screener.
       </p>
-      {top.length > 0 && (
-        <div className="max-w-sm mx-auto">
-          <p className="text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 dark:text-slate-500 mb-3">
-            Quick-add top sectors
-          </p>
-          <div className="flex flex-col gap-2">
-            {top.map(s => {
-              const pinned = pinnedIds.includes(s.id)
-              const pos = (s.ytd_pct ?? 0) >= 0
-              return (
-                <button
-                  key={s.id}
-                  onClick={() => toggle(s.id)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-[16px] border text-left transition-all ${
-                    pinned
-                      ? 'bg-amber-50 dark:bg-amber-500/10 border-amber-200/70 dark:border-amber-500/25 shadow-[0_2px_8px_rgba(251,191,36,0.12)]'
-                      : 'bg-white dark:bg-slate-900 border-slate-200/60 dark:border-white/20 hover:border-slate-300 dark:hover:border-white/30 shadow-[0_1px_3px_rgba(0,0,0,0.04)]'
-                  }`}
-                >
-                  <BookmarkIcon size={13} filled={pinned} className={pinned ? 'text-amber-400' : 'text-slate-300 dark:text-slate-600'} />
-                  <span className="flex-1 text-[13px] font-semibold text-slate-700 dark:text-slate-300">{s.name}</span>
-                  {s.ytd_pct !== null && (
-                    <span className={`font-mono text-[12px] font-bold tabular-nums ${pos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
-                      {pos ? '+' : ''}{s.ytd_pct.toFixed(1)}%
-                    </span>
-                  )}
-                </button>
-              )
-            })}
-          </div>
-        </div>
-      )}
     </div>
   )
 }

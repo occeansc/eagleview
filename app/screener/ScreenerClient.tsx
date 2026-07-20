@@ -5,7 +5,8 @@ import {
   SectorHolding, Sector, Period,
   PERIOD_LABELS, getPeriodValue, formatPrice,
 } from '@/lib/types'
-import { SearchIcon, TrendingUpIcon, TrendingDownIcon } from '@/components/Icons'
+import { BookmarkIcon, SearchIcon, TrendingUpIcon, TrendingDownIcon } from '@/components/Icons'
+import { useWatchlist } from '@/lib/watchlist'
 import TickerModal from '@/components/TickerModal'
 
 // Screener shows all 8 periods (1D through 5Y) — same pattern as Dashboard.
@@ -23,6 +24,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
   const [direction, setDirection] = useState<'all' | 'positive' | 'negative'>('all')
   const [limit,     setLimit]     = useState(50)
   const [selectedTicker, setSelectedTicker] = useState<SectorHolding | null>(null)
+  const { toggle, isPinned } = useWatchlist()
 
   const filtered = useMemo(() => {
     /* Dedupe: one entry per ticker, keep highest return for active period */
@@ -159,8 +161,9 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
         {/* ── Desktop table (sm+) — full overflow-x-auto with all columns ── */}
         <div className="hidden sm:block overflow-x-auto">
           <div style={{ minWidth: '800px' }}>
-            <div className="grid grid-cols-[28px_64px_minmax(140px,260px)_64px_50px_50px_50px_50px_50px_50px_50px_50px] gap-x-2 text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 dark:text-slate-500 px-4 py-3 bg-slate-50/70 dark:bg-white/5 border-b border-slate-100 dark:border-white/10">
+            <div className="grid grid-cols-[28px_32px_64px_minmax(140px,260px)_64px_50px_50px_50px_50px_50px_50px_50px_50px] gap-x-2 text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 dark:text-slate-500 px-4 py-3 bg-slate-50/70 dark:bg-white/5 border-b border-slate-100 dark:border-white/10">
               <span>#</span>
+              <span />
               <span>Ticker</span>
               <span>Company</span>
               <span className="text-right">Price</span>
@@ -207,10 +210,22 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                   return (
                     <div key={`${h.ticker}-${h.sector_id}`}
                       onClick={() => setSelectedTicker(h)}
-                      className={`grid grid-cols-[28px_64px_minmax(140px,260px)_64px_50px_50px_50px_50px_50px_50px_50px_50px] gap-x-2 items-center px-4 py-2.5 transition-colors cursor-pointer ${
+                      className={`grid grid-cols-[28px_32px_64px_minmax(140px,260px)_64px_50px_50px_50px_50px_50px_50px_50px_50px] gap-x-2 items-center px-4 py-2.5 transition-colors cursor-pointer ${
                         isPos ? 'hover:bg-emerald-50/40 dark:hover:bg-emerald-500/10' : 'hover:bg-rose-50/40 dark:hover:bg-rose-500/10'
                       }`}>
                       <span className="text-[11px] text-slate-300 dark:text-slate-600 tabular-nums font-mono">{i + 1}</span>
+                      <button
+                        onClick={e => { e.stopPropagation(); toggle(h.ticker) }}
+                        className={`w-7 h-7 flex items-center justify-center rounded-full transition-all ${
+                          isPinned(h.ticker)
+                            ? 'text-amber-400 hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10'
+                            : 'text-slate-300 dark:text-slate-600 hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10'
+                        }`}
+                        aria-label={isPinned(h.ticker) ? 'Remove from watchlist' : 'Add to watchlist'}
+                        aria-pressed={isPinned(h.ticker)}
+                      >
+                        <BookmarkIcon size={13} filled={isPinned(h.ticker)} />
+                      </button>
                       <Chip />
                       <div className="min-w-0 px-2">
                         <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight">{h.company_name}</p>
@@ -239,8 +254,9 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
         <div className="sm:hidden overflow-x-auto">
           {/* No minWidth — columns size naturally so selected period fits without scrolling */}
           <div>
-            <div className="grid grid-cols-[24px_52px_1fr_60px_64px_52px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 dark:text-slate-500 px-3 py-2.5 bg-slate-50/70 dark:bg-white/5 border-b border-slate-100 dark:border-white/10">
+            <div className="grid grid-cols-[24px_30px_52px_1fr_60px_64px_52px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 dark:text-slate-500 px-3 py-2.5 bg-slate-50/70 dark:bg-white/5 border-b border-slate-100 dark:border-white/10">
               <span>#</span>
+              <span />
               <span>Ticker</span>
               <span>Company · Sector</span>
               <span className="text-right">Price</span>
@@ -263,10 +279,22 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                   return (
                     <div key={`${h.ticker}-${h.sector_id}-m`}
                       onClick={() => setSelectedTicker(h)}
-                      className={`grid grid-cols-[24px_52px_1fr_60px_64px_52px] items-center px-3 py-2.5 transition-colors cursor-pointer ${
+                      className={`grid grid-cols-[24px_30px_52px_1fr_60px_64px_52px] items-center px-3 py-2.5 transition-colors cursor-pointer ${
                         isPos ? 'hover:bg-emerald-50/40 dark:hover:bg-emerald-500/10' : 'hover:bg-rose-50/40 dark:hover:bg-rose-500/10'
                       }`}>
                       <span className="text-[11px] text-slate-300 dark:text-slate-600 tabular-nums font-mono">{i + 1}</span>
+                      <button
+                        onClick={e => { e.stopPropagation(); toggle(h.ticker) }}
+                        className={`w-7 h-7 flex items-center justify-center rounded-full transition-all ${
+                          isPinned(h.ticker)
+                            ? 'text-amber-400 hover:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10'
+                            : 'text-slate-300 dark:text-slate-600 hover:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-500/10'
+                        }`}
+                        aria-label={isPinned(h.ticker) ? 'Remove from watchlist' : 'Add to watchlist'}
+                        aria-pressed={isPinned(h.ticker)}
+                      >
+                        <BookmarkIcon size={13} filled={isPinned(h.ticker)} />
+                      </button>
                       <span className={`font-mono text-[10px] font-black px-1 py-1 rounded-[7px] text-center inline-block ${
                         isPos ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/25' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 dark:text-rose-300 border border-rose-100 dark:border-rose-500/25'
                       }`}>
@@ -307,7 +335,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       )}
 
       <p className="text-center text-[10px] text-slate-300 dark:text-slate-600 mt-5 tracking-widest">
-        EAGLEVIEW V4.4.23 · EQUAL-WEIGHTED BASKETS
+        EAGLEVIEW V4.4.25 · EQUAL-WEIGHTED BASKETS
       </p>
 
       {selectedTicker && (

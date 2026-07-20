@@ -5,7 +5,6 @@ import {
   Sector, Benchmark, Period, SectorSnapshot,
   getPeriodValue, getRankChange, PERIOD_LABELS, computeScorecard,
 } from '@/lib/types'
-import { useWatchlist } from '@/lib/watchlist'
 import { EagleIcon, FlameIcon, TrendingUpIcon, TrendingDownIcon } from './Icons'
 import SectorCard from './SectorCard'
 import BenchmarkBar from './BenchmarkBar'
@@ -29,7 +28,6 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
   const [period, setPeriod]         = useState<Period>('YTD')
   const [filterMode, setFilterMode] = useState<FilterMode>('all')
   const [selected, setSelected]     = useState<Sector | null>(null)
-  const { toggle, isPinned, ready, pinnedIds } = useWatchlist()
 
   const spx = benchmarks.find(b => b.ticker === '^GSPC')
 
@@ -49,10 +47,6 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
         Math.max(...sectors.map(s => new Date(s.updated_at).getTime()))
       ).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
     : null
-
-  const pinned = ready && pinnedIds.length > 0
-    ? sorted.filter(s => pinnedIds.includes(s.id))
-    : []
 
   // ── Filtered display set ──────────────────────────────────────
   const displayed = useMemo(() => {
@@ -179,35 +173,6 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
       {/* ── Market Pulse ────────────────────────── */}
       <BenchmarkBar benchmarks={benchmarks} period={period} />
 
-      {/* ── Pinned watchlist strip ───────────────── */}
-      {pinned.length > 0 && filterMode === 'all' && (
-        <div className="mb-6">
-          <div className="flex items-center gap-3 mb-3">
-            <span className="text-[10px] font-bold tracking-widest text-amber-500 uppercase whitespace-nowrap">
-              Watchlist
-            </span>
-            <div className="flex-1 h-px bg-amber-200" />
-          </div>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {pinned.map(sector => (
-              <SectorCard
-                key={`pin-${sector.id}`}
-                sector={sector}
-                rank={sorted.indexOf(sector) + 1}
-                period={period}
-                isHot={sorted.indexOf(sector) < 2}
-                delay={0}
-                isPinned
-                scorecard={computeScorecard(sector, spx)}
-                snapshots={snapshots[sector.id] ?? []}
-                onClick={() => setSelected(sector)}
-                onTogglePin={e => { e.stopPropagation(); toggle(sector.id) }}
-              />
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* ── Rankings divider ─────────────────────── */}
       <div className="flex items-center gap-3 mb-4">
         <span className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-500 uppercase whitespace-nowrap flex items-center gap-1.5">
@@ -273,11 +238,9 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
                 period={period}
                 isHot={overallRank <= 2}
                 delay={i * 30}
-                isPinned={isPinned(sector.id)}
                 scorecard={computeScorecard(sector, spx)}
                 snapshots={snapshots[sector.id] ?? []}
                 onClick={() => setSelected(sector)}
-                onTogglePin={e => { e.stopPropagation(); toggle(sector.id) }}
               />
             )
           })}

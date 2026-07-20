@@ -20,7 +20,7 @@ const WARM_TTL = 4 * 60 * 60 * 1000
 // to WARM_TTL, exactly what happened when marketCap/peRatio/week52High/
 // nextEarnings/earningsTime were added but existing cached entries (keyed
 // only by symbol) kept being served without them.
-const SCHEMA_VERSION = 'v3'
+const SCHEMA_VERSION = 'v4'
 
 const COMPANY_SIGNALS = [
   'company','corporation','incorporated','founded','headquartered',
@@ -36,7 +36,23 @@ function isCompanyArticle(text: string): boolean {
 }
 
 function trimToTwoSentences(text: string): string {
-  return (text.match(/[^.!?]+[.!?]+\s*/g) ?? []).slice(0, 2).join('').trim()
+  const sentences = (text.match(/[^.!?]+[.!?]+\s*/g) ?? []).slice(0, 2).join('').trim()
+  if (sentences) return sentences
+  return text.replace(/\s+/g, ' ').trim().slice(0, 320)
+}
+
+function synthesizeCompanyDescription(companyName: string, symbol: string, profile: Awaited<ReturnType<typeof fetchYahooProfile>>): string {
+  const name = companyName && companyName !== symbol ? companyName : symbol
+  const parts: string[] = []
+  if (profile?.industry) parts.push(`operates in the ${profile.industry} industry`)
+  if (profile?.country) parts.push(`is based in ${profile.country}`)
+  if (profile?.employees) parts.push(`has about ${profile.employees.toLocaleString('en-US')} employees`)
+
+  if (parts.length === 0) {
+    return `${name} is a publicly listed company tracked in Eagleview under the ticker ${symbol}. Detailed business-summary data was not available from the live provider for this ticker.`
+  }
+
+  return `${name} is a publicly listed company that ${parts.join(', ')}. It is tracked in Eagleview under the ticker ${symbol}.`
 }
 
 
@@ -238,7 +254,7 @@ async function fetchYahooCalendar(symbol: string): Promise<{ nextEarnings: strin
    fails silently and falls through if Yahoo changes their markup.        */
 async function fetchYahooPageMeta(symbol: string): Promise<string | null> {
   try {
-    const res = await fetch(`https://finance.yahoo.com/quote/${symbol}`, {
+    const res = await fetch(`https://finance.yahoo.com/quote/${symbol}/profile`, {
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Eagleview/1.0)' },
       next: { revalidate: 604800 },
     })
@@ -316,6 +332,9 @@ export async function GET(req: NextRequest, { params }: { params: { symbol: stri
   }
   if (!description && companyName !== symbol) {
     description = await fetchWikipedia(companyName)
+  }
+  if (!description) {
+    description = synthesizeCompanyDescription(companyName, symbol, profileResult)
   }
 
   const payload: TickerInfo = {

@@ -4,8 +4,9 @@ import { useEffect, useRef, useState } from 'react'
 import { createPortal }                  from 'react-dom'
 import type { SectorHolding }            from '@/lib/types'
 import { formatPrice }                   from '@/lib/types'
-import { CloseIcon, SunIcon, MoonIcon }  from './Icons'
+import { BookmarkIcon, CloseIcon, SunIcon, MoonIcon }  from './Icons'
 import { useTheme }                      from './ThemeProvider'
+import { useWatchlist }                  from '@/lib/watchlist'
 import type { TickerInfo }               from '@/app/api/ticker-info/[symbol]/route'
 
 interface Props {
@@ -92,6 +93,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
   const [loading,  setLoading]  = useState(true)
   const overlayRef              = useRef<HTMLDivElement>(null)
   const abortRef                = useRef<AbortController | null>(null)
+  const { toggle, isPinned }    = useWatchlist()
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -160,6 +162,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
   const pos      = hasYtd && holding.ytd_pct! >= 0
   const neutral  = !hasYtd
   const price    = formatPrice(holding.price ?? null)
+  const saved    = isPinned(holding.ticker)
   const ytdAbs   = Math.abs(holding.ytd_pct ?? 0)
   const alpha    = hasYtd ? Math.min(0.08 + (ytdAbs / 100) * 0.16, 0.22) : 0
   const gradRgb  = neutral ? '148,163,184' : pos ? '16,185,129' : '244,63,94'
@@ -190,7 +193,20 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
               <CloseIcon size={13} />
             </button>
 
-            <div className="flex items-center gap-3 pr-10">
+            <button
+              onClick={e => { e.stopPropagation(); toggle(holding.ticker) }}
+              className={`absolute right-14 top-4 w-8 h-8 bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-900 flex items-center justify-center rounded-full transition-colors shadow-sm ${
+                saved
+                  ? 'text-amber-400 hover:text-rose-400'
+                  : 'text-slate-300 dark:text-slate-600 hover:text-amber-400'
+              }`}
+              aria-label={saved ? 'Remove from watchlist' : 'Add to watchlist'}
+              aria-pressed={saved}
+            >
+              <BookmarkIcon size={13} filled={saved} />
+            </button>
+
+            <div className="flex items-center gap-3 pr-20">
               <span className={`font-mono text-[13px] font-black px-2.5 py-1.5 rounded-[9px] shrink-0 border ${
                 neutral ? 'bg-slate-50/80 dark:bg-white/5  text-slate-600 dark:text-slate-400  border-slate-100 dark:border-white/10'
                     : pos ? 'bg-emerald-50/80 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 dark:text-emerald-300 border-emerald-100 dark:border-emerald-500/25'
@@ -390,7 +406,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
         {/* Footer */}
         <div className="px-5 py-3 border-t border-slate-100 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400 dark:text-slate-500">
-            Eagleview v4.4.23
+            Eagleview v4.4.25
           </p>
           {info?.website && (
             <a

@@ -4,7 +4,7 @@ import {
   Sector, Period, ScorecardLevel, SectorSnapshot,
   getPeriodValue, getRankChange, getBreadth,
 } from '@/lib/types'
-import { ZapIcon, BookmarkIcon, AwardIcon, FlameIcon, TrendingUpIcon, TrendingDownIcon } from './Icons'
+import { ZapIcon, AwardIcon, FlameIcon, TrendingUpIcon, TrendingDownIcon } from './Icons'
 import Sparkline from './Sparkline'
 
 interface Props {
@@ -13,16 +13,14 @@ interface Props {
   period:      Period
   isHot:       boolean
   delay:       number
-  isPinned:    boolean
   scorecard:   ScorecardLevel
   snapshots:   SectorSnapshot[]
   onClick:     () => void
-  onTogglePin: (e: React.MouseEvent) => void
 }
 
 export default function SectorCard({
   sector, rank, period, isHot, delay,
-  isPinned, scorecard, snapshots, onClick, onTogglePin,
+  scorecard, snapshots, onClick,
 }: Props) {
   const value      = getPeriodValue(sector, period)
   const rankChange = getRankChange(sector, period)
@@ -106,7 +104,7 @@ export default function SectorCard({
             </span>
           )}
 
-          {/* Right side: scorecard + streak + pin */}
+          {/* Right side: scorecard + streak */}
           <div className="ml-auto flex items-center gap-1.5">
             {scorecard === 'gold' && (
               <span className="flex items-center gap-0.5 text-[9px] font-bold scorecard-gold border border-amber-200/50 dark:border-amber-500/25 bg-amber-50/50 dark:bg-amber-500/10 px-1.5 py-0.5 rounded-full">
@@ -128,18 +126,6 @@ export default function SectorCard({
                 <ZapIcon size={10} /> {streak}
               </span>
             )}
-
-            <button
-              onClick={e => { e.stopPropagation(); onTogglePin(e) }}
-              className={`w-6 h-6 flex items-center justify-center rounded-full transition-all ${
-                isPinned
-                  ? 'bg-amber-100/70 dark:bg-amber-500/15 text-amber-500 dark:text-amber-400'
-                  : 'text-slate-300 dark:text-slate-600 hover:text-slate-500 dark:hover:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'
-              }`}
-              aria-label="Pin"
-            >
-              <BookmarkIcon size={12} filled={isPinned} />
-            </button>
           </div>
         </div>
 
