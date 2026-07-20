@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.4.18 — Earnings Calendar Updater
+Eagleview v4.4.29 — Earnings Calendar Updater
 ==============================================
 Fetches upcoming earnings dates for every ticker in the Eagleview universe
 and writes them to the ticker_earnings table. Runs on its own DAILY schedule
@@ -59,6 +59,20 @@ class DB:
         )
         r.raise_for_status()
 
+    def delete_past_earnings(self, cutoff: date) -> None:
+        """Remove stale earnings rows older than the US-market calendar day.
+
+        The /earnings page is labelled upcoming; rows from last week/month must
+        not survive just because the next provider fetch has not produced a new
+        future date for that ticker yet.
+        """
+        r = requests.delete(
+            f"{self.base}/ticker_earnings?earnings_date=lt.{cutoff.isoformat()}",
+            headers=self.uh,
+            timeout=60,
+        )
+        r.raise_for_status()
+
 
 def build_ticker_universe() -> list[dict]:
     """Flatten SECTOR_STOCKS into a unique (ticker, company_name, sector_name)
@@ -105,7 +119,7 @@ def fetch_earnings_date(ticker: str):
         ts = info.get("earningsTimestampStart") or info.get("earningsTimestamp")
         if ts:
             dt_et = datetime.fromtimestamp(ts, tz=timezone.utc).astimezone(ET)
-            if dt_et.date() >= date.today():
+            if dt_et.date() >= datetime.now(ET).date():
                 market_open  = dt_et.replace(hour=9,  minute=30, second=0, microsecond=0)
                 market_close = dt_et.replace(hour=16, minute=0,  second=0, microsecond=0)
                 if dt_et < market_open:
@@ -132,7 +146,8 @@ def fetch_earnings_date(ticker: str):
         return None, None
 
     candidates = raw if isinstance(raw, (list, tuple)) else [raw]
-    future = [d for d in candidates if isinstance(d, date) and d >= date.today()]
+    today_et = datetime.now(ET).date()
+    future = [d for d in candidates if isinstance(d, date) and d >= today_et]
     if not future:
         return None, None
 
@@ -147,7 +162,10 @@ def main():
         sys.exit(1)
 
     db = DB(url, key)
-    log.info("══ Eagleview v4.4.18 Earnings Sync ══")
+    today_et = datetime.now(ET).date()
+    log.info("══ Eagleview v4.4.29 Earnings Sync ══")
+    log.info(f"  Cleaning stale earnings before {today_et.isoformat()} ET")
+    db.delete_past_earnings(today_et)
 
     universe = build_ticker_universe()
     log.info(f"  {len(universe)} unique tickers")
