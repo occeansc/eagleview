@@ -133,7 +133,7 @@ export default function Nav() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100/60 dark:bg-white/10 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-white/20 tracking-widest">
-            V4.4.25
+            V4.4.26
           </span>
         </div>
       </nav>
