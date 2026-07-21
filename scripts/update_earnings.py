@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.4.31 — Earnings Calendar Updater
+Eagleview v4.4.32 — Earnings Calendar Updater
 ==============================================
 Fetches upcoming earnings dates for every ticker in the Eagleview universe
 and writes them to the ticker_earnings table. Runs on its own DAILY schedule
@@ -163,7 +163,7 @@ def main():
 
     db = DB(url, key)
     today_et = datetime.now(ET).date()
-    log.info("══ Eagleview v4.4.31 Earnings Sync ══")
+    log.info("══ Eagleview v4.4.32 Earnings Sync ══")
     log.info(f"  Cleaning stale earnings before {today_et.isoformat()} ET")
     db.delete_past_earnings(today_et)
 

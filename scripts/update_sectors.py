@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.4.31 — Data Updater
+Eagleview v4.4.32 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -16,6 +16,7 @@ Env vars:
 """
 
 import os, sys, logging, time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 import requests
@@ -124,7 +125,7 @@ SECTOR_STOCKS = [
     ]),
     ("Space & Satellites", [
         ("RKLB","Rocket Lab"), ("ASTS","AST SpaceMobile"), ("LUNR","Intuitive Machines"),
-        ("SPCE","Virgin Galactic"), ("RDW","Redwire"), ("IRDM","Iridium Communications"),
+        ("SPCX","SpaceX"), ("SPCE","Virgin Galactic"), ("RDW","Redwire"), ("IRDM","Iridium Communications"),
         ("VSAT","Viasat"), ("GSAT","Globalstar"), ("BKSY","BlackSky Technology"),
         ("SPIR","Spire Global"), ("PL","Planet Labs"), ("SATL","Satellogic"),
         ("MNTS","Momentus"), ("KTOS","Kratos Defense"), ("LHX","L3Harris"),
@@ -368,6 +369,22 @@ class DB:
             headers=self.mh, timeout=30,
         ).raise_for_status()
 
+    def delete_stale_sector_holdings(self, sector_id: int, active_tickers: list[str]) -> None:
+        """Remove holdings in a sector that are no longer in the source universe.
+
+        Holdings are upserted instead of delete+insert to avoid a temporary empty
+        UI. The missing piece is pruning obsolete rows such as tickers removed
+        from the hardcoded universe; do that after the fresh upsert succeeds.
+        """
+        keep = [t for t in active_tickers if t]
+        if not keep:
+            return
+        keep_list = ",".join(keep)
+        requests.delete(
+            f"{self.base}/sector_holdings?sector_id=eq.{sector_id}&ticker=not.in.({keep_list})",
+            headers=self.mh, timeout=30,
+        ).raise_for_status()
+
     def insert(self, table: str, rows: list) -> None:
         if not rows:
             return
@@ -437,20 +454,53 @@ def chunks(items: list[str], size: int):
         yield items[i:i + size]
 
 
-def fetch_regular_market_prices(tickers: list[str]) -> dict[str, float]:
-    """Fetch current regular-session quote prices in Yahoo quote batches.
+def fetch_chart_regular_market_price(ticker: str) -> tuple[str, float | None]:
+    """Read Yahoo chart metadata for a ticker.
 
-    We accept a quote only when Yahoo explicitly says marketState == REGULAR.
-    That prevents pre-market/post-market values from entering EagleView's core
-    price/performance math. Failed quotes are skipped and later fall back to the
-    existing daily-close behaviour.
+    The public v8 chart endpoint exposes meta.regularMarketPrice and
+    meta.currentTradingPeriod without requiring Yahoo's quote crumb/cookie flow.
+    It is slower than a batch quote call, so we use it only as a fallback for
+    tickers that did not come back from the batch endpoint.
+    """
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
+    headers = {"User-Agent": "Mozilla/5.0 (compatible; Eagleview/1.0)"}
+    try:
+        r = requests.get(
+            url,
+            params={"range": "1d", "interval": "1d", "includePrePost": "false"},
+            headers=headers,
+            timeout=15,
+        )
+        r.raise_for_status()
+        result = r.json().get("chart", {}).get("result") or []
+        if not result:
+            return ticker, None
+        meta = result[0].get("meta", {})
+        price = meta.get("regularMarketPrice")
+        if isinstance(price, (int, float)) and price > 0:
+            return ticker, round(float(price), 4)
+    except Exception:
+        return ticker, None
+    return ticker, None
+
+
+def fetch_regular_market_prices(tickers: list[str]) -> dict[str, float]:
+    """Fetch current regular-session prices for EagleView's market-hours anchor.
+
+    We only run this while the US regular session is open. The first attempt uses
+    Yahoo's batch quote endpoint and accepts rows only with marketState=REGULAR.
+    If that endpoint is blocked/unavailable, we fall back to the public chart
+    metadata endpoint per ticker. Off-hours behaviour remains unchanged because
+    this function returns {} outside the regular cash session.
     """
     if not tickers or not is_regular_market_open():
         return {}
 
+    symbols = sorted(set(tickers))
     prices: dict[str, float] = {}
     headers = {"User-Agent": "Mozilla/5.0 (compatible; Eagleview/1.0)"}
-    for batch in chunks(sorted(set(tickers)), 100):
+
+    for batch in chunks(symbols, 100):
         url = "https://query1.finance.yahoo.com/v7/finance/quote"
         try:
             r = requests.get(
@@ -462,7 +512,7 @@ def fetch_regular_market_prices(tickers: list[str]) -> dict[str, float]:
             r.raise_for_status()
             results = r.json().get("quoteResponse", {}).get("result", [])
         except Exception as e:
-            log.warning(f"  Current quote batch failed ({batch[0]}…{batch[-1]}): {e}")
+            log.warning(f"  Batch quote failed ({batch[0]}…{batch[-1]}): {e}; using chart metadata fallback")
             continue
 
         for q in results:
@@ -471,6 +521,15 @@ def fetch_regular_market_prices(tickers: list[str]) -> dict[str, float]:
             state = q.get("marketState")
             if symbol and isinstance(price, (int, float)) and price > 0 and state == "REGULAR":
                 prices[symbol] = round(float(price), 4)
+
+    missing = [t for t in symbols if t not in prices]
+    if missing:
+        with ThreadPoolExecutor(max_workers=16) as pool:
+            futures = [pool.submit(fetch_chart_regular_market_price, t) for t in missing]
+            for fut in as_completed(futures):
+                symbol, price = fut.result()
+                if price is not None:
+                    prices[symbol] = price
 
     return prices
 
@@ -575,7 +634,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.4.31 Data Sync ══")
+    log.info("══ Eagleview v4.4.32 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -749,6 +808,7 @@ def main():
                 "stock_rows":  stock_rows,
                 "rets":        rets,
                 "stock_count": len(stock_rows),
+                "active_tickers": [row["ticker"] for row in stock_rows],
                 "breadth_1d":  breadth(stock_rows, "day_pct"),
                 "breadth_1w":  breadth(stock_rows, "week_pct"),
                 "breadth_1m":  breadth(stock_rows, "month_pct"),
@@ -916,9 +976,12 @@ def main():
             )
 
             # Refresh individual stock rows — one upsert per sector instead of
-            # delete+insert, halving DB calls and removing the transient empty-window
+            # delete+insert, halving DB calls and removing the transient empty-window.
+            # Then prune obsolete holdings for the sector so old universe entries
+            # do not linger with stale prices/performance.
             if sc["stock_rows"]:
                 db.upsert_bulk("sector_holdings", sc["stock_rows"], "sector_id,ticker")
+                db.delete_stale_sector_holdings(sector_id, sc.get("active_tickers", []))
 
             sector_ok += 1
 
