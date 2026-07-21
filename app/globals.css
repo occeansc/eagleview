@@ -19,6 +19,7 @@
   }
   body {
     @apply text-slate-900;
+    font-family: var(--font-ui);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     background-color: var(--bg-page);
@@ -60,6 +61,8 @@
 
   --ease-spring:      cubic-bezier(0.16, 1, 0.3, 1);
   --ease-back:        cubic-bezier(0.34, 1.56, 0.64, 1);
+  --font-ui:          -apple-system, BlinkMacSystemFont, "Trebuchet MS", Roboto, Ubuntu, sans-serif;
+  --font-mono-ui:     ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 /* ── CSS Custom Properties: DARK ─────────────────────────────── */

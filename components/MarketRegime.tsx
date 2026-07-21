@@ -67,7 +67,7 @@ export default function MarketRegime({ sectors }: { sectors: Sector[] }) {
       </span>
 
       {/* Label + sub */}
-      <span className={`text-[10px] font-extrabold tracking-wide ${cfg.text}`}>
+      <span className={`text-[10px] font-bold tracking-wide ${cfg.text}`}>
         {cfg.label}
       </span>
       {cfg.sub && regime !== 'loading' && (

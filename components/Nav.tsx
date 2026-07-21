@@ -112,7 +112,7 @@ export default function Nav() {
               <EagleIcon size={17} className="text-slate-800 dark:text-slate-200" />
             </div>
             {/* No purple anywhere — hover stays in slate family */}
-            <span className="font-extrabold tracking-tight text-[15px] bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent group-hover:from-slate-700 group-hover:to-slate-500 dark:group-hover:from-slate-200 dark:group-hover:to-slate-500 transition-all">
+            <span className="font-bold tracking-tight text-[15px] bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent group-hover:from-slate-700 group-hover:to-slate-500 dark:group-hover:from-slate-200 dark:group-hover:to-slate-500 transition-all">
               Eagleview
             </span>
           </Link>
@@ -142,8 +142,8 @@ export default function Nav() {
 
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100/60 dark:bg-white/10 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-white/20 tracking-widest">
-            V4.4.29
+          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100/60 dark:bg-white/10 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-white/20 tracking-wide">
+            V4.4.30
           </span>
         </div>
       </nav>

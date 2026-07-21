@@ -80,7 +80,7 @@ export default function WatchlistPage() {
     <div className="max-w-5xl mx-auto px-3 sm:px-6 pt-5 pb-8 sm:py-6">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-5 sm:mb-6 gap-3 sm:gap-4">
         <div className="pr-14 sm:pr-0">
-          <h2 className="text-[22px] font-black tracking-tight text-slate-900 dark:text-slate-100">Watchlist</h2>
+          <h2 className="text-[22px] font-bold tracking-tight text-slate-900 dark:text-slate-100">Watchlist</h2>
           <p className="text-[12px] text-slate-400 dark:text-slate-500 mt-0.5">
             {rows.length === 0
               ? 'Tap the bookmark icon on any stock to track it here'
@@ -112,7 +112,7 @@ export default function WatchlistPage() {
           <div className="rounded-[22px] overflow-hidden mb-5" style={cardStyle}>
             <div className="hidden sm:block overflow-x-auto">
               <div style={{ minWidth: '800px' }}>
-                <div className="grid grid-cols-[36px_72px_minmax(160px,280px)_72px_repeat(8,54px)] gap-x-2 text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 dark:text-slate-500 px-4 py-3 bg-slate-50/70 dark:bg-white/5 border-b border-slate-100 dark:border-white/10">
+                <div className="grid grid-cols-[36px_72px_minmax(160px,280px)_72px_repeat(8,54px)] gap-x-2 text-[9px] font-bold tracking-[0.09em] uppercase text-slate-400 dark:text-slate-500 px-4 py-3 bg-slate-50/70 dark:bg-white/5 border-b border-slate-100 dark:border-white/10">
                   <span />
                   <span>Ticker</span>
                   <span>Company</span>
@@ -169,10 +169,10 @@ export default function WatchlistPage() {
                     boxShadow: pos ? '0 4px 16px rgba(5,46,22,0.35)' : '0 4px 16px rgba(76,5,25,0.35)',
                   } : cardStyle}
                 >
-                  <p className="text-[9px] font-black tracking-[0.18em] uppercase mb-2 text-slate-400 dark:text-slate-500">
+                  <p className="text-[9px] font-bold tracking-[0.09em] uppercase mb-2 text-slate-400 dark:text-slate-500">
                     {p} Avg
                   </p>
-                  <p className={`font-mono text-[18px] sm:text-[22px] font-extrabold leading-none tabular-nums mb-2 truncate ${
+                  <p className={`font-mono text-[18px] sm:text-[22px] font-bold leading-none tabular-nums mb-2 truncate ${
                     avg === null ? 'text-slate-300 dark:text-slate-600'
                       : pos ? (active ? 'text-emerald-400' : 'text-emerald-600 dark:text-emerald-400')
                       : (active ? 'text-rose-400' : 'text-rose-600 dark:text-rose-400')
@@ -195,8 +195,8 @@ export default function WatchlistPage() {
         </>
       )}
 
-      <p className="text-center text-[10px] text-slate-300 dark:text-slate-600 mt-5 tracking-widest">
-        EAGLEVIEW V4.4.29 · TICKER WATCHLIST
+      <p className="text-center text-[10px] text-slate-300 dark:text-slate-600 mt-5 tracking-wide">
+        EAGLEVIEW V4.4.30 · TICKER WATCHLIST
       </p>
 
       {selectedTicker && (
@@ -241,7 +241,7 @@ function WatchlistRow({ holding, period, onSelect, onToggle, isPinned }: {
       }`}
     >
       <WatchlistToggle active={isPinned} onClick={onToggle} />
-      <span className={`font-mono text-[11px] font-black px-1.5 py-1 rounded-[8px] text-center inline-block shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
+      <span className={`font-mono text-[11px] font-bold px-1.5 py-1 rounded-[8px] text-center inline-block shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
         isPos ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/25' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-100 dark:border-rose-500/25'
       }`}>
         {holding.ticker}
@@ -259,7 +259,7 @@ function WatchlistRow({ holding, period, onSelect, onToggle, isPinned }: {
         const bold = p === period
         return (
           <span key={p} className={`font-mono text-right tabular-nums ${
-            bold ? `text-[13px] font-extrabold ${pos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`
+            bold ? `text-[13px] font-bold ${pos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`
                  : `text-[11px] ${pos ? 'text-emerald-400' : 'text-rose-300'}`
           }`}>
             {v !== null ? `${pos ? '+' : ''}${v.toFixed(1)}%` : '—'}
@@ -284,7 +284,7 @@ function WatchlistMobileRow({ holding, period, onSelect, onToggle, isPinned }: {
       }`}
     >
       <WatchlistToggle active={isPinned} onClick={onToggle} size={13} />
-      <span className={`font-mono text-[10px] font-black px-1 py-1 rounded-[7px] text-center inline-block ${
+      <span className={`font-mono text-[10px] font-bold px-1 py-1 rounded-[7px] text-center inline-block ${
         isPos ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/25' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 border border-rose-100 dark:border-rose-500/25'
       }`}>
         {holding.ticker}
@@ -296,7 +296,7 @@ function WatchlistMobileRow({ holding, period, onSelect, onToggle, isPinned }: {
       <span className="font-mono text-[10px] text-slate-400 dark:text-slate-500 text-right tabular-nums">
         {formatPrice(holding.price ?? null)}
       </span>
-      <span className={`font-mono text-[13px] font-extrabold text-right tabular-nums ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+      <span className={`font-mono text-[13px] font-bold text-right tabular-nums ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
         {val !== null ? `${isPos ? '+' : ''}${val.toFixed(1)}%` : '—'}
       </span>
     </div>

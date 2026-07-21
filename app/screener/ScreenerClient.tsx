@@ -62,7 +62,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
 
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-[22px] font-black tracking-tight text-slate-900 dark:text-slate-100 mb-1">
+        <h2 className="text-[22px] font-bold tracking-tight text-slate-900 dark:text-slate-100 mb-1">
           Stock Screener
         </h2>
         <p className="text-[12px] text-slate-400 dark:text-slate-500">
@@ -159,7 +159,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
         {/* ── Desktop table (sm+) — full overflow-x-auto with all columns ── */}
         <div className="hidden sm:block overflow-x-auto">
           <div style={{ minWidth: '760px' }}>
-            <div className="grid grid-cols-[28px_64px_minmax(180px,320px)_64px_50px_50px_50px_50px_50px_50px_50px_50px] gap-x-2 text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 dark:text-slate-500 px-4 py-3 bg-slate-50/70 dark:bg-white/5 border-b border-slate-100 dark:border-white/10">
+            <div className="grid grid-cols-[28px_64px_minmax(180px,320px)_64px_50px_50px_50px_50px_50px_50px_50px_50px] gap-x-2 text-[9px] font-bold tracking-[0.09em] uppercase text-slate-400 dark:text-slate-500 px-4 py-3 bg-slate-50/70 dark:bg-white/5 border-b border-slate-100 dark:border-white/10">
               <span>#</span>
               <span>Ticker</span>
               <span>Company</span>
@@ -185,7 +185,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                   const val   = getPeriodValue(h, period)
                   const isPos = val !== null && val >= 0
                   const Chip = () => (
-                    <span className={`font-mono text-[11px] font-black px-1.5 py-1 rounded-[8px] text-center inline-block shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
+                    <span className={`font-mono text-[11px] font-bold px-1.5 py-1 rounded-[8px] text-center inline-block shadow-[inset_0_1px_2px_rgba(0,0,0,0.04)] ${
                       isPos ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/25' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 dark:text-rose-300 border border-rose-100 dark:border-rose-500/25'
                     }`}>
                       {h.ticker}
@@ -197,7 +197,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                     const bold = p === period
                     return (
                       <span className={`font-mono text-right tabular-nums ${
-                        bold ? `text-[13px] font-extrabold ${pos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`
+                        bold ? `text-[13px] font-bold ${pos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`
                              : `text-[11px] ${pos ? 'text-emerald-400' : 'text-rose-300'}`
                       }`}>
                         {v !== null ? `${pos ? '+' : ''}${v.toFixed(1)}%` : '—'}
@@ -239,7 +239,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
         <div className="sm:hidden overflow-x-auto">
           {/* No minWidth — columns size naturally so selected period fits without scrolling */}
           <div>
-            <div className="grid grid-cols-[24px_58px_1fr_60px_64px_52px] text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 dark:text-slate-500 px-3 py-2.5 bg-slate-50/70 dark:bg-white/5 border-b border-slate-100 dark:border-white/10">
+            <div className="grid grid-cols-[24px_58px_1fr_60px_64px_52px] text-[9px] font-bold tracking-[0.09em] uppercase text-slate-400 dark:text-slate-500 px-3 py-2.5 bg-slate-50/70 dark:bg-white/5 border-b border-slate-100 dark:border-white/10">
               <span>#</span>
               <span>Ticker</span>
               <span>Company · Sector</span>
@@ -267,7 +267,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                         isPos ? 'hover:bg-emerald-50/40 dark:hover:bg-emerald-500/10' : 'hover:bg-rose-50/40 dark:hover:bg-rose-500/10'
                       }`}>
                       <span className="text-[11px] text-slate-300 dark:text-slate-600 tabular-nums font-mono">{i + 1}</span>
-                      <span className={`font-mono text-[10px] font-black px-1 py-1 rounded-[7px] text-center inline-block ${
+                      <span className={`font-mono text-[10px] font-bold px-1 py-1 rounded-[7px] text-center inline-block ${
                         isPos ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 dark:text-emerald-300 border border-emerald-100 dark:border-emerald-500/25' : 'bg-rose-50 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 dark:text-rose-300 border border-rose-100 dark:border-rose-500/25'
                       }`}>
                         {h.ticker}
@@ -279,7 +279,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
                       <span className="font-mono text-[10px] text-slate-400 dark:text-slate-500 text-right tabular-nums">
                         {formatPrice(h.price ?? null)}
                       </span>
-                      <span className={`font-mono text-[13px] font-extrabold text-right tabular-nums ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                      <span className={`font-mono text-[13px] font-bold text-right tabular-nums ${isPos ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
                         {val !== null ? `${isPos ? '+' : ''}${val.toFixed(1)}%` : '—'}
                       </span>
                       <span className={`font-mono text-[11px] text-right tabular-nums ${isPosW ? 'text-emerald-400' : 'text-rose-300'}`}>
@@ -306,8 +306,8 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
         </div>
       )}
 
-      <p className="text-center text-[10px] text-slate-300 dark:text-slate-600 mt-5 tracking-widest">
-        EAGLEVIEW V4.4.29 · EQUAL-WEIGHTED BASKETS
+      <p className="text-center text-[10px] text-slate-300 dark:text-slate-600 mt-5 tracking-wide">
+        EAGLEVIEW V4.4.30 · EQUAL-WEIGHTED BASKETS
       </p>
 
       {selectedTicker && (

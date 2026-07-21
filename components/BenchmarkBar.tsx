@@ -24,10 +24,10 @@ export default function BenchmarkBar({ benchmarks, period }: Props) {
   return (
     <div className="mb-7">
       <div className="flex items-center justify-between mb-3 px-0.5">
-        <p className="text-[10px] font-bold tracking-[0.20em] text-slate-400 dark:text-slate-500 uppercase">
+        <p className="text-[10px] font-bold tracking-[0.10em] text-slate-400 dark:text-slate-500 uppercase">
           Market Pulse
         </p>
-        <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-widest hidden sm:block opacity-70">
+        <span className="text-[9px] text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-wide hidden sm:block opacity-70">
           Via Yahoo Finance
         </span>
       </div>
@@ -67,7 +67,7 @@ export default function BenchmarkBar({ benchmarks, period }: Props) {
 
               {/* Name + icon row */}
               <div className="flex items-center justify-between mb-1.5 relative z-10">
-                <p className="text-[9px] font-bold tracking-[0.18em] uppercase text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors">
+                <p className="text-[9px] font-bold tracking-[0.09em] uppercase text-slate-500 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200 transition-colors">
                   {meta.short}
                 </p>
                 <Icon

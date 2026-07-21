@@ -81,7 +81,7 @@ export default function EarningsClient({ earnings, holdings }: Props) {
 
       {/* Header */}
       <div className="mb-6">
-        <h2 className="text-[22px] font-black tracking-tight text-slate-900 dark:text-slate-100 mb-1">
+        <h2 className="text-[22px] font-bold tracking-tight text-slate-900 dark:text-slate-100 mb-1">
           Earnings Calendar
         </h2>
         <p className="text-[12px] text-slate-400 dark:text-slate-500">
@@ -129,7 +129,7 @@ export default function EarningsClient({ earnings, holdings }: Props) {
         <div className="space-y-5">
           {grouped.map(([dateIso, rows]) => (
             <div key={dateIso}>
-              <h3 className="flex items-baseline gap-1.5 text-[13px] font-black text-slate-700 dark:text-slate-300 mb-2 px-1">
+              <h3 className="flex items-baseline gap-1.5 text-[13px] font-bold text-slate-700 dark:text-slate-300 mb-2 px-1">
                 {formatDateHeader(dateIso)}
                 <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold">
                   {formatDateSub(dateIso)}
@@ -154,7 +154,7 @@ export default function EarningsClient({ earnings, holdings }: Props) {
                       onClick={() => holding && setSelectedTicker(holding)}
                       className={`flex items-center gap-3 px-4 py-3 transition-colors ${holding ? 'cursor-pointer hover:bg-slate-50/80 dark:hover:bg-white/5' : ''}`}
                     >
-                      <span className="font-mono text-[11px] font-black px-1.5 py-1 rounded-[8px] bg-slate-50 dark:bg-white/5 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/20 shrink-0">
+                      <span className="font-mono text-[11px] font-bold px-1.5 py-1 rounded-[8px] bg-slate-50 dark:bg-white/5 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/20 shrink-0">
                         {e.ticker}
                       </span>
                       <div className="min-w-0 flex-1">
@@ -166,12 +166,12 @@ export default function EarningsClient({ earnings, holdings }: Props) {
                         </p>
                       </div>
                       {e.earnings_time === 'bmo' && (
-                        <span className="flex items-center gap-1 text-[9px] font-black tracking-wide bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/25 px-2 py-1 rounded-full shrink-0">
+                        <span className="flex items-center gap-1 text-[9px] font-bold tracking-wide bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/25 px-2 py-1 rounded-full shrink-0">
                           <SunIcon size={9} /> BMO
                         </span>
                       )}
                       {e.earnings_time === 'amc' && (
-                        <span className="flex items-center gap-1 text-[9px] font-black tracking-wide bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-200/50 dark:border-sky-500/25 px-2 py-1 rounded-full shrink-0">
+                        <span className="flex items-center gap-1 text-[9px] font-bold tracking-wide bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-200/50 dark:border-sky-500/25 px-2 py-1 rounded-full shrink-0">
                           <MoonIcon size={9} /> AMC
                         </span>
                       )}
@@ -186,7 +186,7 @@ export default function EarningsClient({ earnings, holdings }: Props) {
 
       {/* Footer */}
       <div className="mt-6 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500">
-        <span>Eagleview v4.4.29</span>
+        <span>Eagleview v4.4.30</span>
         {lastSynced && (
           <span>
             Last sync: {new Date(lastSynced).toLocaleString('en-US', {

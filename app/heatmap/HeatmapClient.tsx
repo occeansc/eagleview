@@ -120,10 +120,10 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
 
           {/* Summary stats */}
           <div className="flex items-center gap-3 text-[11px] bg-slate-50 dark:bg-white/5 px-3 py-1.5 rounded-xl border border-slate-100/80 dark:border-white/10">
-            <span className="font-extrabold text-emerald-600 dark:text-emerald-400">{up}↑</span>
-            <span className="font-extrabold text-rose-500 dark:text-rose-400">{sorted.length - up}↓</span>
+            <span className="font-bold text-emerald-600 dark:text-emerald-400">{up}↑</span>
+            <span className="font-bold text-rose-500 dark:text-rose-400">{sorted.length - up}↓</span>
             <div className="h-3 w-px bg-slate-200 dark:bg-white/20" />
-            <span className={`font-black ${avg >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
+            <span className={`font-bold ${avg >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500 dark:text-rose-400'}`}>
               Avg {fmt(avg)}
             </span>
           </div>
@@ -177,7 +177,7 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
                     {/* Badges — same pill style as Dashboard/Watchlist */}
                     {sc === 'gold' && (
                       <span
-                        className="text-[7px] font-black tracking-widest px-1.5 py-[3px] rounded-full uppercase leading-none border"
+                        className="text-[7px] font-bold tracking-wide px-1.5 py-[3px] rounded-full uppercase leading-none border"
                         style={{
                           backgroundColor: 'rgba(254,243,199,0.9)',
                           borderColor:     'rgba(253,230,138,0.8)',
@@ -189,7 +189,7 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
                     )}
                     {sc === 'silver' && (
                       <span
-                        className="text-[7px] font-black tracking-widest px-1.5 py-[3px] rounded-full uppercase leading-none border"
+                        className="text-[7px] font-bold tracking-wide px-1.5 py-[3px] rounded-full uppercase leading-none border"
                         style={{
                           backgroundColor: 'rgba(241,245,249,0.9)',
                           borderColor:     'rgba(203,213,225,0.7)',
@@ -201,7 +201,7 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
                     )}
                     {sc === 'bronze' && (
                       <span
-                        className="text-[7px] font-black tracking-widest px-1.5 py-[3px] rounded-full uppercase leading-none border"
+                        className="text-[7px] font-bold tracking-wide px-1.5 py-[3px] rounded-full uppercase leading-none border"
                         style={{
                           backgroundColor: 'rgba(255,247,237,0.9)',
                           borderColor:     'rgba(254,215,170,0.7)',
@@ -216,7 +216,7 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
                   {/* Return % + sector name */}
                   <div className="flex-1 flex flex-col justify-center mt-1">
                     <div
-                      className={`font-black tracking-tight leading-none tabular-nums ${
+                      className={`font-bold tracking-tight leading-none tabular-nums ${
                         isXL ? 'text-3xl sm:text-[40px]' :
                         isLG ? 'text-[22px] sm:text-[28px]' :
                                'text-xl'
@@ -246,13 +246,13 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
                     <div className={isXL ? 'mt-auto pt-2' : 'hidden md:block mt-auto pt-2'}>
                       <div className="flex justify-between items-center mb-1">
                         <span
-                          className="text-[8px] font-black uppercase tracking-widest"
+                          className="text-[8px] font-bold uppercase tracking-wide"
                           style={{ color: p.label, opacity: 0.6 }}
                         >
                           Breadth
                         </span>
                         <span
-                          className="text-[9px] font-black tabular-nums"
+                          className="text-[9px] font-bold tabular-nums"
                           style={{ color: p.label, opacity: 0.8 }}
                         >
                           {bw.toFixed(0)}%
@@ -273,7 +273,7 @@ export default function HeatmapClient({ sectors, benchmarks }: Props) {
         </div>
 
         {/* Colour scale legend */}
-        <div className="mt-8 flex items-center justify-center gap-3 text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-500 uppercase">
+        <div className="mt-8 flex items-center justify-center gap-3 text-[10px] font-bold tracking-wide text-slate-400 dark:text-slate-500 uppercase">
           <span>−15%</span>
           <div className="flex rounded-md overflow-hidden gap-px border border-slate-200/60 dark:border-white/20 shadow-sm">
             {(isDark

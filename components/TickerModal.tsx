@@ -207,7 +207,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
             </button>
 
             <div className="flex items-center gap-3 pr-20">
-              <span className={`font-mono text-[13px] font-black px-2.5 py-1.5 rounded-[9px] shrink-0 border ${
+              <span className={`font-mono text-[13px] font-bold px-2.5 py-1.5 rounded-[9px] shrink-0 border ${
                 neutral ? 'bg-slate-50/80 dark:bg-white/5  text-slate-600 dark:text-slate-400  border-slate-100 dark:border-white/10'
                     : pos ? 'bg-emerald-50/80 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 dark:text-emerald-300 border-emerald-100 dark:border-emerald-500/25'
                     : 'bg-rose-50/80 dark:bg-rose-500/10 text-rose-700 dark:text-rose-300 dark:text-rose-300 border-rose-100 dark:border-rose-500/25'
@@ -215,7 +215,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
                 {holding.ticker}
               </span>
               <div className="min-w-0">
-                <p className="text-[16px] font-black text-slate-900 dark:text-slate-100 leading-snug truncate">
+                <p className="text-[16px] font-bold text-slate-900 dark:text-slate-100 leading-snug truncate">
                   {holding.company_name}
                 </p>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 font-medium mt-0.5">
@@ -231,7 +231,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
 
           {/* Performance heatmap */}
           <div className="px-5 pt-5 pb-4">
-            <p className="text-[8px] font-black tracking-[0.22em] uppercase text-slate-400 dark:text-slate-500 mb-3">
+            <p className="text-[8px] font-bold tracking-[0.10em] uppercase text-slate-400 dark:text-slate-500 mb-3">
               Performance
             </p>
             <div className="grid grid-cols-3 gap-2">
@@ -253,7 +253,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
                         border: '1.5px dashed rgba(148,163,184,0.35)',
                       }}
                     >
-                      <span className="text-[8px] font-black tracking-[0.18em] uppercase mb-2 leading-none text-slate-400 dark:text-slate-500">
+                      <span className="text-[8px] font-bold tracking-[0.09em] uppercase mb-2 leading-none text-slate-400 dark:text-slate-500">
                         {label}
                       </span>
                       <span className="text-[12px] font-bold text-slate-300 dark:text-slate-600 leading-none">
@@ -270,13 +270,13 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
                     style={{ backgroundColor: p.bg }}
                   >
                     <span
-                      className="text-[8px] font-black tracking-[0.18em] uppercase mb-2 leading-none"
+                      className="text-[8px] font-bold tracking-[0.09em] uppercase mb-2 leading-none"
                       style={{ color: p.muted }}
                     >
                       {label}
                     </span>
                     <span
-                      className={`font-black tabular-nums leading-none ${numSize}`}
+                      className={`font-bold tabular-nums leading-none ${numSize}`}
                       style={{ color: p.text }}
                     >
                       {formatted}
@@ -292,7 +292,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
           {(loading || info?.marketCap || info?.peRatio || info?.week52High || info?.nextEarnings) && (
             <div className="px-5 pb-5">
               <div className="h-px bg-slate-100 dark:bg-white/10 mb-4" />
-              <p className="text-[8px] font-black tracking-[0.22em] uppercase text-slate-400 dark:text-slate-500 mb-3">
+              <p className="text-[8px] font-bold tracking-[0.10em] uppercase text-slate-400 dark:text-slate-500 mb-3">
                 Key Stats
               </p>
 
@@ -305,7 +305,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
               ) : (
                 <div className="grid grid-cols-2 gap-2.5">
                   <div className="rounded-[12px] px-3 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
-                    <p className="text-[8px] font-black tracking-[0.14em] uppercase text-slate-400 dark:text-slate-500 mb-1">
+                    <p className="text-[8px] font-bold tracking-[0.07em] uppercase text-slate-400 dark:text-slate-500 mb-1">
                       Market Cap
                     </p>
                     <p className="text-[14px] font-bold text-slate-800 dark:text-slate-200 tabular-nums">
@@ -314,7 +314,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
                   </div>
 
                   <div className="rounded-[12px] px-3 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
-                    <p className="text-[8px] font-black tracking-[0.14em] uppercase text-slate-400 dark:text-slate-500 mb-1">
+                    <p className="text-[8px] font-bold tracking-[0.07em] uppercase text-slate-400 dark:text-slate-500 mb-1">
                       P/E Ratio
                     </p>
                     <p className="text-[14px] font-bold text-slate-800 dark:text-slate-200 tabular-nums">
@@ -323,7 +323,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
                   </div>
 
                   <div className="rounded-[12px] px-3 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
-                    <p className="text-[8px] font-black tracking-[0.14em] uppercase text-slate-400 dark:text-slate-500 mb-1">
+                    <p className="text-[8px] font-bold tracking-[0.07em] uppercase text-slate-400 dark:text-slate-500 mb-1">
                       52W High
                     </p>
                     <p className="text-[14px] font-bold text-slate-800 dark:text-slate-200 tabular-nums">
@@ -332,7 +332,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
                   </div>
 
                   <div className="rounded-[12px] px-3 py-2.5 bg-slate-50 dark:bg-white/5 border border-slate-200/60 dark:border-white/10">
-                    <p className="text-[8px] font-black tracking-[0.14em] uppercase text-slate-400 dark:text-slate-500 mb-1">
+                    <p className="text-[8px] font-bold tracking-[0.07em] uppercase text-slate-400 dark:text-slate-500 mb-1">
                       Next Earnings
                     </p>
                     <div className="flex items-center gap-1.5">
@@ -340,12 +340,12 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
                         {info?.nextEarnings ? fmtEarningsDate(info.nextEarnings) : '—'}
                       </p>
                       {info?.earningsTime === 'bmo' && (
-                        <span className="flex items-center gap-0.5 text-[8px] font-black bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/25 px-1.5 py-0.5 rounded-full shrink-0">
+                        <span className="flex items-center gap-0.5 text-[8px] font-bold bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/25 px-1.5 py-0.5 rounded-full shrink-0">
                           <SunIcon size={8} /> BMO
                         </span>
                       )}
                       {info?.earningsTime === 'amc' && (
-                        <span className="flex items-center gap-0.5 text-[8px] font-black bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-200/50 dark:border-sky-500/25 px-1.5 py-0.5 rounded-full shrink-0">
+                        <span className="flex items-center gap-0.5 text-[8px] font-bold bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-200/50 dark:border-sky-500/25 px-1.5 py-0.5 rounded-full shrink-0">
                           <MoonIcon size={8} /> AMC
                         </span>
                       )}
@@ -359,7 +359,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
           {/* About section */}
           <div className="px-5 pb-5">
             <div className="h-px bg-slate-100 dark:bg-white/10 mb-4" />
-            <p className="text-[8px] font-black tracking-[0.22em] uppercase text-slate-400 dark:text-slate-500 mb-3">
+            <p className="text-[8px] font-bold tracking-[0.10em] uppercase text-slate-400 dark:text-slate-500 mb-3">
               About
             </p>
 
@@ -406,7 +406,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
         {/* Footer */}
         <div className="px-5 py-3 border-t border-slate-100 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400 dark:text-slate-500">
-            Eagleview v4.4.29
+            Eagleview v4.4.30
           </p>
           {info?.website && (
             <a

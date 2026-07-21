@@ -157,7 +157,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
               <CloseIcon size={14} />
             </button>
 
-            <h2 className="text-[22px] font-black tracking-tight text-slate-900 dark:text-slate-100 leading-tight pr-10 mb-4">
+            <h2 className="text-[22px] font-bold tracking-tight text-slate-900 dark:text-slate-100 leading-tight pr-10 mb-4">
               {sector.name}
             </h2>
 
@@ -167,10 +167,10 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
                 onClick={() => setDropdownOpen(dropdownOpen === 'return' ? null : 'return')}
                 className="flex items-baseline gap-2.5 bg-white/80 dark:bg-slate-900/80 hover:bg-white dark:hover:bg-slate-900 border border-slate-100 dark:border-white/10 hover:border-slate-200 dark:hover:border-white/20 rounded-[14px] px-4 py-2.5 shadow-[inset_0_1px_3px_rgba(0,0,0,0.04)] transition-colors"
               >
-                <span className={`font-mono text-[28px] font-extrabold leading-none tabular-nums ${pctClass}`}>
+                <span className={`font-mono text-[28px] font-bold leading-none tabular-nums ${pctClass}`}>
                   {sectorVal !== null ? `${sectorVal > 0 ? '+' : ''}${sectorVal.toFixed(2)}%` : '—'}
                 </span>
-                <span className="text-[10px] uppercase font-black tracking-[0.16em] text-slate-400 dark:text-slate-500 shrink-0 flex items-center gap-1">
+                <span className="text-[10px] uppercase font-bold tracking-[0.08em] text-slate-400 dark:text-slate-500 shrink-0 flex items-center gap-1">
                   {localPeriod} Avg
                   <ChevronDownIcon size={14} className="text-slate-400 dark:text-slate-500" />
                 </span>
@@ -183,7 +183,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
             {/* Badges row */}
             <div className="flex items-center gap-2 flex-wrap">
               {momentumDelta !== null && (
-                <span className={`flex items-center font-black tracking-[0.12em] text-[9px] uppercase px-2.5 py-1.5 rounded-[8px] border ${
+                <span className={`flex items-center font-bold tracking-[0.06em] text-[9px] uppercase px-2.5 py-1.5 rounded-[8px] border ${
                   momentumDelta > 0
                     ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-500/25'
                     : momentumDelta < 0
@@ -195,7 +195,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
                 </span>
               )}
               {streak >= 5 && (
-                <span className="flex items-center gap-1 px-2.5 py-1.5 font-black uppercase rounded-[8px] bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/25 text-[9px] text-orange-600 dark:text-orange-400 tracking-widest">
+                <span className="flex items-center gap-1 px-2.5 py-1.5 font-bold uppercase rounded-[8px] bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/25 text-[9px] text-orange-600 dark:text-orange-400 tracking-wide">
                   <ZapIcon size={10} /> {streak} syncs
                 </span>
               )}
@@ -218,7 +218,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
 
           {/* vs Market */}
           <div className="px-6 py-5 bg-[#FCFCFD] dark:bg-white/[0.02] border-b border-slate-100 dark:border-white/10">
-            <p className="text-[9px] font-black tracking-[0.18em] uppercase text-slate-400 dark:text-slate-500 mb-4">
+            <p className="text-[9px] font-bold tracking-[0.09em] uppercase text-slate-400 dark:text-slate-500 mb-4">
               vs Market
             </p>
             <BenchmarkRows
@@ -259,10 +259,10 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
             {!loading && sorted.length > 0 && (
               <div className="flex items-center gap-2 px-6 pt-3 pb-1">
                 <span className="w-5 shrink-0" />
-                <span className="text-[9px] font-black tracking-widest uppercase text-slate-300 dark:text-slate-600 w-12 text-center shrink-0">Ticker</span>
-                <span className="flex-1 text-[9px] font-black tracking-widest uppercase text-slate-300 dark:text-slate-600">Company</span>
-                <span className="text-[9px] font-black tracking-widest uppercase text-slate-300 dark:text-slate-600 w-16 text-right shrink-0">Price</span>
-                <span className="text-[9px] font-black tracking-widest uppercase text-slate-300 dark:text-slate-600 w-14 text-right shrink-0">Return</span>
+                <span className="text-[9px] font-bold tracking-wide uppercase text-slate-300 dark:text-slate-600 w-12 text-center shrink-0">Ticker</span>
+                <span className="flex-1 text-[9px] font-bold tracking-wide uppercase text-slate-300 dark:text-slate-600">Company</span>
+                <span className="text-[9px] font-bold tracking-wide uppercase text-slate-300 dark:text-slate-600 w-16 text-right shrink-0">Price</span>
+                <span className="text-[9px] font-bold tracking-wide uppercase text-slate-300 dark:text-slate-600 w-14 text-right shrink-0">Return</span>
               </div>
             )}
 
@@ -311,7 +311,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
         {/* Footer */}
         <div className="px-6 py-3 border-t border-slate-100 dark:border-white/10 bg-white dark:bg-slate-900 shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400 dark:text-slate-500">
-            Eagleview v4.4.29 · Yahoo Finance
+            Eagleview v4.4.30 · Yahoo Finance
           </p>
           <p className="text-[10px] text-slate-300 dark:text-slate-600 tabular-nums">
             Last sync: {formatSyncTime(sector.updated_at)}
@@ -355,7 +355,7 @@ const PeriodDropdown = forwardRef<
             : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-white/5'
         }`}
       >
-        <span className={`text-[12px] ${p === current ? 'font-extrabold' : 'font-semibold'}`}>
+        <span className={`text-[12px] ${p === current ? 'font-bold' : 'font-semibold'}`}>
           {PERIOD_LABELS[p]}
         </span>
         {p === current && <span className="text-[10px] text-emerald-400">✓</span>}
@@ -414,8 +414,8 @@ function BenchmarkRows({ sectorVal, sectorName, benchmarks, period }: {
     <div>
       <div className="flex items-center gap-2 mb-1">
         <span className="w-28 shrink-0" /><span className="flex-1" />
-        <span className="text-[9px] text-slate-300 dark:text-slate-600 w-14 text-right tracking-widest uppercase">Return</span>
-        <span className="text-[9px] text-slate-300 dark:text-slate-600 w-12 text-right tracking-widest uppercase">Alpha</span>
+        <span className="text-[9px] text-slate-300 dark:text-slate-600 w-14 text-right tracking-wide uppercase">Return</span>
+        <span className="text-[9px] text-slate-300 dark:text-slate-600 w-12 text-right tracking-wide uppercase">Alpha</span>
       </div>
       <Row label={`▸ ${sectorName.length > 16 ? sectorName.slice(0,15)+'…' : sectorName}`} val={sectorVal} bold />
       <div className="my-1.5 border-t border-slate-100 dark:border-white/10" />

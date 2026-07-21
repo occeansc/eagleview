@@ -1,16 +1,8 @@
 import type { Metadata } from 'next'
-import { Inter, JetBrains_Mono } from 'next/font/google'
 import Nav from '@/components/Nav'
 import InstallPrompt from '@/components/InstallPrompt'
 import { ThemeProvider } from '@/components/ThemeProvider'
 import './globals.css'
-
-const inter = Inter({
-  subsets: ['latin'], variable: '--font-inter', display: 'optional',
-})
-const mono = JetBrains_Mono({
-  subsets: ['latin'], variable: '--font-mono', display: 'optional',
-})
 
 export const metadata: Metadata = {
   title:       { default: 'Eagleview', template: '%s · Eagleview' },
@@ -30,7 +22,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${inter.variable} ${mono.variable}`}>
+    <html lang="en">
       <head>
         <link rel="apple-touch-icon" sizes="180x180" href="/apple-icon.png" />
         <link rel="icon" type="image/svg+xml" href="/icon.svg" />

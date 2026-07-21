@@ -175,7 +175,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
 
       {/* ── Rankings divider ─────────────────────── */}
       <div className="flex items-center gap-3 mb-4">
-        <span className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-500 uppercase whitespace-nowrap flex items-center gap-1.5">
+        <span className="text-[10px] font-bold tracking-wide text-slate-400 dark:text-slate-500 uppercase whitespace-nowrap flex items-center gap-1.5">
           {filterMode === 'hot'     && <FlameIcon size={11} className="text-orange-500" />}
           {filterMode === 'rising'  && <TrendingUpIcon size={11} className="text-sky-500" />}
           {filterMode === 'falling' && <TrendingDownIcon size={11} className="text-rose-500 dark:text-rose-400" />}
@@ -188,7 +188,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
         {filterMode !== 'all' && (
           <button
             onClick={() => setFilterMode('all')}
-            className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 uppercase tracking-widest transition-colors whitespace-nowrap"
+            className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 uppercase tracking-wide transition-colors whitespace-nowrap"
           >
             Clear ✕
           </button>
