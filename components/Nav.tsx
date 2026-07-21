@@ -17,7 +17,7 @@ const TABS = [
 
 const CACHE_KEY  = 'eagleview-sentiment'
 const CACHE_TIME = 'eagleview-sentiment-time'
-const CACHE_TTL  = 900_000 // 15 min — aligns with revalidate = 900
+const CACHE_TTL  = 300_000 // 5 min — aligns with price-page revalidate = 300
 const REFRESH_KEY = 'eagleview-last-visibility-refresh'
 const REFRESH_TTL = 300_000 // avoid a forced refresh on every app open/page resume
 
@@ -143,7 +143,7 @@ export default function Nav() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100/60 dark:bg-white/10 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-white/20 tracking-wide">
-            V4.4.30
+            V4.4.31
           </span>
         </div>
       </nav>

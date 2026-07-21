@@ -4,7 +4,7 @@ import EarningsClient from './EarningsClient'
 import type { TickerEarnings, SectorHolding } from '@/lib/types'
 
 export const metadata: Metadata = { title: 'Earnings' }
-export const revalidate = 900
+export const revalidate = 300
 
 function getTodayInNewYorkIsoDate(): string {
   // Earnings dates are US-market calendar dates. Use New York time instead of

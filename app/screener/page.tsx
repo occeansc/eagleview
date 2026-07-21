@@ -4,7 +4,7 @@ import ScreenerClient from './ScreenerClient'
 import type { SectorHolding, Sector } from '@/lib/types'
 
 export const metadata: Metadata = { title: 'Screener' }
-export const revalidate = 900
+export const revalidate = 300
 
 export default async function ScreenerPage() {
   const supabase = createSupabaseClient()

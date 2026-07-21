@@ -4,7 +4,7 @@ import HeatmapClient from './HeatmapClient'
 import type { Sector, Benchmark } from '@/lib/types'
 
 export const metadata: Metadata = { title: 'Heatmap' }
-export const revalidate = 900
+export const revalidate = 300
 
 export default async function HeatmapPage() {
   const supabase = createSupabaseClient()

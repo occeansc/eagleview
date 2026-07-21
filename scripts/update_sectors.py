@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.4.30 — Data Updater
+Eagleview v4.4.31 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -415,14 +415,87 @@ class DB:
         r.raise_for_status()
 
 
-# ── Return helpers ────────────────────────────────────────────────────────────
-def calc_returns(series: pd.Series) -> dict:
+# ── Price / return helpers ───────────────────────────────────────────────────
+def is_regular_market_open(now: datetime | None = None) -> bool:
+    """Return True only during the regular NYSE/Nasdaq cash session.
+
+    Off-hours behaviour deliberately stays unchanged: the sync uses the latest
+    daily close. We only substitute a current quote while the regular session is
+    actually open, and even then each ticker must report Yahoo marketState=REGULAR.
+    """
+    ET = ZoneInfo("America/New_York")
+    now_et = (now or datetime.now(ET)).astimezone(ET)
+    if now_et.weekday() >= 5:
+        return False
+    market_open = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
+    market_close = now_et.replace(hour=16, minute=0, second=0, microsecond=0)
+    return market_open <= now_et <= market_close
+
+
+def chunks(items: list[str], size: int):
+    for i in range(0, len(items), size):
+        yield items[i:i + size]
+
+
+def fetch_regular_market_prices(tickers: list[str]) -> dict[str, float]:
+    """Fetch current regular-session quote prices in Yahoo quote batches.
+
+    We accept a quote only when Yahoo explicitly says marketState == REGULAR.
+    That prevents pre-market/post-market values from entering EagleView's core
+    price/performance math. Failed quotes are skipped and later fall back to the
+    existing daily-close behaviour.
+    """
+    if not tickers or not is_regular_market_open():
+        return {}
+
+    prices: dict[str, float] = {}
+    headers = {"User-Agent": "Mozilla/5.0 (compatible; Eagleview/1.0)"}
+    for batch in chunks(sorted(set(tickers)), 100):
+        url = "https://query1.finance.yahoo.com/v7/finance/quote"
+        try:
+            r = requests.get(
+                url,
+                params={"symbols": ",".join(batch), "fields": "symbol,regularMarketPrice,marketState"},
+                headers=headers,
+                timeout=20,
+            )
+            r.raise_for_status()
+            results = r.json().get("quoteResponse", {}).get("result", [])
+        except Exception as e:
+            log.warning(f"  Current quote batch failed ({batch[0]}…{batch[-1]}): {e}")
+            continue
+
+        for q in results:
+            symbol = q.get("symbol")
+            price = q.get("regularMarketPrice")
+            state = q.get("marketState")
+            if symbol and isinstance(price, (int, float)) and price > 0 and state == "REGULAR":
+                prices[symbol] = round(float(price), 4)
+
+    return prices
+
+
+def calc_returns(series: pd.Series, current_override: float | None = None) -> dict:
     if series is None or series.empty:
         return {}
     series = series.dropna()
     if len(series) < 2:
         return {}
-    current = float(series.iloc[-1])
+
+    use_live_anchor = current_override is not None and current_override > 0
+    current = float(current_override) if use_live_anchor else float(series.iloc[-1])
+
+    # During regular market hours, current_override is a same-day live regular
+    # session quote. Denominators should be completed historical closes: 1D means
+    # previous regular close, 1W means five completed sessions ago, etc. If the
+    # downloaded daily series already contains today's in-progress candle, remove
+    # it from the denominator series so the math remains consistent.
+    ref_series = series
+    if use_live_anchor:
+        today_et = datetime.now(ZoneInfo("America/New_York")).date()
+        ref_series = series[series.index.date < today_et]
+        if ref_series.empty:
+            ref_series = series
 
     # Sanity thresholds for SHORT periods only — genuine day-over-day or
     # week-over-week moves beyond these are exceedingly rare for any real
@@ -436,9 +509,14 @@ def calc_returns(series: pd.Series) -> dict:
     SHORT_PERIOD_CAPS = {1: 100.0, 5: 150.0}  # {days: max abs % swing}
 
     def pct(days: int):
-        if len(series) <= days:
-            return None
-        past = float(series.iloc[-(days + 1)])
+        if use_live_anchor:
+            if len(ref_series) < days:
+                return None
+            past = float(ref_series.iloc[-days])
+        else:
+            if len(series) <= days:
+                return None
+            past = float(series.iloc[-(days + 1)])
         if not past:
             return None
         value = round((current - past) / past * 100, 2)
@@ -452,8 +530,8 @@ def calc_returns(series: pd.Series) -> dict:
             return None
         return value
 
-    year  = datetime.now().year
-    ytd_s = series[series.index.year == year]
+    year  = datetime.now(ZoneInfo("America/New_York")).year
+    ytd_s = ref_series[ref_series.index.year == year] if use_live_anchor else series[series.index.year == year]
     ytd   = None
     if not ytd_s.empty:
         start = float(ytd_s.iloc[0])
@@ -497,7 +575,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.4.30 Data Sync ══")
+    log.info("══ Eagleview v4.4.31 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -592,10 +670,16 @@ def main():
         log.error("  All download attempts failed — aborting")
         sys.exit(1)
 
+    regular_market_prices = fetch_regular_market_prices(all_tickers)
+    if regular_market_prices:
+        log.info(f"  Current regular-session prices collected: {len(regular_market_prices)} tickers")
+    else:
+        log.info("  Off-hours or no REGULAR quotes available — using latest daily close anchors")
+
     ticker_returns: dict[str, dict] = {
-        t: (calc_returns(closes[t]) if t in closes.columns else {})
-        for t in all_tickers
-    }
+        t: (calc_returns(closes[t], regular_market_prices.get(t)) if t in closes.columns else {})
+        for t in all_tickers}
+
     missing = [t for t, r in ticker_returns.items() if not r]
     if missing:
         log.warning(f"  No data for: {missing}")
@@ -603,9 +687,14 @@ def main():
     # ══════════════════════════════════════════════════════════════════════════
     # PHASE 3 — Ensure all sector rows exist + compute per-sector data
     # ══════════════════════════════════════════════════════════════════════════
-    # Build latest closing price map — used in Phase 3 stock rows
-    price_map: dict[str, float] = {}
+    # Build latest display price map — during regular market hours this uses
+    # Yahoo regularMarketPrice; off-hours it stays with the existing daily-close
+    # behaviour. This keeps displayed price and performance math on the same
+    # sync-time anchor without introducing pre/post-market prices.
+    price_map: dict[str, float] = dict(regular_market_prices)
     for t in all_tickers:
+        if t in price_map:
+            continue
         if t in closes.columns:
             series = closes[t].dropna()
             if not series.empty:

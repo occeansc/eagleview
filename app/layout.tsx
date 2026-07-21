@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import Nav from '@/components/Nav'
 import InstallPrompt from '@/components/InstallPrompt'
 import { ThemeProvider } from '@/components/ThemeProvider'
@@ -12,12 +12,15 @@ export const metadata: Metadata = {
     apple: [{ url: '/apple-icon.png', sizes: '180x180', type: 'image/png' }],
   },
   manifest: '/manifest.webmanifest',
-  themeColor: '#0f172a',
   appleWebApp: {
     capable: true,
     title:   'Eagleview',
     statusBarStyle: 'black-translucent',
   },
+}
+
+export const viewport: Viewport = {
+  themeColor: '#0f172a',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
