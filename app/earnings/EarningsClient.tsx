@@ -186,7 +186,7 @@ export default function EarningsClient({ earnings, holdings }: Props) {
 
       {/* Footer */}
       <div className="mt-6 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500">
-        <span>Eagleview v4.4.39</span>
+        <span>Eagleview v4.4.40</span>
         {lastSynced && (
           <span>
             Last sync: {new Date(lastSynced).toLocaleString('en-US', {

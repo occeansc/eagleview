@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.4.39 — Data Updater
+Eagleview v4.4.40 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -58,7 +58,7 @@ SECTOR_STOCKS = [
         ('QLYS','Qualys'), ('NET','Cloudflare'), ('CHKP','Check Point'), ('DT','Dynatrace'),
         ('GEN','Gen Digital'), ('VRNS','Varonis Systems'), ('RDWR','Radware'),
         ('AKAM','Akamai Technologies'), ('CSCO','Cisco Systems'), ('FFIV','F5'), ('FSLY','Fastly'),
-        ('BB','BlackBerry'), ('CYBR','CyberArk'),
+        ('BB','BlackBerry'),
     ]),
     ('AI & Machine Learning', [
         ('PLTR','Palantir'), ('AI','C3.ai'), ('BBAI','BigBear.ai'), ('SOUN','SoundHound AI'),
@@ -73,7 +73,7 @@ SECTOR_STOCKS = [
         ('XYZ','Block'), ('PYPL','PayPal'), ('HOOD','Robinhood'), ('SOFI','SoFi Technologies'),
         ('AFRM','Affirm'), ('NU','Nu Holdings'), ('LMND','Lemonade'), ('ROOT','Root Insurance'),
         ('MQ','Marqeta'), ('RELY','Remitly'), ('TOST','Toast'), ('FLYW','Flywire'), ('DAVE','Dave'),
-        ('NRDS','NerdWallet'), ('LC','LendingClub'), ('PAYO','Payoneer'), ('FICO','Fair Isaac'),
+        ('NRDS','NerdWallet'), ('PAYO','Payoneer'), ('FICO','Fair Isaac'),
         ('WEX','WEX'), ('FIS','Fidelity National Information Services'), ('GPN','Global Payments'),
         ('QFIN','Qifu Technology'), ('STNE','StoneCo'), ('PAGS','PagSeguro Digital'),
         ('FOUR','Shift4 Payments'),
@@ -103,7 +103,7 @@ SECTOR_STOCKS = [
         ('ISRG','Intuitive Surgical'), ('MDT','Medtronic'), ('EW','Edwards Lifesciences'),
         ('SYK','Stryker'), ('BSX','Boston Scientific'), ('DXCM','Dexcom'), ('PODD','Insulet'),
         ('BDX','Becton Dickinson'), ('ZBH','Zimmer Biomet'), ('INMD','InMode'), ('AMGN','Amgen'),
-        ('GILD','Gilead Sciences'), ('HOLX','Hologic'), ('ABT','Abbott Laboratories'),
+        ('GILD','Gilead Sciences'), ('ABT','Abbott Laboratories'),
         ('TMO','Thermo Fisher Scientific'), ('DHR','Danaher'),
     ]),
     ('EV, Battery & Autonomy', [
@@ -126,7 +126,7 @@ SECTOR_STOCKS = [
         ('BKSY','BlackSky Technology'), ('SPIR','Spire Global'), ('PL','Planet Labs'),
         ('SATL','Satellogic'), ('MNTS','Momentus'), ('KTOS','Kratos Defense'), ('LHX','L3Harris'),
         ('NOC','Northrop Grumman'), ('BA','Boeing'), ('TDY','Teledyne'), ('HEI','HEICO'),
-        ('ATRO','Astronics'), ('GILT','Gilat Satellite Networks'), ('SATS','EchoStar'),
+        ('ATRO','Astronics'), ('GILT','Gilat Satellite Networks'), ('ECHO','EchoStar'),
     ]),
     ('Defense & Aerospace', [
         ('LMT','Lockheed Martin'), ('NOC','Northrop Grumman'), ('RTX','RTX Corp'),
@@ -300,7 +300,7 @@ SECTOR_STOCKS = [
     ('Healthcare Tools & Diagnostics', [
         ('TMO','Thermo Fisher Scientific'), ('DHR','Danaher'), ('ILMN','Illumina'),
         ('TXG','10x Genomics'), ('PACB','Pacific Biosciences'), ('NTRA','Natera'),
-        ('GH','Guardant Health'), ('EXAS','Exact Sciences'), ('HOLX','Hologic'),
+        ('GH','Guardant Health'), ('A','Agilent Technologies'), ('WAT','Waters Corporation'),
         ('IDXX','IDEXX Laboratories'), ('DXCM','Dexcom'), ('PODD','Insulet'), ('QSI','Quantum-Si'),
         ('ABT','Abbott Laboratories'), ('ISRG','Intuitive Surgical'), ('MDT','Medtronic'),
         ('EW','Edwards Lifesciences'), ('BSX','Boston Scientific'),
@@ -641,7 +641,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.4.39 Data Sync ══")
+    log.info("══ Eagleview v4.4.40 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
