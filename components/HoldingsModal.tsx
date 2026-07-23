@@ -311,7 +311,7 @@ function ModalContent({ sector, period, benchmarks, onClose }: Props) {
         {/* Footer */}
         <div className="px-6 py-3 border-t border-slate-100 dark:border-white/10 bg-white dark:bg-slate-900 shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400 dark:text-slate-500">
-            Eagleview v4.4.37 · Yahoo Finance
+            Eagleview v4.4.38 · Yahoo Finance
           </p>
           <p className="text-[10px] text-slate-300 dark:text-slate-600 tabular-nums">
             Last sync: {formatSyncTime(sector.updated_at)}

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   Sector, Benchmark, Period, SectorSnapshot,
   getPeriodValue, getRankChange, PERIOD_LABELS, computeScorecard,
@@ -21,13 +22,38 @@ interface Props {
 type FilterMode = 'all' | 'hot' | 'rising' | 'falling'
 
 const PERIODS_LOCAL: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '5Y']
+const PERIOD_SET = new Set<Period>(PERIODS_LOCAL)
 const RISING_THRESHOLD  =  5
 const FALLING_THRESHOLD = -5
 
+function parsePeriod(value: string | null): Period {
+  return value && PERIOD_SET.has(value as Period) ? value as Period : '1D'
+}
+
 export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
+  const router   = useRouter()
+  const pathname = usePathname()
+
   const [period, setPeriod]         = useState<Period>('1D')
   const [filterMode, setFilterMode] = useState<FilterMode>('all')
   const [selected, setSelected]     = useState<Sector | null>(null)
+
+  useEffect(() => {
+    const syncFromUrl = () => {
+      setPeriod(parsePeriod(new URLSearchParams(window.location.search).get('period')))
+    }
+    syncFromUrl()
+    window.addEventListener('popstate', syncFromUrl)
+    return () => window.removeEventListener('popstate', syncFromUrl)
+  }, [])
+
+  const updatePeriod = (nextPeriod: Period) => {
+    setPeriod(nextPeriod)
+    const params = new URLSearchParams(window.location.search)
+    params.set('period', nextPeriod)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    window.dispatchEvent(new CustomEvent('eagleview-period-change', { detail: nextPeriod }))
+  }
 
   const spx = benchmarks.find(b => b.ticker === '^GSPC')
 
@@ -121,7 +147,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
               {PERIODS_LOCAL.map(p => (
                 <button
                   key={p}
-                  onClick={() => setPeriod(p)}
+                  onClick={() => updatePeriod(p)}
                   className={`period-pill ${period === p ? 'period-pill-active' : ''}`}
                 >
                   {p}
