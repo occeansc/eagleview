@@ -196,7 +196,7 @@ export default function WatchlistPage() {
       )}
 
       <p className="text-center text-[10px] text-slate-300 dark:text-slate-600 mt-5 tracking-wide">
-        EAGLEVIEW V4.4.38 · TICKER WATCHLIST
+        EAGLEVIEW V4.4.39 · TICKER WATCHLIST
       </p>
 
       {selectedTicker && (

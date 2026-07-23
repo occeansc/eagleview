@@ -130,19 +130,16 @@ export default function Nav() {
       })
   }, [periodField, cacheKey, cacheTimeKey])
 
-  // Accent colours — null (loading) uses slate, not purple
+  // Accent colours — null (loading) uses slate, not purple.
+  // Desktop keeps the active pill neutral; only the small menu icon is dynamic.
   const desktopActive =
-    sentiment === 'bull'
-      ? 'bg-emerald-600 text-white shadow-[0_4px_14px_rgba(16,185,129,0.26)] ring-1 ring-emerald-500/30 dark:bg-emerald-500/18 dark:text-emerald-200 dark:ring-emerald-400/30'
-      : sentiment === 'bear'
-      ? 'bg-rose-600 text-white shadow-[0_4px_14px_rgba(244,63,94,0.24)] ring-1 ring-rose-500/30 dark:bg-rose-500/18 dark:text-rose-200 dark:ring-rose-400/30'
-      : 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-[0_4px_12px_rgba(15,23,42,0.18)] ring-1 ring-slate-900/10 dark:ring-slate-100/20'
+    'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-[0_4px_12px_rgba(15,23,42,0.18)] ring-1 ring-slate-900/10 dark:ring-slate-100/20'
 
   const iconActive =
-    sentiment === 'bull'    ? 'text-emerald-400' :
-    sentiment === 'bear'    ? 'text-rose-400'    :
-    sentiment === 'neutral' ? 'text-slate-400 dark:text-slate-500'   :
-                              'text-slate-400 dark:text-slate-500'    // loading
+    sentiment === 'bull'    ? 'text-emerald-400 dark:text-emerald-500' :
+    sentiment === 'bear'    ? 'text-rose-400 dark:text-rose-500'       :
+    sentiment === 'neutral' ? 'text-slate-400 dark:text-slate-500'     :
+                              'text-slate-400 dark:text-slate-500'      // loading
 
   const mobileActive =
     sentiment === 'bull'    ? 'text-emerald-600 dark:text-emerald-400' :
@@ -197,7 +194,7 @@ export default function Nav() {
         <div className="flex items-center gap-3">
           <ThemeToggle />
           <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100/60 dark:bg-white/10 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-white/20 tracking-wide">
-            V4.4.38
+            V4.4.39
           </span>
         </div>
       </nav>
