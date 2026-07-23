@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.4.34 — Data Updater
+Eagleview v4.4.37 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -35,12 +35,13 @@ SECTOR_STOCKS = [
     ('Semiconductors', [
         ('NVDA','NVIDIA'), ('AMD','Advanced Micro Devices'), ('AVGO','Broadcom'),
         ('TSM','Taiwan Semiconductor'), ('ASML','ASML Holding'), ('SKHY','SK hynix ADR'),
-        ('ARM','Arm Holdings'), ('MU','Micron Technology'), ('INTC','Intel'), ('QCOM','Qualcomm'),
-        ('MRVL','Marvell Technology'), ('AMAT','Applied Materials'), ('LRCX','Lam Research'),
-        ('KLAC','KLA Corp'), ('TXN','Texas Instruments'), ('ADI','Analog Devices'),
-        ('MCHP','Microchip Technology'), ('ON','ON Semiconductor'), ('NXPI','NXP Semiconductors'),
-        ('MPWR','Monolithic Power Systems'), ('GFS','GlobalFoundries'), ('ALAB','Astera Labs'),
-        ('SWKS','Skyworks Solutions'), ('QRVO','Qorvo'), ('STM','STMicroelectronics'),
+        ('ARM','Arm Holdings'), ('MU','Micron Technology'), ('SNDK','SanDisk'), ('INTC','Intel'),
+        ('QCOM','Qualcomm'), ('MRVL','Marvell Technology'), ('AMAT','Applied Materials'),
+        ('LRCX','Lam Research'), ('KLAC','KLA Corp'), ('TXN','Texas Instruments'),
+        ('ADI','Analog Devices'), ('MCHP','Microchip Technology'), ('ON','ON Semiconductor'),
+        ('NXPI','NXP Semiconductors'), ('MPWR','Monolithic Power Systems'), ('GFS','GlobalFoundries'),
+        ('ALAB','Astera Labs'), ('SWKS','Skyworks Solutions'), ('QRVO','Qorvo'),
+        ('STM','STMicroelectronics'),
     ]),
     ('Software & Cloud', [
         ('MSFT','Microsoft'), ('ORCL','Oracle'), ('ADBE','Adobe'), ('CRM','Salesforce'),
@@ -115,7 +116,8 @@ SECTOR_STOCKS = [
     ]),
     ('Advanced Air Mobility', [
         ('JOBY','Joby Aviation'), ('ACHR','Archer Aviation'), ('EVTL','Vertical Aerospace'),
-        ('BLDE','Blade Air Mobility'), ('TXT','Textron'), ('BA','Boeing'), ('ERJ','Embraer ADR'),
+        ('EH','EHang'), ('EVEX','Eve Holding'), ('SRFM','Surf Air Mobility'), ('TXT','Textron'),
+        ('BA','Boeing'), ('GE','GE Aerospace'), ('HON','Honeywell'), ('RTX','RTX'),
     ]),
     ('Space & Satellites', [
         ('RKLB','Rocket Lab'), ('ASTS','AST SpaceMobile'), ('LUNR','Intuitive Machines'),
@@ -138,8 +140,9 @@ SECTOR_STOCKS = [
     ('Drones & Defense Autonomy', [
         ('AVAV','AeroVironment'), ('RCAT','Red Cat Holdings'), ('KTOS','Kratos Defense'),
         ('PDYN','Palladyne AI'), ('AXON','Axon Enterprise'), ('ONDS','Ondas Holdings'),
-        ('UMAC','Unusual Machines'), ('TXT','Textron'), ('LHX','L3Harris'), ('NOC','Northrop Grumman'),
-        ('PLTR','Palantir'),
+        ('UMAC','Unusual Machines'), ('PLTR','Palantir'), ('DRS','Leonardo DRS'),
+        ('MRCY','Mercury Systems'), ('HII','Huntington Ingalls'), ('TXT','Textron'), ('LHX','L3Harris'),
+        ('NOC','Northrop Grumman'), ('TDG','TransDigm'), ('CW','Curtiss-Wright'),
     ]),
     ('Robotics & Automation', [
         ('TER','Teradyne'), ('AZTA','Azenta'), ('NOVT','Novanta'), ('RRX','Regal Rexnord'),
@@ -638,7 +641,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.4.34 Data Sync ══")
+    log.info("══ Eagleview v4.4.37 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")

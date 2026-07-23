@@ -86,7 +86,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-3 sm:px-6 py-6">
+    <div className="max-w-[1440px] mx-auto px-3 sm:px-6 xl:px-8 py-6">
 
       {/* ── Header ─────────────────────────────── */}
       <div className="dashboard-header-row flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
@@ -227,7 +227,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {displayed.map((sector, i) => {
             const overallRank = sorted.indexOf(sector) + 1
             return (
