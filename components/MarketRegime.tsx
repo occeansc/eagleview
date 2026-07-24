@@ -4,6 +4,23 @@ import { Sector, RegimeType, computeRegime } from '@/lib/types'
 import { TrendingUpIcon, TrendingDownIcon } from './Icons'
 import { useTheme } from './ThemeProvider'
 
+type BreadthSentiment = 'bull' | 'bear' | 'neutral'
+
+const MENU_SENTIMENT_ACCENT: Record<BreadthSentiment, { dot: string; icon: string }> = {
+  bull: {
+    dot:  'bg-emerald-400 dark:bg-emerald-500 shadow-[0_0_8px_rgba(52,211,153,0.7)]',
+    icon: 'text-emerald-400 dark:text-emerald-500',
+  },
+  bear: {
+    dot:  'bg-rose-400 dark:bg-rose-500 shadow-[0_0_8px_rgba(251,113,133,0.7)]',
+    icon: 'text-rose-400 dark:text-rose-500',
+  },
+  neutral: {
+    dot:  'bg-slate-400 dark:bg-slate-500 shadow-[0_0_7px_rgba(148,163,184,0.5)]',
+    icon: 'text-slate-400 dark:text-slate-500',
+  },
+}
+
 const CONFIG: Record<RegimeType, {
   label:  string
   sub:    string
@@ -46,9 +63,10 @@ const CONFIG: Record<RegimeType, {
   },
 }
 
-export default function MarketRegime({ sectors }: { sectors: Sector[] }) {
+export default function MarketRegime({ sectors, sentiment }: { sectors: Sector[]; sentiment: BreadthSentiment }) {
   const regime = computeRegime(sectors)
   const cfg    = CONFIG[regime]
+  const menuAccent = MENU_SENTIMENT_ACCENT[sentiment]
   const { theme } = useTheme()
   const isDark = theme === 'dark'
 
@@ -62,8 +80,8 @@ export default function MarketRegime({ sectors }: { sectors: Sector[] }) {
     >
       {/* Pulsing dot */}
       <span className="relative flex items-center justify-center w-2 h-2">
-        <span className={`absolute inline-flex w-full h-full rounded-full pulse-blip ${cfg.dot} opacity-60`} />
-        <span className={`relative w-2 h-2 rounded-full ${cfg.dot}`} />
+        <span className={`absolute inline-flex w-full h-full rounded-full pulse-blip ${menuAccent.dot} opacity-60`} />
+        <span className={`relative w-2 h-2 rounded-full ${menuAccent.dot}`} />
       </span>
 
       {/* Label + sub */}
@@ -76,8 +94,8 @@ export default function MarketRegime({ sectors }: { sectors: Sector[] }) {
         </span>
       )}
 
-      {regime === 'risk-on'  && <TrendingUpIcon   size={11} className={cfg.accent} />}
-      {regime === 'risk-off' && <TrendingDownIcon  size={11} className={cfg.accent} />}
+      {regime === 'risk-on'  && <TrendingUpIcon   size={11} className={menuAccent.icon} />}
+      {regime === 'risk-off' && <TrendingDownIcon  size={11} className={menuAccent.icon} />}
     </div>
   )
 }

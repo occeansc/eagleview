@@ -65,8 +65,12 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
     })
   }, [sectors, period])
 
-  const positiveCount = sorted.filter(s => (getPeriodValue(s, period) ?? 0) >= 0).length
-  const negativeCount = sorted.length - positiveCount
+  const positiveCount = sorted.filter(s => (getPeriodValue(s, period) ?? 0) > 0).length
+  const negativeCount = sorted.filter(s => (getPeriodValue(s, period) ?? 0) < 0).length
+  const breadthSentiment =
+    positiveCount > negativeCount ? 'bull' :
+    negativeCount > positiveCount ? 'bear' :
+    'neutral'
 
   const lastUpdated = sectors.length > 0
     ? new Date(
@@ -121,7 +125,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
             <EagleIcon size={22} className="text-slate-800 dark:text-slate-200 shrink-0" />
             <h1 className="landscape-title text-2xl font-bold text-slate-800 dark:text-slate-200 tracking-tight">Eagleview</h1>
           </div>
-          <div className="tagline-block flex flex-wrap items-center gap-2 pl-8 sm:pl-0">
+          <div className="tagline-block flex flex-wrap items-center gap-2 pl-0">
             <p className="text-xs text-slate-400 dark:text-slate-500">
               {sorted.length} sectors · {PERIOD_LABELS[period]}
               {positiveCount > 0 && (
@@ -134,7 +138,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
               )}
               {lastUpdated && <> · {lastUpdated}</>}
             </p>
-            <MarketRegime sectors={sectors} />
+            <MarketRegime sectors={sectors} sentiment={breadthSentiment} />
           </div>
         </div>
 
