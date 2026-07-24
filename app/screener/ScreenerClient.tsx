@@ -91,7 +91,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
             placeholder="Search ticker or company…"
             value={query}
             onChange={e => setQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 text-[13px] bg-slate-50/80 dark:bg-white/5 border border-slate-200/60 dark:border-white/20 rounded-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-300/50 focus:border-indigo-300 transition-all placeholder:text-slate-400 dark:text-slate-500"
+            className="w-full pl-10 pr-4 py-2.5 text-base sm:text-[13px] bg-slate-50/80 dark:bg-white/5 border border-slate-200/60 dark:border-white/20 rounded-[12px] focus:outline-none focus:ring-2 focus:ring-indigo-300/50 focus:border-indigo-300 transition-all placeholder:text-slate-400 dark:text-slate-500"
           />
         </div>
 
@@ -307,7 +307,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       )}
 
       <p className="text-center text-[10px] text-slate-300 dark:text-slate-600 mt-5 tracking-wide">
-        EAGLEVIEW V4.4.41 · EQUAL-WEIGHTED BASKETS
+        EAGLEVIEW V4.4.43 · EQUAL-WEIGHTED BASKETS
       </p>
 
       {selectedTicker && (

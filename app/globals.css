@@ -454,12 +454,14 @@
     line-height: 1.2 !important;
     margin-bottom: 2px !important;
   }
-  /* Tagline: single flex row, no wrap */
+  /* Keep the summary and market-status control in a fixed left-aligned stack.
+     The Risk control must not jump beside the summary merely because a shorter
+     timeframe happens to leave room on a landscape phone. */
   .tagline-block {
     display: flex !important;
-    flex-direction: row !important;
+    flex-direction: column !important;
     flex-wrap: nowrap !important;
-    align-items: center !important;
+    align-items: flex-start !important;
     gap: 6px !important;
     margin-bottom: 4px !important;
     overflow: hidden;
