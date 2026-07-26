@@ -142,10 +142,10 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
           </div>
         </div>
 
-        {/* ── Period bar: scroll container (pills) + filter group (buttons) ── */}
+        {/* ── Period bar: fixed timeframe controls + filter group ── */}
         <div className="period-bar shrink-0">
 
-          {/* Period pills — inside the scrollable container */}
+          {/* All timeframe controls are deliberately visible — no horizontal scrolling. */}
           <div className="period-control">
             <div className="period-control-inner">
               {PERIODS_LOCAL.map(p => (
