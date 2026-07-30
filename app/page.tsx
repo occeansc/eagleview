@@ -2,7 +2,7 @@ import { createSupabaseClient } from '@/lib/supabase'
 import SectorGrid from '@/components/SectorGrid'
 import type { Sector, Benchmark, SectorSnapshot } from '@/lib/types'
 
-export const revalidate = 300 // 5 min — keep post-sync prices fresh without hammering Supabase
+export const revalidate = 900 // 15 min — refreshes within one sync cycle
 
 async function getData() {
   const supabase = createSupabaseClient()

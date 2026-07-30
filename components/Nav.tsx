@@ -17,31 +17,9 @@ const TABS = [
 
 const CACHE_KEY  = 'eagleview-sentiment'
 const CACHE_TIME = 'eagleview-sentiment-time'
-const CACHE_TTL  = 300_000 // 5 min — aligns with price-page revalidate = 300
+const CACHE_TTL  = 900_000 // 15 min — aligns with revalidate = 900
 const REFRESH_KEY = 'eagleview-last-visibility-refresh'
 const REFRESH_TTL = 300_000 // avoid a forced refresh on every app open/page resume
-
-const PERIOD_FIELDS = {
-  '1D':  'day_pct',
-  '1W':  'week_pct',
-  '1M':  'month_pct',
-  '3M':  'quarter_pct',
-  '6M':  'half_year_pct',
-  'YTD': 'ytd_pct',
-  '1Y':  'year_pct',
-  '5Y':  'five_year_pct',
-} as const
-
-type NavPeriod = keyof typeof PERIOD_FIELDS
-const PERIOD_SET = new Set<NavPeriod>(Object.keys(PERIOD_FIELDS) as NavPeriod[])
-
-function parsePeriod(value: string | null): NavPeriod {
-  return value && PERIOD_SET.has(value as NavPeriod) ? value as NavPeriod : '1D'
-}
-
-function hrefWithPeriod(href: string, period: NavPeriod) {
-  return `${href === '/' ? '/' : href}?period=${encodeURIComponent(period)}`
-}
 
 // Tri-state: null = loading, bull/bear/neutral = resolved
 type Sentiment = 'bull' | 'bear' | 'neutral' | null
@@ -49,10 +27,6 @@ type Sentiment = 'bull' | 'bear' | 'neutral' | null
 export default function Nav() {
   const path   = usePathname()
   const router = useRouter()
-  const [period, setPeriod] = useState<NavPeriod>('1D')
-  const periodField  = PERIOD_FIELDS[period]
-  const cacheKey     = `${CACHE_KEY}-${period}`
-  const cacheTimeKey = `${CACHE_TIME}-${period}`
   const [sentiment, setSentiment] = useState<Sentiment>(null)
 
   // Warm route bundles after first paint so switching tabs feels instant.
@@ -61,25 +35,6 @@ export default function Nav() {
       if (href !== path) router.prefetch(href)
     })
   }, [path, router])
-
-  // Keep nav sentiment period in sync with the dashboard URL period without
-  // using useSearchParams(), which would force CSR bailouts during static build.
-  useEffect(() => {
-    const syncFromUrl = () => {
-      setPeriod(parsePeriod(new URLSearchParams(window.location.search).get('period')))
-    }
-    const onPeriodChange = (event: Event) => {
-      const detail = (event as CustomEvent<NavPeriod>).detail
-      setPeriod(parsePeriod(detail ?? null))
-    }
-    syncFromUrl()
-    window.addEventListener('popstate', syncFromUrl)
-    window.addEventListener('eagleview-period-change', onPeriodChange)
-    return () => {
-      window.removeEventListener('popstate', syncFromUrl)
-      window.removeEventListener('eagleview-period-change', onPeriodChange)
-    }
-  }, [path])
 
   // Re-fetch fresh server data when the app becomes visible again, but throttle
   // it. Refreshing on every iOS pageshow made the app feel like it was dragging
@@ -103,43 +58,37 @@ export default function Nav() {
   }, [router])
 
   useEffect(() => {
-    setSentiment(null)
     try {
-      const cached   = localStorage.getItem(cacheKey)
-      const cachedAt = localStorage.getItem(cacheTimeKey)
+      const cached   = localStorage.getItem(CACHE_KEY)
+      const cachedAt = localStorage.getItem(CACHE_TIME)
       const fresh    = cachedAt && Date.now() - Number(cachedAt) < CACHE_TTL
       if (cached && fresh) { setSentiment(cached as Sentiment); return }
     } catch { /* localStorage unavailable */ }
 
-    // Fetch the same period field the dashboard is showing, so the nav
-    // accent follows the current timeframe instead of being pinned to YTD.
+    // Fetch ytd_pct for all sectors — tiny query, explicit cast for TypeScript
     getSupabaseClient()
       .from('sectors')
-      .select(periodField)
+      .select('ytd_pct')
       .then(({ data }) => {
         if (!data?.length) return
-        const rows = data as Array<Record<typeof periodField, number | null>>
-        const pos  = rows.filter(s => (s[periodField] ?? 0) > 0).length
-        const neg  = rows.filter(s => (s[periodField] ?? 0) < 0).length
+        const rows = data as Array<{ ytd_pct: number | null }>
+        const pos  = rows.filter(s => (s.ytd_pct ?? 0) > 0).length
+        const neg  = rows.filter(s => (s.ytd_pct ?? 0) < 0).length
         const result: Sentiment = pos > neg ? 'bull' : neg > pos ? 'bear' : 'neutral'
         setSentiment(result)
         try {
-          localStorage.setItem(cacheKey,     result)
-          localStorage.setItem(cacheTimeKey, String(Date.now()))
+          localStorage.setItem(CACHE_KEY,  result)
+          localStorage.setItem(CACHE_TIME, String(Date.now()))
         } catch { /* localStorage unavailable */ }
       })
-  }, [periodField, cacheKey, cacheTimeKey])
+  }, [])
 
-  // Accent colours — null (loading) uses slate, not purple.
-  // Desktop keeps the active pill neutral; only the small menu icon is dynamic.
-  const desktopActive =
-    'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-[0_4px_12px_rgba(15,23,42,0.18)] ring-1 ring-slate-900/10 dark:ring-slate-100/20'
-
+  // Accent colours — null (loading) uses slate, not purple
   const iconActive =
-    sentiment === 'bull'    ? 'text-emerald-400 dark:text-emerald-500' :
-    sentiment === 'bear'    ? 'text-rose-400 dark:text-rose-500'       :
-    sentiment === 'neutral' ? 'text-slate-400 dark:text-slate-500'     :
-                              'text-slate-400 dark:text-slate-500'      // loading
+    sentiment === 'bull'    ? 'text-emerald-400' :
+    sentiment === 'bear'    ? 'text-rose-400'    :
+    sentiment === 'neutral' ? 'text-slate-400 dark:text-slate-500'   :
+                              'text-slate-400 dark:text-slate-500'    // loading
 
   const mobileActive =
     sentiment === 'bull'    ? 'text-emerald-600 dark:text-emerald-400' :
@@ -163,7 +112,7 @@ export default function Nav() {
               <EagleIcon size={17} className="text-slate-800 dark:text-slate-200" />
             </div>
             {/* No purple anywhere — hover stays in slate family */}
-            <span className="font-bold tracking-tight text-[15px] bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent group-hover:from-slate-700 group-hover:to-slate-500 dark:group-hover:from-slate-200 dark:group-hover:to-slate-500 transition-all">
+            <span className="font-extrabold tracking-tight text-[15px] bg-gradient-to-r from-slate-900 to-slate-600 dark:from-slate-100 dark:to-slate-400 bg-clip-text text-transparent group-hover:from-slate-700 group-hover:to-slate-500 dark:group-hover:from-slate-200 dark:group-hover:to-slate-500 transition-all">
               Eagleview
             </span>
           </Link>
@@ -176,10 +125,10 @@ export default function Nav() {
               return (
                 <Link
                   key={href}
-                  href={hrefWithPeriod(href, period)}
+                  href={href}
                   className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[13px] font-semibold transition-all duration-250 ${
                     active
-                      ? desktopActive
+                      ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-[0_4px_12px_rgba(15,23,42,0.18)] ring-1 ring-slate-900/10 dark:ring-slate-100/20'
                       : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-white/70 dark:hover:bg-slate-900/70 hover:shadow-sm'
                   }`}
                 >
@@ -193,8 +142,8 @@ export default function Nav() {
 
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100/60 dark:bg-white/10 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-white/20 tracking-wide">
-            V4.4.44
+          <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-slate-100/60 dark:bg-white/10 px-2.5 py-1 rounded-full border border-slate-200/50 dark:border-white/20 tracking-widest">
+            V4.4.29
           </span>
         </div>
       </nav>
@@ -206,7 +155,7 @@ export default function Nav() {
           return (
             <Link
               key={href}
-              href={hrefWithPeriod(href, period)}
+              href={href}
               className={`relative flex-1 flex flex-col items-center justify-center gap-0.5 py-2.5 min-w-0 transition-all duration-200 ${
                 active ? `${mobileActive} -translate-y-0.5` : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-400'
               }`}
