@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect, useState } from 'react'
-import { FlameIcon, TrendingUpIcon, TrendingDownIcon, AwardIcon, InfoIcon, CloseIcon } from './Icons'
+import { useEffect, useRef, useState } from 'react'
+import { AwardIcon, CloseIcon, FlameIcon, TrendingDownIcon, TrendingUpIcon } from './Icons'
 
 type SignalTerm = {
   key: string
@@ -12,16 +12,17 @@ type SignalTerm = {
 }
 
 interface BadgeLegendProps {
-  showHot:     boolean
-  showRising:  boolean
+  showHot: boolean
+  showRising: boolean
   showFalling: boolean
-  showGold:    boolean
-  showSilver:  boolean
-  showBronze:  boolean
+  showGold: boolean
+  showSilver: boolean
+  showBronze: boolean
 }
 
 export default function BadgeLegend({ showHot, showRising, showFalling, showGold, showSilver, showBronze }: BadgeLegendProps) {
   const [open, setOpen] = useState(false)
+  const triggerRef = useRef<HTMLButtonElement>(null)
 
   const terms: SignalTerm[] = [
     showHot ? {
@@ -50,10 +51,15 @@ export default function BadgeLegend({ showHot, showRising, showFalling, showGold
     } : null,
   ].filter((term): term is SignalTerm => term !== null)
 
+  const close = () => {
+    setOpen(false)
+    window.setTimeout(() => triggerRef.current?.focus(), 0)
+  }
+
   useEffect(() => {
     if (!open) return
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setOpen(false)
+      if (event.key === 'Escape') close()
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
@@ -65,6 +71,7 @@ export default function BadgeLegend({ showHot, showRising, showFalling, showGold
     <>
       <div className="mt-7 flex justify-end border-t border-slate-200/60 pt-3 dark:border-white/10">
         <button
+          ref={triggerRef}
           type="button"
           onClick={() => setOpen(true)}
           className="group inline-flex items-center gap-1.5 rounded-full px-1.5 py-1 text-[11px] font-semibold text-slate-400 transition-colors hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 dark:text-slate-500 dark:hover:text-slate-200"
@@ -73,9 +80,7 @@ export default function BadgeLegend({ showHot, showRising, showFalling, showGold
           aria-label="Open Signal Guide"
           title="How EagleView ranks sector signals"
         >
-          <span className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-slate-300/80 text-slate-400 transition-colors group-hover:border-slate-400 group-hover:text-sky-600 dark:border-white/20 dark:text-slate-500 dark:group-hover:border-white/35 dark:group-hover:text-sky-300">
-            <InfoIcon size={11} />
-          </span>
+          <span aria-hidden="true" className="flex h-[18px] w-[18px] items-center justify-center rounded-full border border-slate-300/80 font-serif text-[12px] font-bold leading-none text-slate-400 transition-colors group-hover:border-slate-400 group-hover:text-sky-600 dark:border-white/20 dark:text-slate-500 dark:group-hover:border-white/35 dark:group-hover:text-sky-300">i</span>
           <span className="hidden sm:inline">Signal guide</span>
         </button>
       </div>
@@ -84,7 +89,9 @@ export default function BadgeLegend({ showHot, showRising, showFalling, showGold
         <div
           className="fixed inset-0 z-[80] flex items-end justify-center bg-slate-950/40 p-0 backdrop-blur-[2px] sm:items-center sm:p-6"
           role="presentation"
-          onMouseDown={() => setOpen(false)}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) close()
+          }}
         >
           <section
             role="dialog"
@@ -100,12 +107,7 @@ export default function BadgeLegend({ showHot, showRising, showFalling, showGold
                 <h2 id="signal-guide-title" className="text-base font-bold tracking-tight text-slate-800 dark:text-slate-100">Signal guide</h2>
                 <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-slate-400">A concise read on the badges visible in this ranking.</p>
               </div>
-              <button
-                type="button"
-                onClick={() => setOpen(false)}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 dark:border-white/10 dark:text-slate-400 dark:hover:border-white/20 dark:hover:text-white"
-                aria-label="Close Signal Guide"
-              >
+              <button type="button" onClick={close} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-400 transition-colors hover:border-slate-300 hover:text-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/70 dark:border-white/10 dark:text-slate-400 dark:hover:border-white/20 dark:hover:text-white" aria-label="Close Signal Guide">
                 <CloseIcon size={15} />
               </button>
             </div>
@@ -125,9 +127,7 @@ export default function BadgeLegend({ showHot, showRising, showFalling, showGold
             </div>
 
             {(showGold || showSilver || showBronze) && (
-              <p className="mt-4 text-[11px] leading-relaxed text-slate-400 dark:text-slate-500">
-                Medal badges measure relative performance against the S&amp;P 500 across 1M, 3M, 6M, and YTD.
-              </p>
+              <p className="mt-4 text-[11px] leading-relaxed text-slate-400 dark:text-slate-500">Medal badges measure relative performance against the S&amp;P 500 across 1M, 3M, 6M, and YTD.</p>
             )}
           </section>
         </div>

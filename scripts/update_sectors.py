@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.4.28 — Data Updater
+Eagleview v4.4.44 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -16,6 +16,7 @@ Env vars:
 """
 
 import os, sys, logging, time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 import requests
@@ -31,271 +32,278 @@ log = logging.getLogger(__name__)
 
 # ── Sector baskets ────────────────────────────────────────────────────────────
 SECTOR_STOCKS = [
-    ("Semiconductors", [
-        ("NVDA","NVIDIA"), ("AMD","Advanced Micro Devices"), ("AVGO","Broadcom"),
-        ("TSM","Taiwan Semiconductor"), ("ASML","ASML Holding"), ("SKHY","SK hynix ADR"),
-        ("ARM","Arm Holdings"), ("MU","Micron Technology"), ("INTC","Intel"),
-        ("QCOM","Qualcomm"), ("MRVL","Marvell Technology"), ("AMAT","Applied Materials"),
-        ("LRCX","Lam Research"), ("KLAC","KLA Corp"), ("TXN","Texas Instruments"),
-        ("ADI","Analog Devices"), ("MCHP","Microchip Technology"), ("ON","ON Semiconductor"),
-        ("NXPI","NXP Semiconductors"), ("MPWR","Monolithic Power Systems"), ("GFS","GlobalFoundries"),
-        ("ALAB","Astera Labs"), ("SWKS","Skyworks Solutions"), ("QRVO","Qorvo"),
-        ("STM","STMicroelectronics"),
+    ('Semiconductors', [
+        ('NVDA','NVIDIA'), ('AMD','Advanced Micro Devices'), ('AVGO','Broadcom'),
+        ('TSM','Taiwan Semiconductor'), ('ASML','ASML Holding'), ('SKHY','SK hynix ADR'),
+        ('ARM','Arm Holdings'), ('MU','Micron Technology'), ('SNDK','SanDisk'), ('INTC','Intel'),
+        ('QCOM','Qualcomm'), ('MRVL','Marvell Technology'), ('AMAT','Applied Materials'),
+        ('LRCX','Lam Research'), ('KLAC','KLA Corp'), ('TXN','Texas Instruments'),
+        ('ADI','Analog Devices'), ('MCHP','Microchip Technology'), ('ON','ON Semiconductor'),
+        ('NXPI','NXP Semiconductors'), ('MPWR','Monolithic Power Systems'), ('GFS','GlobalFoundries'),
+        ('ALAB','Astera Labs'), ('SWKS','Skyworks Solutions'), ('QRVO','Qorvo'),
+        ('STM','STMicroelectronics'),
     ]),
-    ("Software & Cloud", [
-        ("MSFT","Microsoft"), ("ORCL","Oracle"), ("ADBE","Adobe"),
-        ("CRM","Salesforce"), ("NOW","ServiceNow"), ("SNOW","Snowflake"),
-        ("DDOG","Datadog"), ("MDB","MongoDB"), ("HUBS","HubSpot"),
-        ("WDAY","Workday"), ("VEEV","Veeva Systems"), ("TEAM","Atlassian"),
-        ("GTLB","GitLab"), ("PATH","UiPath"), ("TWLO","Twilio"),
-        ("BILL","BILL Holdings"), ("DOCN","DigitalOcean"), ("PCTY","Paylocity"),
-        ("ESTC","Elastic"), ("APPF","AppFolio"), ("PCOR","Procore Technologies"),
-        ("ZM","Zoom Communications"), ("U","Unity Software"), ("BOX","Box"),
+    ('Software & Cloud', [
+        ('MSFT','Microsoft'), ('ORCL','Oracle'), ('ADBE','Adobe'), ('CRM','Salesforce'),
+        ('NOW','ServiceNow'), ('SNOW','Snowflake'), ('DDOG','Datadog'), ('MDB','MongoDB'),
+        ('HUBS','HubSpot'), ('WDAY','Workday'), ('VEEV','Veeva Systems'), ('TEAM','Atlassian'),
+        ('GTLB','GitLab'), ('PATH','UiPath'), ('TWLO','Twilio'), ('BILL','BILL Holdings'),
+        ('DOCN','DigitalOcean'), ('PCTY','Paylocity'), ('ESTC','Elastic'), ('APPF','AppFolio'),
+        ('PCOR','Procore Technologies'), ('ZM','Zoom Communications'), ('U','Unity Software'),
+        ('BOX','Box'),
     ]),
-    ("Cybersecurity", [
-        ("CRWD","CrowdStrike"), ("PANW","Palo Alto Networks"), ("ZS","Zscaler"),
-        ("FTNT","Fortinet"), ("S","SentinelOne"), ("OKTA","Okta"),
-        ("RBRK","Rubrik"), ("TENB","Tenable"), ("RPD","Rapid7"),
-        ("QLYS","Qualys"), ("NET","Cloudflare"), ("CHKP","Check Point"),
-        ("DT","Dynatrace"), ("GEN","Gen Digital"), ("VRNS","Varonis Systems"),
-        ("RDWR","Radware"), ("AKAM","Akamai Technologies"), ("CSCO","Cisco Systems"),
-        ("FFIV","F5"), ("FSLY","Fastly"), ("BB","BlackBerry"),
-        ("CACI","CACI International"), ("LDOS","Leidos"), ("BAH","Booz Allen Hamilton"),
+    ('Cybersecurity', [
+        ('CRWD','CrowdStrike'), ('PANW','Palo Alto Networks'), ('ZS','Zscaler'), ('FTNT','Fortinet'),
+        ('S','SentinelOne'), ('OKTA','Okta'), ('RBRK','Rubrik'), ('TENB','Tenable'), ('RPD','Rapid7'),
+        ('QLYS','Qualys'), ('NET','Cloudflare'), ('CHKP','Check Point'), ('DT','Dynatrace'),
+        ('GEN','Gen Digital'), ('VRNS','Varonis Systems'), ('RDWR','Radware'),
+        ('AKAM','Akamai Technologies'), ('CSCO','Cisco Systems'), ('FFIV','F5'), ('FSLY','Fastly'),
+        ('BB','BlackBerry'),
     ]),
-    ("AI & Machine Learning", [
-        ("PLTR","Palantir"), ("AI","C3.ai"), ("BBAI","BigBear.ai"),
-        ("SOUN","SoundHound AI"), ("GOOG","Alphabet"), ("META","Meta Platforms"),
-        ("AAPL","Apple"), ("IBM","IBM"), ("AMBA","Ambarella"),
-        ("PEGA","Pegasystems"), ("NICE","NICE Systems"), ("SDGR","Schrodinger"),
-        ("RXRX","Recursion Pharmaceuticals"), ("TEM","Tempus AI"), ("APP","AppLovin"),
-        ("AEVA","Aeva Technologies"), ("ASAN","Asana"), ("BRZE","Braze"),
-        ("UPST","Upstart"), ("NBIS","Nebius Group"), ("CRWV","CoreWeave"),
-        ("MSFT","Microsoft"), ("NVDA","NVIDIA"), ("ORCL","Oracle"),
+    ('AI & Machine Learning', [
+        ('PLTR','Palantir'), ('AI','C3.ai'), ('BBAI','BigBear.ai'), ('SOUN','SoundHound AI'),
+        ('GOOG','Alphabet'), ('META','Meta Platforms'), ('AAPL','Apple'), ('IBM','IBM'),
+        ('AMBA','Ambarella'), ('PEGA','Pegasystems'), ('NICE','NICE Systems'), ('SDGR','Schrodinger'),
+        ('RXRX','Recursion Pharmaceuticals'), ('TEM','Tempus AI'), ('APP','AppLovin'),
+        ('AEVA','Aeva Technologies'), ('ASAN','Asana'), ('BRZE','Braze'), ('UPST','Upstart'),
+        ('NBIS','Nebius Group'), ('CRWV','CoreWeave'), ('MSFT','Microsoft'), ('NVDA','NVIDIA'),
+        ('ORCL','Oracle'),
     ]),
-    ("Fintech & Insurtech", [
-        ("XYZ","Block"), ("PYPL","PayPal"), ("HOOD","Robinhood"),
-        ("SOFI","SoFi Technologies"), ("AFRM","Affirm"), ("NU","Nu Holdings"),
-        ("LMND","Lemonade"), ("ROOT","Root Insurance"), ("MQ","Marqeta"),
-        ("RELY","Remitly"), ("TOST","Toast"), ("FLYW","Flywire"),
-        ("DAVE","Dave"), ("NRDS","NerdWallet"), ("LC","LendingClub"),
-        ("CLOV","Clover Health"), ("FICO","Fair Isaac"), ("WEX","WEX"),
-        ("FIS","Fidelity National Information Services"), ("GPN","Global Payments"), ("QFIN","Qifu Technology"),
-        ("STNE","StoneCo"), ("PAGS","PagSeguro Digital"), ("FOUR","Shift4 Payments"),
+    ('Fintech & Insurtech', [
+        ('XYZ','Block'), ('PYPL','PayPal'), ('HOOD','Robinhood'), ('SOFI','SoFi Technologies'),
+        ('AFRM','Affirm'), ('NU','Nu Holdings'), ('LMND','Lemonade'), ('ROOT','Root Insurance'),
+        ('MQ','Marqeta'), ('RELY','Remitly'), ('TOST','Toast'), ('FLYW','Flywire'), ('DAVE','Dave'),
+        ('NRDS','NerdWallet'), ('PAYO','Payoneer'), ('FICO','Fair Isaac'),
+        ('WEX','WEX'), ('FIS','Fidelity National Information Services'), ('GPN','Global Payments'),
+        ('QFIN','Qifu Technology'), ('STNE','StoneCo'), ('PAGS','PagSeguro Digital'),
+        ('FOUR','Shift4 Payments'),
     ]),
-    ("Digital Assets & Crypto", [
-        ("COIN","Coinbase"), ("MSTR","MicroStrategy"), ("MARA","Marathon Digital"),
-        ("RIOT","Riot Platforms"), ("CLSK","CleanSpark"), ("HUT","Hut 8"),
-        ("BTBT","Bit Digital"), ("CIFR","Cipher Mining"), ("IREN","IREN"),
-        ("WULF","TeraWulf"), ("CORZ","Core Scientific"), ("CRCL","Circle Internet Group"),
-        ("BKKT","Bakkt"), ("HIVE","HIVE Digital"), ("BTDR","Bitdeer Technologies"),
-        ("BTCS","BTCS Inc"), ("CAN","Canaan"), ("EBON","Ebang International"),
-        ("APLD","Applied Digital"), ("GREE","Greenidge Generation"), ("ANY","Sphere 3D"),
-        ("LMFA","LM Funding America"), ("ARBK","Argo Blockchain"), ("GLXY","Galaxy Digital"),
+    ('Digital Assets & Crypto', [
+        ('COIN','Coinbase'), ('MSTR','MicroStrategy'), ('MARA','Marathon Digital'),
+        ('RIOT','Riot Platforms'), ('CLSK','CleanSpark'), ('HUT','Hut 8'), ('BTBT','Bit Digital'),
+        ('CIFR','Cipher Mining'), ('IREN','IREN'), ('WULF','TeraWulf'), ('CORZ','Core Scientific'),
+        ('CRCL','Circle Internet Group'), ('BKKT','Bakkt'), ('HIVE','HIVE Digital'),
+        ('BTDR','Bitdeer Technologies'), ('BTCS','BTCS Inc'), ('CAN','Canaan'),
+        ('EBON','Ebang International'), ('APLD','Applied Digital'), ('GREE','Greenidge Generation'),
+        ('ANY','Sphere 3D'), ('ARBK','Argo Blockchain'), ('GLXY','Galaxy Digital'),
     ]),
-    ("Biotech & Genomics", [
-        ("CRSP","CRISPR Therapeutics"), ("EDIT","Editas Medicine"), ("BEAM","Beam Therapeutics"),
-        ("NTLA","Intellia Therapeutics"), ("PRME","Prime Medicine"), ("IONS","Ionis Pharmaceuticals"),
-        ("ALNY","Alnylam Pharmaceuticals"), ("REGN","Regeneron"), ("MRNA","Moderna"),
-        ("BNTX","BioNTech"), ("VRTX","Vertex Pharmaceuticals"), ("HALO","Halozyme Therapeutics"),
-        ("ARWR","Arrowhead Pharmaceuticals"), ("INSM","Insmed"), ("RXRX","Recursion Pharmaceuticals"),
-        ("BMRN","BioMarin Pharmaceutical"), ("ILMN","Illumina"), ("NTRA","Natera"),
-        ("TXG","10x Genomics"), ("PACB","Pacific Biosciences"), ("GH","Guardant Health"),
-        ("DNA","Ginkgo Bioworks"), ("TWST","Twist Bioscience"), ("SANA","Sana Biotechnology"),
+    ('Biotech & Genomics', [
+        ('CRSP','CRISPR Therapeutics'), ('EDIT','Editas Medicine'), ('BEAM','Beam Therapeutics'),
+        ('NTLA','Intellia Therapeutics'), ('PRME','Prime Medicine'), ('IONS','Ionis Pharmaceuticals'),
+        ('ALNY','Alnylam Pharmaceuticals'), ('REGN','Regeneron'), ('MRNA','Moderna'),
+        ('BNTX','BioNTech'), ('VRTX','Vertex Pharmaceuticals'), ('HALO','Halozyme Therapeutics'),
+        ('ARWR','Arrowhead Pharmaceuticals'), ('INSM','Insmed'), ('RXRX','Recursion Pharmaceuticals'),
+        ('BMRN','BioMarin Pharmaceutical'), ('ILMN','Illumina'), ('NTRA','Natera'),
+        ('TXG','10x Genomics'), ('PACB','Pacific Biosciences'), ('GH','Guardant Health'),
+        ('DNA','Ginkgo Bioworks'), ('TWST','Twist Bioscience'), ('SANA','Sana Biotechnology'),
     ]),
-    ("Pharma & MedTech", [
-        ("JNJ","Johnson & Johnson"), ("PFE","Pfizer"), ("LLY","Eli Lilly"),
-        ("ABBV","AbbVie"), ("BMY","Bristol Myers Squibb"), ("MRK","Merck"),
-        ("NVO","Novo Nordisk"), ("AZN","AstraZeneca"), ("ISRG","Intuitive Surgical"),
-        ("MDT","Medtronic"), ("EW","Edwards Lifesciences"), ("SYK","Stryker"),
-        ("BSX","Boston Scientific"), ("DXCM","Dexcom"), ("PODD","Insulet"),
-        ("BDX","Becton Dickinson"), ("ZBH","Zimmer Biomet"), ("INMD","InMode"),
-        ("AMGN","Amgen"), ("GILD","Gilead Sciences"), ("UNH","UnitedHealth Group"),
-        ("ABT","Abbott Laboratories"), ("TMO","Thermo Fisher Scientific"), ("DHR","Danaher"),
+    ('Pharma & MedTech', [
+        ('JNJ','Johnson & Johnson'), ('PFE','Pfizer'), ('LLY','Eli Lilly'), ('ABBV','AbbVie'),
+        ('BMY','Bristol Myers Squibb'), ('MRK','Merck'), ('NVO','Novo Nordisk'), ('AZN','AstraZeneca'),
+        ('ISRG','Intuitive Surgical'), ('MDT','Medtronic'), ('EW','Edwards Lifesciences'),
+        ('SYK','Stryker'), ('BSX','Boston Scientific'), ('DXCM','Dexcom'), ('PODD','Insulet'),
+        ('BDX','Becton Dickinson'), ('ZBH','Zimmer Biomet'), ('INMD','InMode'), ('AMGN','Amgen'),
+        ('GILD','Gilead Sciences'), ('ABT','Abbott Laboratories'),
+        ('TMO','Thermo Fisher Scientific'), ('DHR','Danaher'),
     ]),
-    ("EV, Battery & Autonomy", [
-        ("TSLA","Tesla"), ("RIVN","Rivian"), ("LCID","Lucid Group"),
-        ("NIO","NIO"), ("LI","Li Auto"), ("XPEV","XPeng"),
-        ("QS","QuantumScape"), ("EVGO","EVgo"), ("BLNK","Blink Charging"),
-        ("CHPT","ChargePoint"), ("ALB","Albemarle"), ("SQM","SQM"),
-        ("LAC","Lithium Americas"), ("SES","SES AI"), ("SLI","Standard Lithium"),
-        ("MP","MP Materials"), ("LEA","Lear"), ("MGA","Magna International"),
-        ("MBLY","Mobileye"), ("SLDP","Solid Power"), ("AUR","Aurora Innovation"),
-        ("ENVX","Enovix"), ("ACHR","Archer Aviation"), ("JOBY","Joby Aviation"),
+    ('EV, Battery & Autonomy', [
+        ('TSLA','Tesla'), ('RIVN','Rivian'), ('LCID','Lucid Group'), ('NIO','NIO'), ('LI','Li Auto'),
+        ('XPEV','XPeng'), ('QS','QuantumScape'), ('EVGO','EVgo'), ('BLNK','Blink Charging'),
+        ('CHPT','ChargePoint'), ('ALB','Albemarle'), ('SQM','SQM'), ('LAC','Lithium Americas'),
+        ('SES','SES AI'), ('SLI','Standard Lithium'), ('MP','MP Materials'), ('MBLY','Mobileye'),
+        ('SLDP','Solid Power'), ('AUR','Aurora Innovation'), ('ENVX','Enovix'),
+        ('AMPX','Amprius Technologies'), ('OUST','Ouster'), ('INVZ','Innoviz Technologies'),
     ]),
-    ("Space & Satellites", [
-        ("RKLB","Rocket Lab"), ("ASTS","AST SpaceMobile"), ("LUNR","Intuitive Machines"),
-        ("SPCE","Virgin Galactic"), ("RDW","Redwire"), ("IRDM","Iridium Communications"),
-        ("VSAT","Viasat"), ("GSAT","Globalstar"), ("BKSY","BlackSky Technology"),
-        ("SPIR","Spire Global"), ("PL","Planet Labs"), ("SATL","Satellogic"),
-        ("MNTS","Momentus"), ("KTOS","Kratos Defense"), ("LHX","L3Harris"),
-        ("NOC","Northrop Grumman"), ("BA","Boeing"), ("TDY","Teledyne"),
-        ("HEI","HEICO"), ("ATRO","Astronics"), ("GILT","Gilat Satellite Networks"),
-        ("SATS","EchoStar"), ("RCAT","Red Cat Holdings"), ("PDYN","Palladyne AI"),
+    ('Advanced Air Mobility', [
+        ('JOBY','Joby Aviation'), ('ACHR','Archer Aviation'), ('EVTL','Vertical Aerospace'),
+        ('EH','EHang'), ('EVEX','Eve Holding'), ('SRFM','Surf Air Mobility'), ('TXT','Textron'),
+        ('BA','Boeing'), ('GE','GE Aerospace'), ('HON','Honeywell'), ('RTX','RTX'),
     ]),
-    ("Defense & Aerospace", [
-        ("LMT","Lockheed Martin"), ("NOC","Northrop Grumman"), ("RTX","RTX Corp"),
-        ("GD","General Dynamics"), ("BA","Boeing"), ("LHX","L3Harris"),
-        ("HII","Huntington Ingalls"), ("TDY","Teledyne"), ("KTOS","Kratos Defense"),
-        ("HEI","HEICO"), ("LDOS","Leidos"), ("CACI","CACI International"),
-        ("BAH","Booz Allen Hamilton"), ("SAIC","SAIC"), ("BWXT","BWX Technologies"),
-        ("AXON","Axon Enterprise"), ("AVAV","AeroVironment"), ("DRS","Leonardo DRS"),
-        ("MRCY","Mercury Systems"), ("TXT","Textron"), ("CW","Curtiss-Wright"),
-        ("AIR","AAR Corp"), ("HWM","Howmet Aerospace"), ("OSK","Oshkosh"),
+    ('Space & Satellites', [
+        ('RKLB','Rocket Lab'), ('ASTS','AST SpaceMobile'), ('LUNR','Intuitive Machines'),
+        ('SPCX','SpaceX'), ('SPCE','Virgin Galactic'), ('RDW','Redwire'),
+        ('IRDM','Iridium Communications'), ('VSAT','Viasat'), ('GSAT','Globalstar'),
+        ('BKSY','BlackSky Technology'), ('SPIR','Spire Global'), ('PL','Planet Labs'),
+        ('SATL','Satellogic'), ('MNTS','Momentus'), ('KTOS','Kratos Defense'), ('LHX','L3Harris'),
+        ('NOC','Northrop Grumman'), ('BA','Boeing'), ('TDY','Teledyne'), ('HEI','HEICO'),
+        ('ATRO','Astronics'), ('GILT','Gilat Satellite Networks'), ('ECHO','EchoStar'),
     ]),
-    ("Robotics & Automation", [
-        ("TER","Teradyne"), ("AZTA","Azenta"), ("NOVT","Novanta"),
-        ("RRX","Regal Rexnord"), ("EMR","Emerson Electric"), ("ROK","Rockwell Automation"),
-        ("PH","Parker Hannifin"), ("HON","Honeywell"), ("IR","Ingersoll Rand"),
-        ("SYM","Symbotic"), ("SERV","Serve Robotics"), ("ACMR","ACM Research"),
-        ("FORM","FormFactor"), ("COHU","Cohu"), ("ONTO","Onto Innovation"),
-        ("ENTG","Entegris"), ("AEIS","Advanced Energy Industries"), ("CGNX","Cognex"),
-        ("ZBRA","Zebra Technologies"), ("IOT","Samsara"), ("KSCP","Knightscope"),
-        ("ISRG","Intuitive Surgical"), ("DE","Deere & Company"), ("AME","AMETEK"),
+    ('Defense & Aerospace', [
+        ('LMT','Lockheed Martin'), ('NOC','Northrop Grumman'), ('RTX','RTX Corp'),
+        ('GD','General Dynamics'), ('BA','Boeing'), ('LHX','L3Harris'), ('HII','Huntington Ingalls'),
+        ('TDY','Teledyne'), ('KTOS','Kratos Defense'), ('HEI','HEICO'), ('LDOS','Leidos'),
+        ('CACI','CACI International'), ('BAH','Booz Allen Hamilton'), ('SAIC','SAIC'),
+        ('BWXT','BWX Technologies'), ('TDG','TransDigm'), ('AVAV','AeroVironment'),
+        ('DRS','Leonardo DRS'), ('MRCY','Mercury Systems'), ('TXT','Textron'), ('CW','Curtiss-Wright'),
+        ('AIR','AAR Corp'), ('HWM','Howmet Aerospace'), ('OSK','Oshkosh'),
     ]),
-    ("Photonics & Optical", [
-        ("COHR","Coherent"), ("LITE","Lumentum"), ("VIAV","Viavi Solutions"),
-        ("LPTH","LightPath Technologies"), ("AAOI","Applied Optoelectronics"), ("LSCC","Lattice Semiconductor"),
-        ("INVZ","Innoviz Technologies"), ("OUST","Ouster"), ("AEVA","Aeva Technologies"),
-        ("MVIS","MicroVision"), ("IPGP","IPG Photonics"), ("MTSI","MACOM Technology Solutions"),
-        ("MKSI","MKS Instruments"), ("CRUS","Cirrus Logic"), ("CIEN","Ciena"),
-        ("OSIS","OSI Systems"), ("HIMX","Himax Technologies"), ("AXTI","AXT Inc"),
-        ("POET","POET Technologies"), ("OLED","Universal Display"), ("GLW","Corning"),
-        ("APH","Amphenol"), ("TEL","TE Connectivity"), ("NVTS","Navitas Semiconductor"),
+    ('Drones & Defense Autonomy', [
+        ('AVAV','AeroVironment'), ('RCAT','Red Cat Holdings'), ('KTOS','Kratos Defense'),
+        ('PDYN','Palladyne AI'), ('AXON','Axon Enterprise'), ('ONDS','Ondas Holdings'),
+        ('UMAC','Unusual Machines'), ('PLTR','Palantir'), ('DRS','Leonardo DRS'),
+        ('MRCY','Mercury Systems'), ('HII','Huntington Ingalls'), ('TXT','Textron'), ('LHX','L3Harris'),
+        ('NOC','Northrop Grumman'), ('TDG','TransDigm'), ('CW','Curtiss-Wright'),
     ]),
-    ("Nuclear & Uranium", [
-        ("CCJ","Cameco"), ("NXE","NexGen Energy"), ("DNN","Denison Mines"),
-        ("EU","enCore Energy"), ("UUUU","Energy Fuels"), ("URG","Ur-Energy"),
-        ("UEC","Uranium Energy"), ("LEU","Centrus Energy"), ("BWXT","BWX Technologies"),
-        ("SMR","NuScale Power"), ("OKLO","Oklo"), ("CEG","Constellation Energy"),
-        ("VST","Vistra"), ("ETR","Entergy"), ("EXC","Exelon"),
-        ("GEV","GE Vernova"), ("LTBR","Lightbridge"), ("BHP","BHP Group"),
-        ("RIO","Rio Tinto"), ("UROY","Uranium Royalty"), ("NNE","Nano Nuclear Energy"),
-        ("ASPI","ASP Isotopes"), ("TLN","Talen Energy"), ("NRG","NRG Energy"),
+    ('Robotics & Automation', [
+        ('TER','Teradyne'), ('AZTA','Azenta'), ('NOVT','Novanta'), ('RRX','Regal Rexnord'),
+        ('EMR','Emerson Electric'), ('ROK','Rockwell Automation'), ('PH','Parker Hannifin'),
+        ('HON','Honeywell'), ('IR','Ingersoll Rand'), ('SYM','Symbotic'), ('SERV','Serve Robotics'),
+        ('ACMR','ACM Research'), ('FORM','FormFactor'), ('COHU','Cohu'), ('ONTO','Onto Innovation'),
+        ('ENTG','Entegris'), ('AEIS','Advanced Energy Industries'), ('CGNX','Cognex'),
+        ('ZBRA','Zebra Technologies'), ('IOT','Samsara'), ('KSCP','Knightscope'),
+        ('ISRG','Intuitive Surgical'), ('DE','Deere & Company'), ('AME','AMETEK'),
     ]),
-    ("Clean Energy & Solar", [
-        ("ENPH","Enphase Energy"), ("SEDG","SolarEdge"), ("FSLR","First Solar"),
-        ("RUN","Sunrun"), ("ARRY","Array Technologies"), ("CSIQ","Canadian Solar"),
-        ("HASI","HA Sustainable Infrastructure"), ("NEE","NextEra Energy"), ("CWEN","Clearway Energy"),
-        ("BEPC","Brookfield Renewable Corporation"), ("ORA","Ormat Technologies"), ("PLUG","Plug Power"),
-        ("FCEL","FuelCell Energy"), ("BE","Bloom Energy"), ("RNW","ReNew Energy Global"),
-        ("SHLS","Shoals Technologies"), ("STEM","Stem"), ("FLNC","Fluence Energy"),
-        ("BEP","Brookfield Renewable Partners"), ("EOSE","Eos Energy Enterprises"), ("SPRU","Spruce Power"),
-        ("NXT","Nextracker"), ("DQ","Daqo New Energy"), ("JKS","JinkoSolar"),
+    ('Photonics & Optical', [
+        ('COHR','Coherent'), ('LITE','Lumentum'), ('VIAV','Viavi Solutions'),
+        ('LPTH','LightPath Technologies'), ('AAOI','Applied Optoelectronics'),
+        ('LSCC','Lattice Semiconductor'), ('INVZ','Innoviz Technologies'), ('OUST','Ouster'),
+        ('AEVA','Aeva Technologies'), ('MVIS','MicroVision'), ('IPGP','IPG Photonics'),
+        ('MTSI','MACOM Technology Solutions'), ('MKSI','MKS Instruments'), ('CIEN','Ciena'),
+        ('OSIS','OSI Systems'), ('HIMX','Himax Technologies'), ('AXTI','AXT Inc'),
+        ('POET','POET Technologies'), ('OLED','Universal Display'), ('GLW','Corning'),
+        ('APH','Amphenol'), ('TEL','TE Connectivity'), ('FN','Fabrinet'),
     ]),
-    ("Power & Data Centers", [
-        ("VRT","Vertiv Holdings"), ("ETN","Eaton"), ("HUBB","Hubbell"),
-        ("GEV","GE Vernova"), ("PWR","Quanta Services"), ("FIX","Comfort Systems USA"),
-        ("EQIX","Equinix"), ("DLR","Digital Realty"), ("SMCI","Super Micro Computer"),
-        ("CLS","Celestica"), ("DELL","Dell Technologies"), ("HPE","Hewlett Packard Enterprise"),
-        ("TT","Trane Technologies"), ("CARR","Carrier Global"), ("POWL","Powell Industries"),
-        ("VST","Vistra"), ("CEG","Constellation Energy"), ("ANET","Arista Networks"),
-        ("POWI","Power Integrations"), ("MYRG","MYR Group"), ("TLN","Talen Energy"),
-        ("NRG","NRG Energy"), ("MOD","Modine Manufacturing"), ("JBL","Jabil"),
-        ("FLEX","Flex"),
+    ('Nuclear & Uranium', [
+        ('CCJ','Cameco'), ('NXE','NexGen Energy'), ('DNN','Denison Mines'), ('EU','enCore Energy'),
+        ('UUUU','Energy Fuels'), ('URG','Ur-Energy'), ('UEC','Uranium Energy'),
+        ('LEU','Centrus Energy'), ('BWXT','BWX Technologies'), ('SMR','NuScale Power'), ('OKLO','Oklo'),
+        ('CEG','Constellation Energy'), ('VST','Vistra'), ('ETR','Entergy'), ('EXC','Exelon'),
+        ('GEV','GE Vernova'), ('LTBR','Lightbridge'), ('BHP','BHP Group'), ('RIO','Rio Tinto'),
+        ('UROY','Uranium Royalty'), ('NNE','Nano Nuclear Energy'), ('ASPI','ASP Isotopes'),
+        ('TLN','Talen Energy'), ('NRG','NRG Energy'),
     ]),
-    ("Consumer & E-commerce", [
-        ("AMZN","Amazon"), ("EBAY","eBay"), ("ETSY","Etsy"),
-        ("SHOP","Shopify"), ("WMT","Walmart"), ("TGT","Target"),
-        ("COST","Costco"), ("HD","Home Depot"), ("LOW","Lowe's"),
-        ("MELI","MercadoLibre"), ("SE","Sea Limited"), ("CPNG","Coupang"),
-        ("W","Wayfair"), ("CHWY","Chewy"), ("BABA","Alibaba"),
-        ("JD","JD.com"), ("PDD","PDD Holdings"), ("DKNG","DraftKings"),
-        ("DASH","DoorDash"), ("MCD","McDonald's"), ("SBUX","Starbucks"),
-        ("CMG","Chipotle Mexican Grill"), ("YUM","Yum! Brands"), ("DPZ","Domino's Pizza"),
-        ("ELF","e.l.f. Beauty"),
+    ('Clean Energy & Solar', [
+        ('ENPH','Enphase Energy'), ('SEDG','SolarEdge'), ('FSLR','First Solar'), ('RUN','Sunrun'),
+        ('ARRY','Array Technologies'), ('CSIQ','Canadian Solar'),
+        ('HASI','HA Sustainable Infrastructure'), ('NEE','NextEra Energy'), ('CWEN','Clearway Energy'),
+        ('BEPC','Brookfield Renewable Corporation'), ('ORA','Ormat Technologies'),
+        ('PLUG','Plug Power'), ('FCEL','FuelCell Energy'), ('BE','Bloom Energy'),
+        ('RNW','ReNew Energy Global'), ('SHLS','Shoals Technologies'), ('STEM','Stem'),
+        ('FLNC','Fluence Energy'), ('BEP','Brookfield Renewable Partners'),
+        ('EOSE','Eos Energy Enterprises'), ('SPRU','Spruce Power'), ('NXT','Nextracker'),
+        ('DQ','Daqo New Energy'), ('JKS','JinkoSolar'),
     ]),
-    ("Traditional Finance", [
-        ("JPM","JPMorgan Chase"), ("BAC","Bank of America"), ("WFC","Wells Fargo"),
-        ("GS","Goldman Sachs"), ("MS","Morgan Stanley"), ("C","Citigroup"),
-        ("BLK","BlackRock"), ("AXP","American Express"), ("V","Visa"),
-        ("MA","Mastercard"), ("COF","Capital One"), ("SCHW","Charles Schwab"),
-        ("SYF","Synchrony Financial"), ("ALLY","Ally Financial"), ("FITB","Fifth Third Bancorp"),
-        ("KEY","KeyCorp"), ("RF","Regions Financial"), ("CFG","Citizens Financial"),
-        ("HBAN","Huntington Bancshares"), ("PNC","PNC Financial"), ("PGR","Progressive"),
-        ("TRV","Travelers"), ("ALL","Allstate"), ("MET","MetLife"),
-        ("PRU","Prudential Financial"),
+    ('Power & Data Centers', [
+        ('VRT','Vertiv Holdings'), ('ETN','Eaton'), ('HUBB','Hubbell'), ('GEV','GE Vernova'),
+        ('PWR','Quanta Services'), ('FIX','Comfort Systems USA'), ('EQIX','Equinix'),
+        ('DLR','Digital Realty'), ('SMCI','Super Micro Computer'), ('CLS','Celestica'),
+        ('DELL','Dell Technologies'), ('HPE','Hewlett Packard Enterprise'), ('TT','Trane Technologies'),
+        ('CARR','Carrier Global'), ('POWL','Powell Industries'), ('VST','Vistra'),
+        ('CEG','Constellation Energy'), ('ANET','Arista Networks'), ('POWI','Power Integrations'),
+        ('MYRG','MYR Group'), ('TLN','Talen Energy'), ('NRG','NRG Energy'),
+        ('MOD','Modine Manufacturing'), ('JBL','Jabil'), ('FLEX','Flex'),
     ]),
-    ("Real Estate & REITs", [
-        ("AMT","American Tower"), ("PLD","Prologis"), ("EQIX","Equinix"),
-        ("CCI","Crown Castle"), ("SPG","Simon Property"), ("PSA","Public Storage"),
-        ("EQR","Equity Residential"), ("AVB","AvalonBay Communities"), ("WELL","Welltower"),
-        ("VTR","Ventas"), ("O","Realty Income"), ("STAG","STAG Industrial"),
-        ("IIPR","Innovative Industrial Properties"), ("REXR","Rexford Industrial Realty"), ("EXR","Extra Space Storage"),
-        ("CUBE","CubeSmart"), ("IRM","Iron Mountain"), ("COLD","Americold Realty"),
-        ("DLR","Digital Realty"), ("SBAC","SBA Communications"), ("DHI","D.R. Horton"),
-        ("LEN","Lennar"), ("PHM","PulteGroup"), ("NVR","NVR"),
-        ("TOL","Toll Brothers"),
+    ('Consumer & E-commerce', [
+        ('AMZN','Amazon'), ('EBAY','eBay'), ('ETSY','Etsy'), ('SHOP','Shopify'), ('WMT','Walmart'),
+        ('TGT','Target'), ('COST','Costco'), ('HD','Home Depot'), ('LOW',"Lowe's"),
+        ('MELI','MercadoLibre'), ('SE','Sea Limited'), ('CPNG','Coupang'), ('W','Wayfair'),
+        ('CHWY','Chewy'), ('BABA','Alibaba'), ('JD','JD.com'), ('PDD','PDD Holdings'),
+        ('DASH','DoorDash'), ('MCD',"McDonald's"), ('SBUX','Starbucks'),
+        ('CMG','Chipotle Mexican Grill'), ('YUM','Yum! Brands'), ('DPZ',"Domino's Pizza"),
+        ('ELF','e.l.f. Beauty'),
     ]),
-    ("Travel & Hospitality", [
-        ("DAL","Delta Air Lines"), ("UAL","United Airlines"), ("AAL","American Airlines"),
-        ("LUV","Southwest Airlines"), ("ALK","Alaska Air"), ("JBLU","JetBlue"),
-        ("RYAAY","Ryanair ADR"), ("EXPE","Expedia"), ("BKNG","Booking Holdings"),
-        ("ABNB","Airbnb"), ("MAR","Marriott International"), ("HLT","Hilton Worldwide"),
-        ("H","Hyatt Hotels"), ("IHG","IHG Hotels & Resorts"), ("WH","Wyndham Hotels"),
-        ("TNL","Travel + Leisure"), ("VAC","Marriott Vacations"), ("NCLH","Norwegian Cruise Line"),
-        ("CCL","Carnival"), ("RCL","Royal Caribbean"), ("CHH","Choice Hotels"),
-        ("WYNN","Wynn Resorts"), ("LVS","Las Vegas Sands"), ("MGM","MGM Resorts"),
-        ("TRIP","Tripadvisor"),
+    ('Gaming, Betting & Live Entertainment', [
+        ('DKNG','DraftKings'), ('FLUT','Flutter Entertainment'), ('MGM','MGM Resorts'),
+        ('LVS','Las Vegas Sands'), ('WYNN','Wynn Resorts'), ('CHDN','Churchill Downs'),
+        ('PENN','PENN Entertainment'), ('RSI','Rush Street Interactive'), ('GENI','Genius Sports'),
+        ('SRAD','Sportradar'), ('LYV','Live Nation Entertainment'), ('TKO','TKO Group'),
+        ('EA','Electronic Arts'), ('TTWO','Take-Two Interactive'), ('RBLX','Roblox'),
     ]),
-    ("Quantum Computing", [
-        ("IONQ","IonQ"), ("RGTI","Rigetti Computing"), ("QUBT","Quantum Computing Inc"),
-        ("ARQQ","Arqit Quantum"), ("QBTS","D-Wave Quantum"), ("LAES","SEALSQ"),
-        ("QSI","Quantum-Si"), ("IBM","IBM"), ("GOOG","Alphabet"),
-        ("HON","Honeywell"), ("MSFT","Microsoft"), ("INTC","Intel"),
-        ("AMZN","Amazon"), ("NVDA","NVIDIA"), ("AMAT","Applied Materials"),
-        ("ACN","Accenture"),
+    ('Traditional Finance', [
+        ('JPM','JPMorgan Chase'), ('BAC','Bank of America'), ('WFC','Wells Fargo'),
+        ('GS','Goldman Sachs'), ('MS','Morgan Stanley'), ('C','Citigroup'), ('BLK','BlackRock'),
+        ('AXP','American Express'), ('V','Visa'), ('MA','Mastercard'), ('COF','Capital One'),
+        ('SCHW','Charles Schwab'), ('SYF','Synchrony Financial'), ('ALLY','Ally Financial'),
+        ('FITB','Fifth Third Bancorp'), ('KEY','KeyCorp'), ('RF','Regions Financial'),
+        ('CFG','Citizens Financial'), ('HBAN','Huntington Bancshares'), ('PNC','PNC Financial'),
+        ('PGR','Progressive'), ('TRV','Travelers'), ('ALL','Allstate'), ('MET','MetLife'),
+        ('PRU','Prudential Financial'),
     ]),
-    ("Industrials & Materials", [
-        ("CENX","Century Aluminum"), ("STRL","Sterling Infrastructure"), ("CAT","Caterpillar"),
-        ("DE","Deere & Company"), ("GE","GE Aerospace"), ("DOW","Dow"),
-        ("LYB","LyondellBasell"), ("NUE","Nucor"), ("STLD","Steel Dynamics"),
-        ("AA","Alcoa"), ("FCX","Freeport-McMoRan"), ("NEM","Newmont"),
-        ("CF","CF Industries"), ("MOS","Mosaic"), ("APD","Air Products and Chemicals"),
-        ("LIN","Linde"), ("VMC","Vulcan Materials"), ("MLM","Martin Marietta Materials"),
-        ("URI","United Rentals"), ("EXP","Eagle Materials"), ("CLF","Cleveland-Cliffs"),
-        ("MMM","3M"), ("DD","DuPont"), ("EMN","Eastman Chemical"),
+    ('Real Estate & REITs', [
+        ('AMT','American Tower'), ('PLD','Prologis'), ('EQIX','Equinix'), ('CCI','Crown Castle'),
+        ('SPG','Simon Property'), ('PSA','Public Storage'), ('EQR','Equity Residential'),
+        ('AVB','AvalonBay Communities'), ('WELL','Welltower'), ('VTR','Ventas'), ('O','Realty Income'),
+        ('STAG','STAG Industrial'), ('IIPR','Innovative Industrial Properties'),
+        ('REXR','Rexford Industrial Realty'), ('EXR','Extra Space Storage'), ('CUBE','CubeSmart'),
+        ('IRM','Iron Mountain'), ('COLD','Americold Realty'), ('DLR','Digital Realty'),
+        ('SBAC','SBA Communications'), ('VICI','VICI Properties'),
+        ('MAA','Mid-America Apartment Communities'), ('ESS','Essex Property Trust'),
+        ('KIM','Kimco Realty'), ('REG','Regency Centers'), ('ARE','Alexandria Real Estate Equities'),
     ]),
-    ("Oil & Gas / Energy", [
-        ("XOM","ExxonMobil"), ("CVX","Chevron"), ("SHEL","Shell ADR"),
-        ("TTE","TotalEnergies ADR"), ("BP","BP ADR"), ("COP","ConocoPhillips"),
-        ("EOG","EOG Resources"), ("OXY","Occidental Petroleum"), ("FANG","Diamondback Energy"),
-        ("DVN","Devon Energy"), ("EQT","EQT"), ("CNQ","Canadian Natural Resources"),
-        ("SU","Suncor Energy"), ("SLB","SLB"), ("HAL","Halliburton"),
-        ("BKR","Baker Hughes"), ("VLO","Valero Energy"), ("MPC","Marathon Petroleum"),
-        ("PSX","Phillips 66"), ("LNG","Cheniere Energy"), ("WMB","Williams Companies"),
-        ("KMI","Kinder Morgan"), ("TRGP","Targa Resources"), ("OKE","ONEOK"),
-        ("ENB","Enbridge"),
+    ('Homebuilders & Housing', [
+        ('DHI','D.R. Horton'), ('LEN','Lennar'), ('PHM','PulteGroup'), ('NVR','NVR'),
+        ('TOL','Toll Brothers'), ('KBH','KB Home'), ('MTH','Meritage Homes'),
+        ('TMHC','Taylor Morrison'), ('BLDR','Builders FirstSource'), ('MAS','Masco'),
     ]),
-    ("Mobility & Logistics", [
-        ("UBER","Uber Technologies"), ("LYFT","Lyft"), ("GRAB","Grab Holdings"),
-        ("DASH","DoorDash"), ("FDX","FedEx"), ("UPS","United Parcel Service"),
-        ("XPO","XPO"), ("ODFL","Old Dominion Freight Line"), ("JBHT","J.B. Hunt"),
-        ("CHRW","C.H. Robinson"), ("KNX","Knight-Swift Transportation"), ("SAIA","Saia"),
-        ("RXO","RXO"), ("LSTR","Landstar System"), ("GXO","GXO Logistics"),
-        ("EXPD","Expeditors International"), ("SKYW","SkyWest"), ("JOBY","Joby Aviation"),
-        ("ACHR","Archer Aviation"), ("EVTL","Vertical Aerospace"), ("ULCC","Frontier Group"),
-        ("ALGT","Allegiant Travel"), ("HTZ","Hertz Global"), ("CAR","Avis Budget Group"),
+    ('Travel & Hospitality', [
+        ('DAL','Delta Air Lines'), ('UAL','United Airlines'), ('AAL','American Airlines'),
+        ('LUV','Southwest Airlines'), ('ALK','Alaska Air'), ('JBLU','JetBlue'), ('RYAAY','Ryanair ADR'),
+        ('EXPE','Expedia'), ('BKNG','Booking Holdings'), ('ABNB','Airbnb'),
+        ('MAR','Marriott International'), ('HLT','Hilton Worldwide'), ('H','Hyatt Hotels'),
+        ('IHG','IHG Hotels & Resorts'), ('WH','Wyndham Hotels'), ('TNL','Travel + Leisure'),
+        ('VAC','Marriott Vacations'), ('NCLH','Norwegian Cruise Line'), ('CCL','Carnival'),
+        ('RCL','Royal Caribbean'), ('CHH','Choice Hotels'), ('WYNN','Wynn Resorts'),
+        ('LVS','Las Vegas Sands'), ('MGM','MGM Resorts'), ('TRIP','Tripadvisor'),
     ]),
-    ("Media, Telecom & Entertainment", [
-        ("DIS","Walt Disney"), ("NFLX","Netflix"), ("WBD","Warner Bros Discovery"),
-        ("PSKY","Paramount Skydance"), ("CMCSA","Comcast"), ("T","AT&T"),
-        ("VZ","Verizon"), ("TMUS","T-Mobile US"), ("CHTR","Charter Communications"),
-        ("SPOT","Spotify Technology"), ("LYV","Live Nation Entertainment"), ("ROKU","Roku"),
-        ("FOXA","Fox"), ("SIRI","Sirius XM"), ("EA","Electronic Arts"),
-        ("TTWO","Take-Two Interactive"), ("RBLX","Roblox"), ("PINS","Pinterest"),
-        ("SNAP","Snap"), ("TKO","TKO Group"), ("NWSA","News Corp"),
-        ("NYT","New York Times"), ("WMG","Warner Music Group"), ("IMAX","IMAX"),
-        ("MTCH","Match Group"),
+    ('Quantum Computing', [
+        ('IONQ','IonQ'), ('RGTI','Rigetti Computing'), ('QUBT','Quantum Computing Inc'),
+        ('ARQQ','Arqit Quantum'), ('QBTS','D-Wave Quantum'), ('LAES','SEALSQ'), ('IBM','IBM'),
+        ('GOOG','Alphabet'), ('HON','Honeywell'), ('MSFT','Microsoft'), ('INTC','Intel'),
+        ('AMZN','Amazon'), ('NVDA','NVIDIA'), ('AMAT','Applied Materials'), ('INFQ','Infleqtion'),
     ]),
-    ("Digital Health & Telehealth", [
-        ("HIMS","Hims & Hers Health"), ("TDOC","Teladoc Health"), ("OSCR","Oscar Health"),
-        ("GDRX","GoodRx"), ("DOCS","Doximity"), ("PGNY","Progyny"),
-        ("AMWL","American Well"), ("LFST","LifeStance Health"), ("EVH","Evolent Health"),
-        ("OM","Outset Medical"), ("HCAT","Health Catalyst"), ("HQY","HealthEquity"),
-        ("CLOV","Clover Health"), ("ALHC","Alignment Healthcare"), ("TEM","Tempus AI"),
-        ("NTRA","Natera"), ("GH","Guardant Health"), ("RMD","ResMed"),
-        ("DXCM","Dexcom"), ("PODD","Insulet"), ("RXRX","Recursion Pharmaceuticals"),
-        ("SDGR","Schrodinger"), ("CERT","Certara"), ("VEEV","Veeva Systems"),
+    ('Industrials & Materials', [
+        ('CENX','Century Aluminum'), ('STRL','Sterling Infrastructure'), ('CAT','Caterpillar'),
+        ('DE','Deere & Company'), ('GE','GE Aerospace'), ('DOW','Dow'), ('LYB','LyondellBasell'),
+        ('NUE','Nucor'), ('STLD','Steel Dynamics'), ('AA','Alcoa'), ('FCX','Freeport-McMoRan'),
+        ('NEM','Newmont'), ('CF','CF Industries'), ('MOS','Mosaic'),
+        ('APD','Air Products and Chemicals'), ('LIN','Linde'), ('VMC','Vulcan Materials'),
+        ('MLM','Martin Marietta Materials'), ('URI','United Rentals'), ('EXP','Eagle Materials'),
+        ('CLF','Cleveland-Cliffs'), ('MMM','3M'), ('DD','DuPont'), ('EMN','Eastman Chemical'),
+    ]),
+    ('Oil & Gas / Energy', [
+        ('XOM','ExxonMobil'), ('CVX','Chevron'), ('SHEL','Shell ADR'), ('TTE','TotalEnergies ADR'),
+        ('BP','BP ADR'), ('COP','ConocoPhillips'), ('EOG','EOG Resources'),
+        ('OXY','Occidental Petroleum'), ('FANG','Diamondback Energy'), ('DVN','Devon Energy'),
+        ('EQT','EQT'), ('CNQ','Canadian Natural Resources'), ('SU','Suncor Energy'), ('SLB','SLB'),
+        ('HAL','Halliburton'), ('BKR','Baker Hughes'), ('VLO','Valero Energy'),
+        ('MPC','Marathon Petroleum'), ('PSX','Phillips 66'), ('LNG','Cheniere Energy'),
+        ('WMB','Williams Companies'), ('KMI','Kinder Morgan'), ('TRGP','Targa Resources'),
+        ('OKE','ONEOK'), ('ENB','Enbridge'),
+    ]),
+    ('Mobility & Logistics', [
+        ('UBER','Uber Technologies'), ('LYFT','Lyft'), ('GRAB','Grab Holdings'), ('DASH','DoorDash'),
+        ('FDX','FedEx'), ('UPS','United Parcel Service'), ('XPO','XPO'),
+        ('ODFL','Old Dominion Freight Line'), ('JBHT','J.B. Hunt'), ('CHRW','C.H. Robinson'),
+        ('KNX','Knight-Swift Transportation'), ('SAIA','Saia'), ('RXO','RXO'),
+        ('LSTR','Landstar System'), ('GXO','GXO Logistics'), ('EXPD','Expeditors International'),
+        ('SKYW','SkyWest'), ('JOBY','Joby Aviation'), ('ACHR','Archer Aviation'),
+        ('EVTL','Vertical Aerospace'), ('ULCC','Frontier Group'), ('ALGT','Allegiant Travel'),
+        ('HTZ','Hertz Global'), ('CAR','Avis Budget Group'),
+    ]),
+    ('Media, Telecom & Entertainment', [
+        ('DIS','Walt Disney'), ('NFLX','Netflix'), ('WBD','Warner Bros Discovery'),
+        ('PSKY','Paramount Skydance'), ('CMCSA','Comcast'), ('T','AT&T'), ('VZ','Verizon'),
+        ('TMUS','T-Mobile US'), ('CHTR','Charter Communications'), ('SPOT','Spotify Technology'),
+        ('LYV','Live Nation Entertainment'), ('ROKU','Roku'), ('FOXA','Fox'), ('SIRI','Sirius XM'),
+        ('EA','Electronic Arts'), ('TTWO','Take-Two Interactive'), ('RBLX','Roblox'),
+        ('PINS','Pinterest'), ('SNAP','Snap'), ('TKO','TKO Group'), ('NWSA','News Corp'),
+        ('NYT','New York Times'), ('WMG','Warner Music Group'), ('IMAX','IMAX'), ('MTCH','Match Group'),
+    ]),
+    ('Digital Health & Telehealth', [
+        ('HIMS','Hims & Hers Health'), ('TDOC','Teladoc Health'), ('OSCR','Oscar Health'),
+        ('GDRX','GoodRx'), ('DOCS','Doximity'), ('PGNY','Progyny'), ('AMWL','American Well'),
+        ('LFST','LifeStance Health'), ('EVH','Evolent Health'), ('HCAT','Health Catalyst'),
+        ('HQY','HealthEquity'), ('CLOV','Clover Health'), ('ALHC','Alignment Healthcare'),
+        ('TEM','Tempus AI'), ('PHR','Phreesia'), ('PRVA','Privia Health'), ('TALK','Talkspace'),
+        ('LFMD','LifeMD'), ('WAY','Waystar'),
+    ]),
+    ('Healthcare Tools & Diagnostics', [
+        ('TMO','Thermo Fisher Scientific'), ('DHR','Danaher'), ('ILMN','Illumina'),
+        ('TXG','10x Genomics'), ('PACB','Pacific Biosciences'), ('NTRA','Natera'),
+        ('GH','Guardant Health'), ('A','Agilent Technologies'), ('WAT','Waters Corporation'),
+        ('IDXX','IDEXX Laboratories'), ('DXCM','Dexcom'), ('PODD','Insulet'), ('QSI','Quantum-Si'),
+        ('ABT','Abbott Laboratories'), ('ISRG','Intuitive Surgical'), ('MDT','Medtronic'),
+        ('EW','Edwards Lifesciences'), ('BSX','Boston Scientific'),
     ]),
 ]
 
@@ -368,6 +376,22 @@ class DB:
             headers=self.mh, timeout=30,
         ).raise_for_status()
 
+    def delete_stale_sector_holdings(self, sector_id: int, active_tickers: list[str]) -> None:
+        """Remove holdings in a sector that are no longer in the source universe.
+
+        Holdings are upserted instead of delete+insert to avoid a temporary empty
+        UI. The missing piece is pruning obsolete rows such as tickers removed
+        from the hardcoded universe; do that after the fresh upsert succeeds.
+        """
+        keep = [t for t in active_tickers if t]
+        if not keep:
+            return
+        keep_list = ",".join(keep)
+        requests.delete(
+            f"{self.base}/sector_holdings?sector_id=eq.{sector_id}&ticker=not.in.({keep_list})",
+            headers=self.mh, timeout=30,
+        ).raise_for_status()
+
     def insert(self, table: str, rows: list) -> None:
         if not rows:
             return
@@ -415,14 +439,129 @@ class DB:
         r.raise_for_status()
 
 
-# ── Return helpers ────────────────────────────────────────────────────────────
-def calc_returns(series: pd.Series) -> dict:
+# ── Price / return helpers ───────────────────────────────────────────────────
+def is_regular_market_open(now: datetime | None = None) -> bool:
+    """Return True only during the regular NYSE/Nasdaq cash session.
+
+    Off-hours behaviour deliberately stays unchanged: the sync uses the latest
+    daily close. We only substitute a current quote while the regular session is
+    actually open, and even then each ticker must report Yahoo marketState=REGULAR.
+    """
+    ET = ZoneInfo("America/New_York")
+    now_et = (now or datetime.now(ET)).astimezone(ET)
+    if now_et.weekday() >= 5:
+        return False
+    market_open = now_et.replace(hour=9, minute=30, second=0, microsecond=0)
+    market_close = now_et.replace(hour=16, minute=0, second=0, microsecond=0)
+    return market_open <= now_et <= market_close
+
+
+def chunks(items: list[str], size: int):
+    for i in range(0, len(items), size):
+        yield items[i:i + size]
+
+
+def fetch_chart_regular_market_price(ticker: str) -> tuple[str, float | None]:
+    """Read Yahoo chart metadata for a ticker.
+
+    The public v8 chart endpoint exposes meta.regularMarketPrice and
+    meta.currentTradingPeriod without requiring Yahoo's quote crumb/cookie flow.
+    It is slower than a batch quote call, so we use it only as a fallback for
+    tickers that did not come back from the batch endpoint.
+    """
+    url = f"https://query1.finance.yahoo.com/v8/finance/chart/{ticker}"
+    headers = {"User-Agent": "Mozilla/5.0 (compatible; Eagleview/1.0)"}
+    try:
+        r = requests.get(
+            url,
+            params={"range": "1d", "interval": "1d", "includePrePost": "false"},
+            headers=headers,
+            timeout=15,
+        )
+        r.raise_for_status()
+        result = r.json().get("chart", {}).get("result") or []
+        if not result:
+            return ticker, None
+        meta = result[0].get("meta", {})
+        price = meta.get("regularMarketPrice")
+        if isinstance(price, (int, float)) and price > 0:
+            return ticker, round(float(price), 4)
+    except Exception:
+        return ticker, None
+    return ticker, None
+
+
+def fetch_regular_market_prices(tickers: list[str]) -> dict[str, float]:
+    """Fetch current regular-session prices for EagleView's market-hours anchor.
+
+    We only run this while the US regular session is open. The first attempt uses
+    Yahoo's batch quote endpoint and accepts rows only with marketState=REGULAR.
+    If that endpoint is blocked/unavailable, we fall back to the public chart
+    metadata endpoint per ticker. Off-hours behaviour remains unchanged because
+    this function returns {} outside the regular cash session.
+    """
+    if not tickers or not is_regular_market_open():
+        return {}
+
+    symbols = sorted(set(tickers))
+    prices: dict[str, float] = {}
+    headers = {"User-Agent": "Mozilla/5.0 (compatible; Eagleview/1.0)"}
+
+    for batch in chunks(symbols, 100):
+        url = "https://query1.finance.yahoo.com/v7/finance/quote"
+        try:
+            r = requests.get(
+                url,
+                params={"symbols": ",".join(batch), "fields": "symbol,regularMarketPrice,marketState"},
+                headers=headers,
+                timeout=20,
+            )
+            r.raise_for_status()
+            results = r.json().get("quoteResponse", {}).get("result", [])
+        except Exception as e:
+            log.warning(f"  Batch quote failed ({batch[0]}…{batch[-1]}): {e}; using chart metadata fallback")
+            continue
+
+        for q in results:
+            symbol = q.get("symbol")
+            price = q.get("regularMarketPrice")
+            state = q.get("marketState")
+            if symbol and isinstance(price, (int, float)) and price > 0 and state == "REGULAR":
+                prices[symbol] = round(float(price), 4)
+
+    missing = [t for t in symbols if t not in prices]
+    if missing:
+        with ThreadPoolExecutor(max_workers=16) as pool:
+            futures = [pool.submit(fetch_chart_regular_market_price, t) for t in missing]
+            for fut in as_completed(futures):
+                symbol, price = fut.result()
+                if price is not None:
+                    prices[symbol] = price
+
+    return prices
+
+
+def calc_returns(series: pd.Series, current_override: float | None = None) -> dict:
     if series is None or series.empty:
         return {}
     series = series.dropna()
     if len(series) < 2:
         return {}
-    current = float(series.iloc[-1])
+
+    use_live_anchor = current_override is not None and current_override > 0
+    current = float(current_override) if use_live_anchor else float(series.iloc[-1])
+
+    # During regular market hours, current_override is a same-day live regular
+    # session quote. Denominators should be completed historical closes: 1D means
+    # previous regular close, 1W means five completed sessions ago, etc. If the
+    # downloaded daily series already contains today's in-progress candle, remove
+    # it from the denominator series so the math remains consistent.
+    ref_series = series
+    if use_live_anchor:
+        today_et = datetime.now(ZoneInfo("America/New_York")).date()
+        ref_series = series[series.index.date < today_et]
+        if ref_series.empty:
+            ref_series = series
 
     # Sanity thresholds for SHORT periods only — genuine day-over-day or
     # week-over-week moves beyond these are exceedingly rare for any real
@@ -436,9 +575,14 @@ def calc_returns(series: pd.Series) -> dict:
     SHORT_PERIOD_CAPS = {1: 100.0, 5: 150.0}  # {days: max abs % swing}
 
     def pct(days: int):
-        if len(series) <= days:
-            return None
-        past = float(series.iloc[-(days + 1)])
+        if use_live_anchor:
+            if len(ref_series) < days:
+                return None
+            past = float(ref_series.iloc[-days])
+        else:
+            if len(series) <= days:
+                return None
+            past = float(series.iloc[-(days + 1)])
         if not past:
             return None
         value = round((current - past) / past * 100, 2)
@@ -452,8 +596,8 @@ def calc_returns(series: pd.Series) -> dict:
             return None
         return value
 
-    year  = datetime.now().year
-    ytd_s = series[series.index.year == year]
+    year  = datetime.now(ZoneInfo("America/New_York")).year
+    ytd_s = ref_series[ref_series.index.year == year] if use_live_anchor else series[series.index.year == year]
     ytd   = None
     if not ytd_s.empty:
         start = float(ytd_s.iloc[0])
@@ -497,7 +641,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.4.28 Data Sync ══")
+    log.info("══ Eagleview v4.4.44 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -592,10 +736,16 @@ def main():
         log.error("  All download attempts failed — aborting")
         sys.exit(1)
 
+    regular_market_prices = fetch_regular_market_prices(all_tickers)
+    if regular_market_prices:
+        log.info(f"  Current regular-session prices collected: {len(regular_market_prices)} tickers")
+    else:
+        log.info("  Off-hours or no REGULAR quotes available — using latest daily close anchors")
+
     ticker_returns: dict[str, dict] = {
-        t: (calc_returns(closes[t]) if t in closes.columns else {})
-        for t in all_tickers
-    }
+        t: (calc_returns(closes[t], regular_market_prices.get(t)) if t in closes.columns else {})
+        for t in all_tickers}
+
     missing = [t for t, r in ticker_returns.items() if not r]
     if missing:
         log.warning(f"  No data for: {missing}")
@@ -603,9 +753,14 @@ def main():
     # ══════════════════════════════════════════════════════════════════════════
     # PHASE 3 — Ensure all sector rows exist + compute per-sector data
     # ══════════════════════════════════════════════════════════════════════════
-    # Build latest closing price map — used in Phase 3 stock rows
-    price_map: dict[str, float] = {}
+    # Build latest display price map — during regular market hours this uses
+    # Yahoo regularMarketPrice; off-hours it stays with the existing daily-close
+    # behaviour. This keeps displayed price and performance math on the same
+    # sync-time anchor without introducing pre/post-market prices.
+    price_map: dict[str, float] = dict(regular_market_prices)
     for t in all_tickers:
+        if t in price_map:
+            continue
         if t in closes.columns:
             series = closes[t].dropna()
             if not series.empty:
@@ -660,6 +815,7 @@ def main():
                 "stock_rows":  stock_rows,
                 "rets":        rets,
                 "stock_count": len(stock_rows),
+                "active_tickers": [row["ticker"] for row in stock_rows],
                 "breadth_1d":  breadth(stock_rows, "day_pct"),
                 "breadth_1w":  breadth(stock_rows, "week_pct"),
                 "breadth_1m":  breadth(stock_rows, "month_pct"),
@@ -827,9 +983,12 @@ def main():
             )
 
             # Refresh individual stock rows — one upsert per sector instead of
-            # delete+insert, halving DB calls and removing the transient empty-window
+            # delete+insert, halving DB calls and removing the transient empty-window.
+            # Then prune obsolete holdings for the sector so old universe entries
+            # do not linger with stale prices/performance.
             if sc["stock_rows"]:
                 db.upsert_bulk("sector_holdings", sc["stock_rows"], "sector_id,ticker")
+                db.delete_stale_sector_holdings(sector_id, sc.get("active_tickers", []))
 
             sector_ok += 1
 

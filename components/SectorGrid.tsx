@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import {
   Sector, Benchmark, Period, SectorSnapshot,
   getPeriodValue, getRankChange, PERIOD_LABELS, computeScorecard,
@@ -21,13 +22,38 @@ interface Props {
 type FilterMode = 'all' | 'hot' | 'rising' | 'falling'
 
 const PERIODS_LOCAL: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '5Y']
+const PERIOD_SET = new Set<Period>(PERIODS_LOCAL)
 const RISING_THRESHOLD  =  5
 const FALLING_THRESHOLD = -5
 
+function parsePeriod(value: string | null): Period {
+  return value && PERIOD_SET.has(value as Period) ? value as Period : '1D'
+}
+
 export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
+  const router   = useRouter()
+  const pathname = usePathname()
+
   const [period, setPeriod]         = useState<Period>('1D')
   const [filterMode, setFilterMode] = useState<FilterMode>('all')
   const [selected, setSelected]     = useState<Sector | null>(null)
+
+  useEffect(() => {
+    const syncFromUrl = () => {
+      setPeriod(parsePeriod(new URLSearchParams(window.location.search).get('period')))
+    }
+    syncFromUrl()
+    window.addEventListener('popstate', syncFromUrl)
+    return () => window.removeEventListener('popstate', syncFromUrl)
+  }, [])
+
+  const updatePeriod = (nextPeriod: Period) => {
+    setPeriod(nextPeriod)
+    const params = new URLSearchParams(window.location.search)
+    params.set('period', nextPeriod)
+    router.replace(`${pathname}?${params.toString()}`, { scroll: false })
+    window.dispatchEvent(new CustomEvent('eagleview-period-change', { detail: nextPeriod }))
+  }
 
   const spx = benchmarks.find(b => b.ticker === '^GSPC')
 
@@ -39,8 +65,12 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
     })
   }, [sectors, period])
 
-  const positiveCount = sorted.filter(s => (getPeriodValue(s, period) ?? 0) >= 0).length
-  const negativeCount = sorted.length - positiveCount
+  const positiveCount = sorted.filter(s => (getPeriodValue(s, period) ?? 0) > 0).length
+  const negativeCount = sorted.filter(s => (getPeriodValue(s, period) ?? 0) < 0).length
+  const breadthSentiment =
+    positiveCount > negativeCount ? 'bull' :
+    negativeCount > positiveCount ? 'bear' :
+    'neutral'
 
   const lastUpdated = sectors.length > 0
     ? new Date(
@@ -86,7 +116,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
   }
 
   return (
-    <div className="max-w-6xl mx-auto px-3 sm:px-6 py-6">
+    <div className="max-w-[1440px] mx-auto px-3 sm:px-6 xl:px-8 py-6">
 
       {/* ── Header ─────────────────────────────── */}
       <div className="dashboard-header-row flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-5">
@@ -95,7 +125,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
             <EagleIcon size={22} className="text-slate-800 dark:text-slate-200 shrink-0" />
             <h1 className="landscape-title text-2xl font-bold text-slate-800 dark:text-slate-200 tracking-tight">Eagleview</h1>
           </div>
-          <div className="tagline-block flex flex-wrap items-center gap-2 pl-8 sm:pl-0">
+          <div className="tagline-block flex flex-col items-start gap-2 pl-0">
             <p className="text-xs text-slate-400 dark:text-slate-500">
               {sorted.length} sectors · {PERIOD_LABELS[period]}
               {positiveCount > 0 && (
@@ -108,20 +138,20 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
               )}
               {lastUpdated && <> · {lastUpdated}</>}
             </p>
-            <MarketRegime sectors={sectors} />
+            <MarketRegime sectors={sectors} sentiment={breadthSentiment} />
           </div>
         </div>
 
-        {/* ── Period bar: scroll container (pills) + filter group (buttons) ── */}
+        {/* ── Period bar: fixed timeframe controls + filter group ── */}
         <div className="period-bar shrink-0">
 
-          {/* Period pills — inside the scrollable container */}
+          {/* All timeframe controls are deliberately visible — no horizontal scrolling. */}
           <div className="period-control">
             <div className="period-control-inner">
               {PERIODS_LOCAL.map(p => (
                 <button
                   key={p}
-                  onClick={() => setPeriod(p)}
+                  onClick={() => updatePeriod(p)}
                   className={`period-pill ${period === p ? 'period-pill-active' : ''}`}
                 >
                   {p}
@@ -175,7 +205,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
 
       {/* ── Rankings divider ─────────────────────── */}
       <div className="flex items-center gap-3 mb-4">
-        <span className="text-[10px] font-bold tracking-widest text-slate-400 dark:text-slate-500 uppercase whitespace-nowrap flex items-center gap-1.5">
+        <span className="text-[10px] font-bold tracking-wide text-slate-400 dark:text-slate-500 uppercase whitespace-nowrap flex items-center gap-1.5">
           {filterMode === 'hot'     && <FlameIcon size={11} className="text-orange-500" />}
           {filterMode === 'rising'  && <TrendingUpIcon size={11} className="text-sky-500" />}
           {filterMode === 'falling' && <TrendingDownIcon size={11} className="text-rose-500 dark:text-rose-400" />}
@@ -188,7 +218,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
         {filterMode !== 'all' && (
           <button
             onClick={() => setFilterMode('all')}
-            className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 uppercase tracking-widest transition-colors whitespace-nowrap"
+            className="text-[10px] font-bold text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 uppercase tracking-wide transition-colors whitespace-nowrap"
           >
             Clear ✕
           </button>
@@ -227,7 +257,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3">
           {displayed.map((sector, i) => {
             const overallRank = sorted.indexOf(sector) + 1
             return (
