@@ -95,9 +95,9 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
           />
         </div>
 
-        {/* Period + direction */}
-        <div className="flex flex-wrap gap-2 items-center">
-          <div className="period-control">
+        {/* Period + direction — deliberately one row. Direction filters are icon-only. */}
+        <div className="flex flex-nowrap gap-2 items-center min-w-0">
+          <div className="period-control min-w-0">
             <div className="period-control-inner">
               {SCREENER_PERIODS.map(p => (
                 <button
@@ -111,28 +111,42 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
             </div>
           </div>
 
-          <div className="period-control">
-            <div className="period-control-inner">
-              {(['all', 'positive', 'negative'] as const).map(d => (
-                <button
-                  key={d}
-                  onClick={() => setDirection(d)}
-                  className={`period-pill flex items-center gap-1 ${
-                    direction === d
-                      ? d === 'positive'
-                        ? 'period-pill-active !bg-emerald-50 dark:!bg-emerald-500/10 !text-emerald-700 dark:text-emerald-300 dark:!text-emerald-300 !border-emerald-200/80 dark:!border-emerald-500/25 !shadow-none'
-                        : d === 'negative'
-                        ? 'period-pill-active !bg-rose-50 dark:!bg-rose-500/10 !text-rose-700 dark:text-rose-300 dark:!text-rose-300 !border-rose-200/80 dark:!border-rose-500/25 !shadow-none'
-                        : 'period-pill-active'
-                      : ''
-                  }`}
-                >
-                  {d === 'positive' && <TrendingUpIcon size={10} className={direction === 'positive' ? 'text-emerald-600 dark:text-emerald-400' : ''} />}
-                  {d === 'negative' && <TrendingDownIcon size={10} className={direction === 'negative' ? 'text-rose-600 dark:text-rose-400' : ''} />}
-                  {d === 'all' ? 'All' : d.charAt(0).toUpperCase() + d.slice(1)}
-                </button>
-              ))}
-            </div>
+          <div className="period-filter-group" aria-label="Performance direction filter">
+            <button
+              onClick={() => setDirection('all')}
+              aria-label="Show all stocks"
+              aria-pressed={direction === 'all'}
+              title="Show all stocks"
+              className={`period-pill ${direction === 'all' ? 'period-pill-active' : ''}`}
+            >
+              All
+            </button>
+            <button
+              onClick={() => setDirection('positive')}
+              aria-label="Show positive-performing stocks"
+              aria-pressed={direction === 'positive'}
+              title="Show positive-performing stocks"
+              className={`period-pill period-pill-icon flex items-center justify-center ${
+                direction === 'positive'
+                  ? 'period-pill-active !bg-emerald-50 dark:!bg-emerald-500/10 !text-emerald-700 dark:text-emerald-300 dark:!text-emerald-300 !border-emerald-200/80 dark:!border-emerald-500/25 !shadow-none'
+                  : ''
+              }`}
+            >
+              <TrendingUpIcon size={12} className="text-emerald-600 dark:text-emerald-400" />
+            </button>
+            <button
+              onClick={() => setDirection('negative')}
+              aria-label="Show negative-performing stocks"
+              aria-pressed={direction === 'negative'}
+              title="Show negative-performing stocks"
+              className={`period-pill period-pill-icon flex items-center justify-center ${
+                direction === 'negative'
+                  ? 'period-pill-active !bg-rose-50 dark:!bg-rose-500/10 !text-rose-700 dark:text-rose-300 dark:!text-rose-300 !border-rose-200/80 dark:!border-rose-500/25 !shadow-none'
+                  : ''
+              }`}
+            >
+              <TrendingDownIcon size={12} className="text-rose-600 dark:text-rose-400" />
+            </button>
           </div>
         </div>
 
@@ -307,7 +321,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       )}
 
       <p className="text-center text-[10px] text-slate-300 dark:text-slate-600 mt-5 tracking-widest">
-        EAGLEVIEW V4.4.29 · EQUAL-WEIGHTED BASKETS
+        EAGLEVIEW V4.5.0 · EQUAL-WEIGHTED BASKETS
       </p>
 
       {selectedTicker && (
