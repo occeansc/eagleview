@@ -179,8 +179,8 @@
   box-shadow: inset 0 1px 2px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.03);
 }
 
-/* Fixed timeframe group — all eight periods remain visible.  This is intentionally
-   non-scrollable so the active 1D/5Y pill can never be clipped at a scroll edge. */
+/* Period control: desktop is a fixed one-row group. On phones the period rail
+   deliberately scrolls on its own so every label keeps a comfortable tap target. */
 .period-control {
   flex: 1 1 0;
   min-width: 0;
@@ -196,14 +196,30 @@
   padding: 6px 8px;
 }
 @media (max-width: 639px) {
+  .period-control {
+    width: 100%;
+  }
   .period-control-inner {
-    gap: 1px;
-    padding: 6px 7px;
+    justify-content: flex-start;
+    gap: 6px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 6px 2px 8px;
+  }
+  .period-control-inner::-webkit-scrollbar {
+    display: none;
+  }
+  .period-control-inner .period-pill {
+    min-width: 42px;
+    padding: 6px 10px;
+    font-size: 11px;
   }
 }
 
-/* Filter buttons — lives OUTSIDE the scroll container so active-state
-   box-shadows are never clipped. Padding matches the period-control-inner. */
+/* Filters remain outside the scrolling period viewport. On phones they occupy
+   their own compact row, preventing them from stealing timeframe width. */
 .period-filter-group {
   display: flex;
   align-items: center;
@@ -211,8 +227,14 @@
   padding: 4px 6px 4px 0;
   flex-shrink: 0;
 }
+@media (max-width: 639px) {
+  .period-filter-group {
+    align-self: flex-end;
+    padding: 0 2px 0 0;
+  }
+}
 .period-pill {
-  /* Mobile: compact so all 8 periods (1D→5Y) fit without scrolling */
+  /* Mobile pills use readable taps; the period rail scrolls instead of shrinking. */
   padding: 5px 6px;
   border-radius: 10px;
   font-weight: 700;
@@ -226,13 +248,6 @@
     box-shadow 0.2s ease,
     color      0.15s ease,
     transform  0.15s var(--ease-back);
-}
-@media (max-width: 374px) {
-  /* Keep all eight timeframe labels visible even on the smallest supported phones. */
-  .period-pill {
-    padding: 5px 3px;
-    font-size: 10px;
-  }
 }
 .dark .period-pill { color: rgba(226,232,240,0.55); }
 @media (min-width: 640px) {

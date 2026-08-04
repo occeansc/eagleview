@@ -84,7 +84,7 @@ SECTOR_STOCKS = [
         ('CIFR','Cipher Mining'), ('IREN','IREN'), ('WULF','TeraWulf'), ('CORZ','Core Scientific'),
         ('CRCL','Circle Internet Group'), ('BKKT','Bakkt'), ('HIVE','HIVE Digital'),
         ('BTDR','Bitdeer Technologies'), ('BTCS','BTCS Inc'), ('CAN','Canaan'),
-        ('EBON','Ebang International'), ('APLD','Applied Digital'), ('GREE','Greenidge Generation'),
+        ('EBON','Ebang International'), ('APLD','Applied Digital'), ('VIP','Vulcan Infrastructure and Power'),
         ('ANY','Sphere 3D'), ('ARBK','Argo Blockchain'), ('GLXY','Galaxy Digital'),
     ]),
     ('Biotech & Genomics', [

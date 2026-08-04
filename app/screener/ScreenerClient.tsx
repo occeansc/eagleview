@@ -8,7 +8,8 @@ import {
 import { SearchIcon, TrendingUpIcon, TrendingDownIcon } from '@/components/Icons'
 import TickerModal from '@/components/TickerModal'
 
-// Screener shows all 8 periods (1D through 5Y) — same pattern as Dashboard.
+// Screener keeps all eight periods available. On phones the period rail scrolls
+// independently so no timeframe (especially 5Y) is squeezed or clipped.
 const SCREENER_PERIODS: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '5Y']
 
 interface Props {
@@ -95,8 +96,9 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
           />
         </div>
 
-        {/* Timeframe + direction — one non-wrapping rail. Timeframes retain all eight fixed controls; direction is compact and icon-led. */}
-        <div className="flex flex-nowrap items-center gap-2">
+        {/* Phone: a clean, independently scrollable period rail plus a separate
+            non-shrinking direction row. Desktop retains the compact single rail. */}
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:flex-nowrap sm:items-center sm:gap-2">
           <div className="period-control">
             <div className="period-control-inner">
               {SCREENER_PERIODS.map(p => (
@@ -315,7 +317,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       )}
 
       <p className="text-center text-[10px] text-slate-300 dark:text-slate-600 mt-5 tracking-wide">
-        EAGLEVIEW V4.5.0 · EQUAL-WEIGHTED BASKETS
+        EAGLEVIEW V4.5.1 · EQUAL-WEIGHTED BASKETS
       </p>
 
       {selectedTicker && (
