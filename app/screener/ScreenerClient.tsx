@@ -320,7 +320,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       )}
 
       <p className="text-center text-[10px] text-slate-300 dark:text-slate-600 mt-5 tracking-wide">
-        EAGLEVIEW V4.5.4 · EQUAL-WEIGHTED BASKETS
+        EAGLEVIEW V4.5.5 · EQUAL-WEIGHTED BASKETS
       </p>
 
       {selectedTicker && (

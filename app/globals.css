@@ -220,7 +220,9 @@
   .screener-period-control .period-control-inner {
     width: max-content;
     min-width: 100%;
-    justify-content: flex-start;
+    /* When all periods fit, distribute them across the available rail width;
+       when they overflow, the minimum gap remains scrollable without compression. */
+    justify-content: space-between;
     gap: 3px;
     padding-left: 8px;
     /* Two pixels less trailing inset aligns the rightmost scroll position to a
