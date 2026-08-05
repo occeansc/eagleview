@@ -5,11 +5,11 @@ import {
   SectorHolding, Sector, Period,
   PERIOD_LABELS, getPeriodValue, formatPrice,
 } from '@/lib/types'
-import { SearchIcon, TrendingUpIcon, TrendingDownIcon } from '@/components/Icons'
+import { SearchIcon, TrendingUpIcon, TrendingDownIcon, GridIcon } from '@/components/Icons'
 import TickerModal from '@/components/TickerModal'
 
-// Screener keeps all eight periods available. On phones the period rail scrolls
-// independently so no timeframe (especially 5Y) is squeezed or clipped.
+// Screener uses the same fixed, single-row timeframe system as the dashboard.
+// All eight periods remain visible; the direction controls are compact on phones.
 const SCREENER_PERIODS: Period[] = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '5Y']
 
 interface Props {
@@ -96,9 +96,9 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
           />
         </div>
 
-        {/* Phone: a clean, independently scrollable period rail plus a separate
-            non-shrinking direction row. Desktop retains the compact single rail. */}
-        <div className="flex flex-col gap-1.5 sm:flex-row sm:flex-nowrap sm:items-center sm:gap-2">
+        {/* Use the dashboard's fixed single-row period bar unchanged: timeframe
+            controls and direction filters are sibling groups inside one shared rail. */}
+        <div className="period-bar screener-period-bar">
           <div className="period-control">
             <div className="period-control-inner">
               {SCREENER_PERIODS.map(p => (
@@ -114,14 +114,17 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
           </div>
 
           <div className="period-filter-group" aria-label="Return direction">
+            <div className="w-px h-5 self-center ml-0.5 mr-1 bg-slate-300/50 dark:bg-white/15" />
             <button
               type="button"
               onClick={() => setDirection('all')}
-              className={`period-pill ${direction === 'all' ? 'period-pill-active' : ''}`}
+              className={`period-pill period-pill-icon flex items-center justify-center gap-1 ${direction === 'all' ? 'period-pill-active' : ''}`}
+              aria-label="Show all returns"
               aria-pressed={direction === 'all'}
               title="Show all returns"
             >
-              All
+              <GridIcon size={11} />
+              <span className="hidden sm:inline">All</span>
             </button>
             <button
               type="button"
@@ -131,7 +134,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
               aria-pressed={direction === 'positive'}
               title="Show positive returns"
             >
-              <TrendingUpIcon size={15} className={direction === 'positive' ? 'text-emerald-600 dark:text-emerald-400' : 'text-emerald-500 dark:text-emerald-400'} />
+              <TrendingUpIcon size={11} className={direction === 'positive' ? 'text-emerald-600 dark:text-emerald-400' : 'text-emerald-500 dark:text-emerald-400'} />
             </button>
             <button
               type="button"
@@ -141,7 +144,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
               aria-pressed={direction === 'negative'}
               title="Show negative returns"
             >
-              <TrendingDownIcon size={15} className={direction === 'negative' ? 'text-rose-600 dark:text-rose-400' : 'text-rose-500 dark:text-rose-400'} />
+              <TrendingDownIcon size={11} className={direction === 'negative' ? 'text-rose-600 dark:text-rose-400' : 'text-rose-500 dark:text-rose-400'} />
             </button>
           </div>
         </div>
@@ -317,7 +320,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       )}
 
       <p className="text-center text-[10px] text-slate-300 dark:text-slate-600 mt-5 tracking-wide">
-        EAGLEVIEW V4.5.1 · EQUAL-WEIGHTED BASKETS
+        EAGLEVIEW V4.5.3 · EQUAL-WEIGHTED BASKETS
       </p>
 
       {selectedTicker && (
