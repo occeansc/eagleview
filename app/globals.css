@@ -201,38 +201,50 @@
     gap: 1px;
     padding: 6px 7px;
   }
-  /* The Screener lives inside a padded filter card. Let its shared period bar
-     reclaim that card padding so it receives the same usable width as Dashboard. */
+  /* Screener only: preserve the filter card's natural width. The timeframe list
+     is the sole scroll viewport; direction controls remain fixed alongside it. */
   .screener-period-bar {
-    width: calc(100% + 34px);
-    max-width: none;
-    margin-left: -17px;
-    margin-right: -17px;
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
   }
-  /* Same dashboard visual grammar, compacted only enough to preserve all eight
-     periods inside the Screener's denser filter card. */
-  .screener-period-bar .period-filter-group {
-    gap: 2px;
-    padding-right: 2px;
+  .screener-period-control {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scroll-padding-inline: 8px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
   }
-  .screener-period-bar .period-filter-group > div {
-    margin-left: 0 !important;
-    margin-right: 0 !important;
+  .screener-period-control::-webkit-scrollbar { display: none; }
+  .screener-period-control .period-control-inner {
+    width: max-content;
+    min-width: 100%;
+    justify-content: flex-start;
+    gap: 3px;
+    padding-left: 8px;
+    /* Two pixels less trailing inset aligns the rightmost scroll position to a
+       pill boundary instead of leaving a predecessor partially clipped. */
+    padding-right: 6px;
   }
-  .screener-period-bar .period-control-inner {
-    gap: 0;
-    padding-left: 2px;
-    padding-right: 2px;
-  }
-  .screener-period-bar .period-control-inner .period-pill {
-    padding-left: 5px;
-    padding-right: 5px;
+  /* Keep six periods visible at 320px, leaving only 1Y and 5Y for a deliberate swipe. */
+  .screener-period-control .period-pill {
+    padding-left: 3px;
+    padding-right: 3px;
     font-size: 10px;
     letter-spacing: 0;
   }
+  .screener-period-bar .period-filter-group {
+    gap: 5px;
+    padding-right: 7px;
+  }
+  .screener-period-bar .period-filter-group > div {
+    margin-left: 2px !important;
+    margin-right: 2px !important;
+  }
   .screener-period-bar .period-pill-icon {
-    padding-left: 4px;
-    padding-right: 4px;
+    padding-left: 7px;
+    padding-right: 7px;
   }
 }
 

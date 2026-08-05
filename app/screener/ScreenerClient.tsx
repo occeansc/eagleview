@@ -96,10 +96,10 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
           />
         </div>
 
-        {/* Use the dashboard's fixed single-row period bar unchanged: timeframe
-            controls and direction filters are sibling groups inside one shared rail. */}
+        {/* Screener only: the timeframe list scrolls inside its own viewport;
+            direction filters stay fixed, so the outer bar remains card-aligned. */}
         <div className="period-bar screener-period-bar">
-          <div className="period-control">
+          <div className="period-control screener-period-control" aria-label="Time period">
             <div className="period-control-inner">
               {SCREENER_PERIODS.map(p => (
                 <button
@@ -320,7 +320,7 @@ export default function ScreenerClient({ holdings, sectors }: Props) {
       )}
 
       <p className="text-center text-[10px] text-slate-300 dark:text-slate-600 mt-5 tracking-wide">
-        EAGLEVIEW V4.5.3 · EQUAL-WEIGHTED BASKETS
+        EAGLEVIEW V4.5.4 · EQUAL-WEIGHTED BASKETS
       </p>
 
       {selectedTicker && (
