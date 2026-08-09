@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import type { TickerEarnings, SectorHolding } from '@/lib/types'
-import { SearchIcon, SunIcon, MoonIcon, CalendarIcon } from '@/components/Icons'
+import { SearchIcon, SunIcon, MoonIcon, CalendarIcon, ChevronDownIcon } from '@/components/Icons'
 import TickerModal from '@/components/TickerModal'
 
 interface Props {
@@ -31,6 +31,16 @@ export default function EarningsClient({ earnings, holdings }: Props) {
   const [query,  setQuery]  = useState('')
   const [sector, setSector] = useState<string>('all')
   const [selectedTicker, setSelectedTicker] = useState<(SectorHolding & { sectors: { name: string } }) | null>(null)
+  const [collapsedDates, setCollapsedDates] = useState<Set<string>>(() => new Set())
+
+  const toggleDate = (dateIso: string) => {
+    setCollapsedDates(current => {
+      const next = new Set(current)
+      if (next.has(dateIso)) next.delete(dateIso)
+      else next.add(dateIso)
+      return next
+    })
+  }
 
   const holdingByTicker = useMemo(() => {
     const map = new Map<string, SectorHolding & { sectors: { name: string } }>()
@@ -127,66 +137,86 @@ export default function EarningsClient({ earnings, holdings }: Props) {
         </div>
       ) : (
         <div className="space-y-5">
-          {grouped.map(([dateIso, rows]) => (
-            <div key={dateIso}>
-              <h3 className="flex items-baseline gap-1.5 text-[13px] font-bold text-slate-700 dark:text-slate-300 mb-2 px-1">
-                {formatDateHeader(dateIso)}
-                <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold">
-                  {formatDateSub(dateIso)}
-                </span>
-                <span className="text-[10px] text-slate-300 dark:text-slate-600 font-bold ml-auto">
-                  {rows.length}
-                </span>
-              </h3>
-              <div
-                className="rounded-[18px] overflow-hidden divide-y divide-slate-50 dark:divide-white/5"
-                style={{
-                  background: 'var(--bg-surface-1)',
-                  border: '1px solid var(--border-subtle)',
-                  boxShadow: 'var(--shadow-glass)',
-                }}
-              >
-                {rows.map(e => {
-                  const holding = holdingByTicker.get(e.ticker)
-                  return (
-                    <div
-                      key={e.ticker}
-                      onClick={() => holding && setSelectedTicker(holding)}
-                      className={`flex items-center gap-3 px-4 py-3 transition-colors ${holding ? 'cursor-pointer hover:bg-slate-50/80 dark:hover:bg-white/5' : ''}`}
-                    >
-                      <span className="font-mono text-[11px] font-bold px-1.5 py-1 rounded-[8px] bg-slate-50 dark:bg-white/5 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/20 shrink-0">
-                        {e.ticker}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight">
-                          {e.company_name}
-                        </p>
-                        <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
-                          {e.sector_name}
-                        </p>
-                      </div>
-                      {e.earnings_time === 'bmo' && (
-                        <span className="flex items-center gap-1 text-[9px] font-bold tracking-wide bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/25 px-2 py-1 rounded-full shrink-0">
-                          <SunIcon size={9} /> BMO
-                        </span>
-                      )}
-                      {e.earnings_time === 'amc' && (
-                        <span className="flex items-center gap-1 text-[9px] font-bold tracking-wide bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-200/50 dark:border-sky-500/25 px-2 py-1 rounded-full shrink-0">
-                          <MoonIcon size={9} /> AMC
-                        </span>
-                      )}
-                    </div>
-                  )
-                })}
+          {grouped.map(([dateIso, rows]) => {
+            const isCollapsed = collapsedDates.has(dateIso)
+            return (
+              <div key={dateIso}>
+                <h3 className="mb-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleDate(dateIso)}
+                    aria-expanded={!isCollapsed}
+                    aria-controls={`earnings-date-${dateIso}`}
+                    aria-label={`${isCollapsed ? 'Expand' : 'Collapse'} ${formatDateHeader(dateIso)} earnings`}
+                    className="group flex w-full items-center gap-1.5 rounded-[10px] px-1 py-1 text-left text-[13px] font-bold text-slate-700 transition-colors hover:bg-slate-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-300/70 dark:text-slate-300 dark:hover:bg-white/5"
+                  >
+                    <span>{formatDateHeader(dateIso)}</span>
+                    <span className="text-[11px] text-slate-400 dark:text-slate-500 font-semibold">
+                      {formatDateSub(dateIso)}
+                    </span>
+                    <span className="text-[10px] text-slate-300 dark:text-slate-600 font-bold ml-auto">
+                      {rows.length}
+                    </span>
+                    <ChevronDownIcon
+                      size={15}
+                      aria-hidden="true"
+                      className={`ml-1 shrink-0 text-slate-400 transition-transform duration-200 dark:text-slate-500 ${isCollapsed ? '-rotate-90' : ''}`}
+                    />
+                  </button>
+                </h3>
+                {!isCollapsed && (
+                  <div
+                    id={`earnings-date-${dateIso}`}
+                    className="rounded-[18px] overflow-hidden divide-y divide-slate-50 dark:divide-white/5"
+                    style={{
+                      background: 'var(--bg-surface-1)',
+                      border: '1px solid var(--border-subtle)',
+                      boxShadow: 'var(--shadow-glass)',
+                    }}
+                  >
+                    {rows.map(e => {
+                      const holding = holdingByTicker.get(e.ticker)
+                      return (
+                        <div
+                          key={e.ticker}
+                          onClick={() => holding && setSelectedTicker(holding)}
+                          className={`flex items-center gap-3 px-4 py-3 transition-colors ${holding ? 'cursor-pointer hover:bg-slate-50/80 dark:hover:bg-white/5' : ''}`}
+                        >
+                          <span className="font-mono text-[11px] font-bold px-1.5 py-1 rounded-[8px] bg-slate-50 dark:bg-white/5 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-white/20 shrink-0">
+                            {e.ticker}
+                          </span>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-[13px] font-semibold text-slate-800 dark:text-slate-200 truncate leading-tight">
+                              {e.company_name}
+                            </p>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                              {e.sector_name}
+                            </p>
+                          </div>
+                          {e.earnings_time === 'bmo' && (
+                            <span className="flex items-center gap-1 text-[9px] font-bold tracking-wide bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-200/50 dark:border-amber-500/25 px-2 py-1 rounded-full shrink-0">
+                              <SunIcon size={9} /> BMO
+                            </span>
+                          )}
+                          {e.earnings_time === 'amc' && (
+                            <span className="flex items-center gap-1 text-[9px] font-bold tracking-wide bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-200/50 dark:border-sky-500/25 px-2 py-1 rounded-full shrink-0">
+                              <MoonIcon size={9} /> AMC
+                            </span>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            )
+          })}
         </div>
       )}
 
       {/* Footer */}
       <div className="mt-6 flex items-center justify-between text-[10px] text-slate-400 dark:text-slate-500">
-        <span>Eagleview v4.5.5</span>
+        <span>Eagleview v4.5.7</span>
         {lastSynced && (
           <span>
             Last sync: {new Date(lastSynced).toLocaleString('en-US', {

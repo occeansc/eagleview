@@ -72,7 +72,14 @@ function fmtEmployees(n: number | null): string | null {
 }
 
 function fmtEarningsDate(iso: string): string {
-  return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  // This modal is the only surface that adds the weekday; other earnings views
+  // retain their existing date formats. Local midnight prevents date-only
+  // earnings values from shifting to the previous calendar day by time zone.
+  return new Date(iso + 'T00:00:00').toLocaleDateString('en-US', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  })
 }
 
 const TILES: { label: string; key: keyof SectorHolding }[] = [
@@ -406,7 +413,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
         {/* Footer */}
         <div className="px-5 py-3 border-t border-slate-100 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400 dark:text-slate-500">
-            Eagleview v4.5.5
+            Eagleview v4.5.7
           </p>
           {info?.website && (
             <a
