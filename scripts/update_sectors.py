@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.5.7 — Data Updater
+Eagleview v4.5.9 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -456,6 +456,49 @@ def is_regular_market_open(now: datetime | None = None) -> bool:
     return market_open <= now_et <= market_close
 
 
+# GitHub Actions cron is UTC-only. These two expressions represent the one
+# approved 4:17 PM New York settled-close sync across daylight-saving time.
+# The event schedule is retained so the inactive seasonal expression cannot
+# accidentally become an extra intraday refresh.
+SCHEDULED_CLOSE_SLOTS = {
+    "17 20 * * 1-5": -4,  # 16:17 EDT
+    "17 21 * * 1-5": -5,  # 16:17 EST
+}
+
+
+def is_nyse_trading_day(now: datetime) -> bool:
+    """Return whether *now* falls on a scheduled NYSE session.
+
+    Weekday alone is not sufficient: GitHub would otherwise create successful
+    but meaningless runs on US exchange holidays.  The workflow installs the
+    small calendar dependency explicitly, so a missing calendar is a hard setup
+    error rather than silently permitting an unverified refresh.
+    """
+    try:
+        import pandas_market_calendars as mcal
+    except ImportError as exc:
+        raise RuntimeError("pandas_market_calendars is required for scheduled sync gating") from exc
+    day = now.date()
+    return not mcal.get_calendar("NYSE").schedule(start_date=day, end_date=day).empty
+
+
+def scheduled_sync_mode(now: datetime, scheduled_slot: str) -> str | None:
+    """Return regular/post_close only for an approved scheduled session window."""
+    offset_hours = int(now.utcoffset().total_seconds() // 3600)
+    if scheduled_slot in SCHEDULED_CLOSE_SLOTS:
+        if SCHEDULED_CLOSE_SLOTS[scheduled_slot] != offset_hours:
+            return None
+        settled_close = now.replace(hour=16, minute=5, second=0, microsecond=0)
+        return "post_close" if now >= settled_close else None
+
+    # Preserve the full operational half-hour cadence while cash trading is live.
+    # A delayed regular slot remains useful if it lands during the same session;
+    # it is never allowed to write after the close.
+    market_open = now.replace(hour=9, minute=30, second=0, microsecond=0)
+    market_close = now.replace(hour=16, minute=0, second=0, microsecond=0)
+    return "regular" if market_open <= now <= market_close else None
+
+
 def chunks(items: list[str], size: int):
     for i in range(0, len(items), size):
         yield items[i:i + size]
@@ -649,22 +692,32 @@ def main():
         log.error("Missing SUPABASE_URL or SUPABASE_SERVICE_KEY")
         sys.exit(1)
 
-    # ── Market-hours guard ────────────────────────────────────────────────────
-    # workflow_dispatch (manual trigger) bypasses this gate entirely — useful
-    # for weekend testing, post-deployment syncs, and debugging.
-    # Scheduled cron runs still enforce market hours.
+    # ── Scheduled-session guard ───────────────────────────────────────────────
+    # Manual dispatch remains intentionally available for post-deploy recovery
+    # and diagnostics.  Scheduled runs are sparse, NYSE-calendar-aware, and only
+    # perform the intended first-open or settled-close refresh.
     is_manual = os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
     if is_manual:
-        log.info("Manual dispatch — bypassing market hours gate, running full sync")
+        log.info("Manual dispatch — bypassing scheduled-session gate, running full sync")
     else:
-        ET          = ZoneInfo("America/New_York")
-        et_now      = datetime.now(ET)
-        market_open = et_now.replace(hour=9,  minute=15, second=0, microsecond=0)
-        market_shut = et_now.replace(hour=17, minute=15, second=0, microsecond=0)
-        if not (market_open <= et_now <= market_shut):
-            log.info(f"Outside market hours ({et_now.strftime('%a %H:%M %Z')}) — skipping cleanly")
+        ET = ZoneInfo("America/New_York")
+        et_now = datetime.now(ET)
+        if not is_nyse_trading_day(et_now):
+            log.info(f"NYSE closed ({et_now.strftime('%a %Y-%m-%d')}) — skipping scheduled sync")
             sys.exit(0)
-        log.info(f"Market hours confirmed ({et_now.strftime('%H:%M %Z, %Z offset from UTC')})")
+
+        scheduled_slot = os.environ.get("EAGLEVIEW_SCHEDULED_SLOT", "")
+        mode = scheduled_sync_mode(et_now, scheduled_slot)
+        if mode is None:
+            log.info(
+                "Scheduled slot not valid for the current New York session "
+                f"({scheduled_slot or 'local/legacy'}, {et_now.strftime('%a %H:%M %Z')}) — skipping"
+            )
+            sys.exit(0)
+        if mode == "post_close":
+            log.info(f"Settled-close sync confirmed ({et_now.strftime('%a %H:%M %Z')})")
+        else:
+            log.info(f"First-open sync confirmed ({et_now.strftime('%a %H:%M %Z')})")
 
     db = DB(url, key)
 

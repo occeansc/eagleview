@@ -1,52 +1,32 @@
 name: Update Sector Data
 
-# Every 30 minutes from 7:00 AM to 5:15 PM EDT (UTC-4), all weekdays.
+# Keep the operational intraday refresh cadence throughout the US cash session.
 #
-# WHY SO MANY SLOTS: GitHub Actions free-tier cron is systematically delayed
-# 1.5–2.5 hours during peak periods. With 90-min spacing, early-morning slots
-# (9:45 AM EDT) were consistently arriving at noon, leaving the morning session
-# without a data update. 30-min spacing ensures at least several slots fire
-# during actual US market hours regardless of delays.
+# GitHub Actions cron is UTC-only and can be congested at :00/:30.  The regular
+# half-hour schedule is deliberately offset to :07/:37. The updater applies the
+# actual America/New_York market-hours guard, so the small seasonal overhang at
+# either end is skipped and never writes stale off-hours data.
 #
-# PRE-MARKET SLOTS (before 9:15 AM ET): if on-time, the market-hours guard
-# in update_sectors.py exits cleanly in ~22s — negligible compute. If delayed
-# 1-2 hours into market hours, they become real syncs. Free insurance.
-#
-# GUARD handles DST automatically via zoneinfo("America/New_York"):
-#   EDT (Mar-Nov, UTC-4): market window 13:15-21:15 UTC
-#   EST (Nov-Mar, UTC-5): market window 14:15-22:15 UTC
-# No manual adjustment needed when US clocks change.
+# The only approved after-close sync is the settled-close run at 4:17 PM ET. It
+# captures the authoritative daily close (and Friday weekly close). After it,
+# any delayed run is rejected until the next actual market session opens.
 
 on:
   schedule:
-    # ── Pre-market buffers ─────────────────────────────────────────────────
-    - cron: '00 11 * * 1-5'   # EDT: 7:00 AM  | guard exits if on-time
-    - cron: '30 11 * * 1-5'   # EDT: 7:30 AM  | guard exits if on-time
-    - cron: '00 12 * * 1-5'   # EDT: 8:00 AM  | guard exits if on-time
-    - cron: '30 12 * * 1-5'   # EDT: 8:30 AM  | guard exits if on-time
-    - cron: '00 13 * * 1-5'   # EDT: 9:00 AM  | guard exits if on-time
-    # ── Market hours ──────────────────────────────────────────────────────
-    - cron: '30 13 * * 1-5'   # EDT: 9:30 AM  (at open)
-    - cron: '00 14 * * 1-5'   # EDT: 10:00 AM
-    - cron: '30 14 * * 1-5'   # EDT: 10:30 AM
-    - cron: '00 15 * * 1-5'   # EDT: 11:00 AM
-    - cron: '30 15 * * 1-5'   # EDT: 11:30 AM
-    - cron: '00 16 * * 1-5'   # EDT: 12:00 PM
-    - cron: '30 16 * * 1-5'   # EDT: 12:30 PM
-    - cron: '00 17 * * 1-5'   # EDT: 1:00 PM
-    - cron: '30 17 * * 1-5'   # EDT: 1:30 PM
-    - cron: '00 18 * * 1-5'   # EDT: 2:00 PM
-    - cron: '30 18 * * 1-5'   # EDT: 2:30 PM
-    - cron: '00 19 * * 1-5'   # EDT: 3:00 PM
-    - cron: '30 19 * * 1-5'   # EDT: 3:30 PM
-    # ── Post-close buffers ────────────────────────────────────────────────
-    - cron: '00 20 * * 1-5'   # EDT: 4:00 PM  | guard exits after close
-    - cron: '30 20 * * 1-5'   # EDT: 4:30 PM  | guard exits after close
-    - cron: '15 21 * * 1-5'   # EDT: 5:15 PM  | guard exits
+    # Intraday: every 30 minutes during the NYSE/Nasdaq cash session, DST-safe.
+    - cron: '7,37 13-20 * * 1-5'
+    - cron: '7 21 * * 1-5'
+    # One settled-close write: 16:17 America/New_York (EDT / EST).
+    - cron: '17 20 * * 1-5'
+    - cron: '17 21 * * 1-5'
   workflow_dispatch:
 
 jobs:
   update-sectors:
+    # Never cancel a started close sync in favour of a later dispatch.
+    concurrency:
+      group: eagleview-sector-data-sync
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -57,9 +37,10 @@ jobs:
         with:
           path: ~/.cache/pip
           key: ${{ runner.os }}-pip-eagleview
-      - run: pip install yfinance pandas requests
+      - run: pip install yfinance pandas requests pandas_market_calendars
       - name: Run sector update
         env:
-          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          SUPABASE_URL:            ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY:    ${{ secrets.SUPABASE_SERVICE_KEY }}
+          EAGLEVIEW_SCHEDULED_SLOT: ${{ github.event.schedule }}
         run: python scripts/update_sectors.py
