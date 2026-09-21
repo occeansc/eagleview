@@ -1,15 +1,13 @@
 name: Update Sector Data
 
-# Keep the operational intraday refresh cadence throughout the US cash session.
+# GitHub Actions cron is UTC-only and can be congested at :00/:30. The regular
+# half-hour schedule is deliberately offset to :07/:37. Each scheduled slot is
+# intentional: if GitHub starts it late, the updater completes the full sync
+# even outside cash-market hours. It skips only dates when the NYSE is closed.
 #
-# GitHub Actions cron is UTC-only and can be congested at :00/:30.  The regular
-# half-hour schedule is deliberately offset to :07/:37. The updater applies the
-# actual America/New_York market-hours guard, so the small seasonal overhang at
-# either end is skipped and never writes stale off-hours data.
-#
-# The only approved after-close sync is the settled-close run at 4:17 PM ET. It
-# captures the authoritative daily close (and Friday weekly close). After it,
-# any delayed run is rejected until the next actual market session opens.
+# The 4:17 PM ET run remains the preferred timely settled-close capture for the
+# authoritative daily close (and Friday weekly close). A delayed start still
+# runs rather than being discarded by a time-of-day gate.
 
 on:
   schedule:
@@ -40,7 +38,6 @@ jobs:
       - run: pip install yfinance pandas requests pandas_market_calendars
       - name: Run sector update
         env:
-          SUPABASE_URL:            ${{ secrets.SUPABASE_URL }}
-          SUPABASE_SERVICE_KEY:    ${{ secrets.SUPABASE_SERVICE_KEY }}
-          EAGLEVIEW_SCHEDULED_SLOT: ${{ github.event.schedule }}
+          SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: python scripts/update_sectors.py
