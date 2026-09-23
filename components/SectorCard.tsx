@@ -42,7 +42,7 @@ export default function SectorCard({
   return (
     <button
       onClick={onClick}
-      className={`sector-card ${positive ? 'positive' : negative ? 'negative' : ''} card-appear group relative rounded-[22px] text-left w-full flex flex-col outline-none overflow-hidden focus-visible:ring-2 focus-visible:ring-indigo-400 ${borderHover}`}
+      className={`sector-card ${positive ? 'positive' : negative ? 'negative' : ''} card-appear group relative rounded-[22px] text-left w-full flex flex-col items-stretch outline-none overflow-hidden focus-visible:ring-2 focus-visible:ring-indigo-400 ${borderHover}`}
       style={{ animationDelay: `${delay}ms` }}
     >
       {/* Hover glow — radial gradient, bottom-right */}
