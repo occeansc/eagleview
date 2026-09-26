@@ -26,6 +26,14 @@ const PERIOD_SET = new Set<Period>(PERIODS_LOCAL)
 const RISING_THRESHOLD  =  5
 const FALLING_THRESHOLD = -5
 
+function formatDashboardUpdated(iso: string): { date: string; time: string } {
+  const d = new Date(iso)
+  return {
+    date: d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+    time: d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true }),
+  }
+}
+
 function parsePeriod(value: string | null): Period {
   return value && PERIOD_SET.has(value as Period) ? value as Period : '1D'
 }
@@ -73,9 +81,9 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
     'neutral'
 
   const lastUpdated = sectors.length > 0
-    ? new Date(
-        Math.max(...sectors.map(s => new Date(s.updated_at).getTime()))
-      ).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    ? formatDashboardUpdated(
+        new Date(Math.max(...sectors.map(s => new Date(s.updated_at).getTime()))).toISOString()
+      )
     : null
 
   // ── Filtered display set ──────────────────────────────────────
@@ -136,7 +144,7 @@ export default function SectorGrid({ sectors, benchmarks, snapshots }: Props) {
                   <span className="text-rose-600 dark:text-rose-400 font-semibold">{negativeCount}↓</span>
                 </>
               )}
-              {lastUpdated && <> · {lastUpdated}</>}
+              {lastUpdated && <> · {lastUpdated.date} <span className="tabular-nums">{lastUpdated.time}</span></>}
             </p>
             <MarketRegime sectors={sectors} sentiment={breadthSentiment} />
           </div>

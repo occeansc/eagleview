@@ -20,7 +20,7 @@ const WARM_TTL = 4 * 60 * 60 * 1000
 // to WARM_TTL, exactly what happened when marketCap/peRatio/week52High/
 // nextEarnings/earningsTime were added but existing cached entries (keyed
 // only by symbol) kept being served without them.
-const SCHEMA_VERSION = 'v4'
+const SCHEMA_VERSION = 'v5'
 
 const COMPANY_SIGNALS = [
   'company','corporation','incorporated','founded','headquartered',
@@ -33,6 +33,19 @@ const COMPANY_SIGNALS = [
 function isCompanyArticle(text: string): boolean {
   const lower = text.toLowerCase()
   return COMPANY_SIGNALS.some(kw => lower.includes(kw))
+}
+
+function isGenericFinanceProfilePrompt(text: string): boolean {
+  const lower = text.toLowerCase().replace(/\s+/g, ' ')
+  return (
+    lower.startsWith('see the company profile for ') ||
+    lower.includes('including business summary, industry/sector information') ||
+    lower.includes('corporate governance, key executives and their compensation')
+  )
+}
+
+function isUsableCompanyDescription(text: string): boolean {
+  return !isGenericFinanceProfilePrompt(text) && isCompanyArticle(text)
 }
 
 function trimToTwoSentences(text: string): string {
@@ -207,7 +220,7 @@ async function fetchYahooProfile(symbol: string): Promise<{
   let description: string | null = null
   if (rawDesc) {
     const candidate = trimToTwoSentences(rawDesc)
-    if (isCompanyArticle(candidate)) description = candidate
+    if (isUsableCompanyDescription(candidate)) description = candidate
   }
 
   return {
@@ -270,7 +283,7 @@ async function fetchYahooPageMeta(symbol: string): Promise<string | null> {
       .replace(/&amp;/g, '&').replace(/&#39;/g, "'")
       .replace(/&quot;/g, '"').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
 
-    if (!isCompanyArticle(decoded)) return null
+    if (!isUsableCompanyDescription(decoded)) return null
     return trimToTwoSentences(decoded)
   } catch { return null }
 }
@@ -305,7 +318,7 @@ async function fetchWikipedia(companyName: string): Promise<string | null> {
     const result = await fetchWikipediaByTitle(candidate)
     if (!result) continue
     const fullText = result.extract + ' ' + (result.description ?? '')
-    if (!isCompanyArticle(fullText)) continue
+    if (!isUsableCompanyDescription(fullText)) continue
     return trimToTwoSentences(result.extract)
   }
   return null

@@ -25,7 +25,7 @@ const clientCache = new Map<string, TickerInfo>()
 // expiration for the lifetime of the browser session, so a ticker viewed
 // before this change would otherwise stay permanently stuck with an old,
 // incomplete cached shape no matter what the server now returns.
-const CLIENT_CACHE_VERSION = 'v2'
+const CLIENT_CACHE_VERSION = 'v3'
 
 /* ── Tile palette — consistent with HeatmapClient ──────────────────────── */
 type Pal = { bg: string; text: string; muted: string }
@@ -413,7 +413,7 @@ export default function TickerModal({ holding, sectorName, onClose }: Props) {
         {/* Footer */}
         <div className="px-5 py-3 border-t border-slate-100 dark:border-white/10 bg-white/90 dark:bg-slate-900/90 shrink-0 flex items-center justify-between">
           <p className="text-[10px] text-slate-400 dark:text-slate-500">
-            Eagleview v4.6.2
+            Eagleview v4.6.3
           </p>
           {info?.website && (
             <a
