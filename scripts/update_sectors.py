@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.6.3 — Data Updater
+Eagleview v4.6.4 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -85,7 +85,7 @@ SECTOR_STOCKS = [
         ('CRCL','Circle Internet Group'), ('BKKT','Bakkt'), ('HIVE','HIVE Digital'),
         ('BTDR','Bitdeer Technologies'), ('BTCS','BTCS Inc'), ('CAN','Canaan'),
         ('EBON','Ebang International'), ('APLD','Applied Digital'), ('VIP','Vulcan Infrastructure and Power'),
-        ('ANY','Sphere 3D'), ('ARBK','Argo Blockchain'), ('GLXY','Galaxy Digital'),
+        ('DRK','DarkHorse Technologies Inc.'), ('ARBK','Argo Blockchain'), ('GLXY','Galaxy Digital'),
     ]),
     ('Biotech & Genomics', [
         ('CRSP','CRISPR Therapeutics'), ('EDIT','Editas Medicine'), ('BEAM','Beam Therapeutics'),
@@ -657,7 +657,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.6.3 Data Sync ══")
+    log.info("══ Eagleview v4.6.4 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
