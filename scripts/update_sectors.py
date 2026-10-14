@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Eagleview v4.6.4 — Data Updater
+Eagleview v4.6.5 — Data Updater
 ================================
 New in v4.0:
   Phase 1 — Read current DB state (for rank deltas + prev values)
@@ -477,6 +477,55 @@ def chunks(items: list[str], size: int):
         yield items[i:i + size]
 
 
+def close_frame_from_download(raw: pd.DataFrame, requested_tickers: list[str]) -> pd.DataFrame:
+    """Normalize yfinance's single- and multi-ticker Close response shape."""
+    if raw is None or raw.empty:
+        return pd.DataFrame(index=getattr(raw, "index", None), columns=requested_tickers)
+    if isinstance(raw.columns, pd.MultiIndex):
+        closes = raw["Close"].copy()
+    else:
+        closes = raw[["Close"]].copy()
+        closes.columns = [requested_tickers[0]]
+    return closes.reindex(columns=requested_tickers)
+
+
+def download_close_history(tickers: list[str], *, threads: bool) -> pd.DataFrame:
+    """Download the six-year adjusted-close matrix used by every return period."""
+    raw = yf.download(
+        tickers,
+        period="6y",
+        progress=False,
+        auto_adjust=True,
+        threads=threads,
+    )
+    return close_frame_from_download(raw, tickers)
+
+
+def tickers_without_usable_returns(closes: pd.DataFrame, tickers: list[str]) -> list[str]:
+    """Return requested symbols lacking enough history to calculate EagleView returns."""
+    missing = []
+    for ticker in tickers:
+        series = closes[ticker] if ticker in closes.columns else pd.Series(dtype=float)
+        if not calc_returns(series):
+            missing.append(ticker)
+    return missing
+
+
+def recover_missing_close_history(closes: pd.DataFrame, tickers: list[str]) -> pd.DataFrame:
+    """Retry failed bulk-download symbols serially to avoid yfinance cache lock races."""
+    for ticker in tickers:
+        try:
+            recovered = download_close_history([ticker], threads=False)
+            if ticker in recovered.columns and recovered[ticker].notna().any():
+                closes[ticker] = recovered[ticker]
+                log.info(f"  Recovered historical data for {ticker} with serial retry")
+            else:
+                log.warning(f"  Serial retry returned no usable history for {ticker}")
+        except Exception as exc:
+            log.warning(f"  Serial retry failed for {ticker}: {exc}")
+    return closes
+
+
 def fetch_chart_regular_market_price(ticker: str) -> tuple[str, float | None]:
     """Read Yahoo chart metadata for a ticker.
 
@@ -510,49 +559,23 @@ def fetch_chart_regular_market_price(ticker: str) -> tuple[str, float | None]:
 def fetch_regular_market_prices(tickers: list[str]) -> dict[str, float]:
     """Fetch current regular-session prices for EagleView's market-hours anchor.
 
-    We only run this while the US regular session is open. The first attempt uses
-    Yahoo's batch quote endpoint and accepts rows only with marketState=REGULAR.
-    If that endpoint is blocked/unavailable, we fall back to the public chart
-    metadata endpoint per ticker. Off-hours behaviour remains unchanged because
-    this function returns {} outside the regular cash session.
+    We only run this while the US regular session is open. Yahoo's batch quote
+    endpoint regularly rejects server-side requests with a cookie/crumb 401, so
+    the public chart metadata endpoint is deliberately the primary route. It
+    exposes the regular-session field directly and avoids treating recoverable
+    quote-session authentication noise as a failed market-data sync.
     """
     if not tickers or not is_regular_market_open():
         return {}
 
     symbols = sorted(set(tickers))
     prices: dict[str, float] = {}
-    headers = {"User-Agent": "Mozilla/5.0 (compatible; Eagleview/1.0)"}
-
-    for batch in chunks(symbols, 100):
-        url = "https://query1.finance.yahoo.com/v7/finance/quote"
-        try:
-            r = requests.get(
-                url,
-                params={"symbols": ",".join(batch), "fields": "symbol,regularMarketPrice,marketState"},
-                headers=headers,
-                timeout=20,
-            )
-            r.raise_for_status()
-            results = r.json().get("quoteResponse", {}).get("result", [])
-        except Exception as e:
-            log.warning(f"  Batch quote failed ({batch[0]}…{batch[-1]}): {e}; using chart metadata fallback")
-            continue
-
-        for q in results:
-            symbol = q.get("symbol")
-            price = q.get("regularMarketPrice")
-            state = q.get("marketState")
-            if symbol and isinstance(price, (int, float)) and price > 0 and state == "REGULAR":
-                prices[symbol] = round(float(price), 4)
-
-    missing = [t for t in symbols if t not in prices]
-    if missing:
-        with ThreadPoolExecutor(max_workers=16) as pool:
-            futures = [pool.submit(fetch_chart_regular_market_price, t) for t in missing]
-            for fut in as_completed(futures):
-                symbol, price = fut.result()
-                if price is not None:
-                    prices[symbol] = price
+    with ThreadPoolExecutor(max_workers=16) as pool:
+        futures = [pool.submit(fetch_chart_regular_market_price, t) for t in symbols]
+        for fut in as_completed(futures):
+            symbol, price = fut.result()
+            if price is not None:
+                prices[symbol] = price
 
     return prices
 
@@ -657,7 +680,7 @@ def rank_by(sectors_map: dict, key: str) -> dict:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
-    log.info("══ Eagleview v4.6.4 Data Sync ══")
+    log.info("══ Eagleview v4.6.5 Data Sync ══")
 
     url = os.environ.get("SUPABASE_URL", "").rstrip("/")
     key = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -738,12 +761,7 @@ def main():
             # year_pct for every ticker. Lesson applied here: 5Y needs pct(1260),
             # requiring 1261+ rows. period="6y" gives ~1512 trading days — a clean
             # ~250-day buffer over the minimum, so we never repeat that mistake.
-            raw    = yf.download(all_tickers, period="6y", progress=False, auto_adjust=True)
-            closes = (
-                raw["Close"]
-                if isinstance(raw.columns, pd.MultiIndex)
-                else raw[["Close"]].rename(columns={"Close": all_tickers[0]})
-            )
+            closes = download_close_history(all_tickers, threads=True)
             log.info(f"  Downloaded {closes.shape[0]} days × {closes.shape[1]} tickers (attempt {attempt})")
             break
         except Exception as e:
@@ -752,6 +770,16 @@ def main():
                 time.sleep(15 * attempt)   # 15s, then 30s
     if closes is None:
         log.error("  All download attempts failed — aborting")
+        sys.exit(1)
+
+    missing_history = tickers_without_usable_returns(closes, all_tickers)
+    if missing_history:
+        log.warning(f"  Bulk download missing usable historical data for: {missing_history}")
+        closes = recover_missing_close_history(closes, missing_history)
+        missing_history = tickers_without_usable_returns(closes, all_tickers)
+    if missing_history:
+        log.error(f"  Data-integrity gate blocked this run; no DB writes will occur. Unresolved history: {missing_history}")
+        log.error("  Existing sector holdings, aggregates, ranks, breadth, and snapshots were preserved unchanged")
         sys.exit(1)
 
     regular_market_prices = fetch_regular_market_prices(all_tickers)
@@ -766,7 +794,9 @@ def main():
 
     missing = [t for t, r in ticker_returns.items() if not r]
     if missing:
-        log.warning(f"  No data for: {missing}")
+        # Defensive backstop: the pre-write gate above should make this impossible.
+        log.error(f"  Data-integrity gate blocked this run after return calculation: {missing}")
+        sys.exit(1)
 
     # ══════════════════════════════════════════════════════════════════════════
     # PHASE 3 — Ensure all sector rows exist + compute per-sector data
@@ -833,7 +863,11 @@ def main():
                 "stock_rows":  stock_rows,
                 "rets":        rets,
                 "stock_count": len(stock_rows),
-                "active_tickers": [row["ticker"] for row in stock_rows],
+                # The intended static universe—not just successfully downloaded
+                # rows—is authoritative for stale-row pruning. The run-level
+                # integrity gate prevents partial writes; this guard ensures a
+                # transient provider failure can never masquerade as removal.
+                "active_tickers": [ticker for ticker, _ in stocks],
                 "breadth_1d":  breadth(stock_rows, "day_pct"),
                 "breadth_1w":  breadth(stock_rows, "week_pct"),
                 "breadth_1m":  breadth(stock_rows, "month_pct"),
