@@ -233,7 +233,7 @@ SECTOR_STOCKS = [
     ('Homebuilders & Housing', [
         ('DHI','D.R. Horton'), ('LEN','Lennar'), ('PHM','PulteGroup'), ('NVR','NVR'),
         ('TOL','Toll Brothers'), ('KBH','KB Home'), ('MTH','Meritage Homes'),
-        ('TMHC','Taylor Morrison'), ('BLDR','Builders FirstSource'), ('MAS','Masco'),
+        ('BLDR','Builders FirstSource'), ('MAS','Masco'),
     ]),
     ('Travel & Hospitality', [
         ('DAL','Delta Air Lines'), ('UAL','United Airlines'), ('AAL','American Airlines'),
