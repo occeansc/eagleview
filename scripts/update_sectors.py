@@ -10,6 +10,13 @@ New in v4.0:
   Phase 5 — Compute deltas, streaks vs old state
   Phase 6 — Save snapshots of old state, then write new state
 
+Tolerant integrity gate (post-v4.6.5):
+  Up to MAX_DROPPED_TICKERS unusable stock tickers (delisted / merged / renamed)
+  are excluded from a run with a GitHub Actions ::warning:: instead of blocking
+  every sector. Benchmarks, >MAX_DROPPED_TICKERS failures, or a sector losing
+  more than MAX_SECTOR_DROP_FRACTION of its stocks still abort with ::error::
+  and no DB writes.
+
 Env vars:
   SUPABASE_URL          project URL — NO trailing /rest/v1
   SUPABASE_SERVICE_KEY  legacy eyJ... service_role key
@@ -46,7 +53,7 @@ SECTOR_STOCKS = [
         ('LRCX','Lam Research'), ('KLAC','KLA Corp'), ('TXN','Texas Instruments'),
         ('ADI','Analog Devices'), ('MCHP','Microchip Technology'), ('ON','ON Semiconductor'),
         ('NXPI','NXP Semiconductors'), ('MPWR','Monolithic Power Systems'), ('GFS','GlobalFoundries'),
-        ('ALAB','Astera Labs'), ('SWKS','Skyworks Solutions'), ('QRVO','Qorvo'),
+        ('ALAB','Astera Labs'), ('SWKS','Skyworks Solutions'),
         ('STM','STMicroelectronics'),
     ]),
     ('Software & Cloud', [
@@ -531,6 +538,78 @@ def tickers_without_usable_returns(closes: pd.DataFrame, tickers: list[str]) -> 
     return missing
 
 
+# ── Data-integrity tolerance + GitHub Actions annotations ────────────────────
+# Delistings, mergers and ticker renames used to block the ENTIRE sync because a
+# single symbol had no usable history. The gate now tolerates a small number of
+# unusable stock tickers (they are excluded from this run's maths, with a loud
+# annotation) and still aborts — writing nothing — when the damage is wide.
+
+MAX_DROPPED_TICKERS      = 5      # most stock tickers that may be excluded in one run
+MAX_SECTOR_DROP_FRACTION = 0.34   # a sector may lose at most about a third of its stocks
+
+
+def _gha_escape(value: str, *, prop: bool = False) -> str:
+    """Escape text for a GitHub Actions workflow command."""
+    out = value.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+    if prop:
+        out = out.replace(":", "%3A").replace(",", "%2C")
+    return out
+
+
+def gha_annotate(level: str, title: str, message: str) -> None:
+    """Emit a GitHub Actions annotation (::error::/::warning::/::notice::).
+
+    No-op outside GitHub Actions, so local runs are unaffected. Printed to stdout
+    and flushed so it shows on the run summary page without opening the logs.
+    """
+    if os.environ.get("GITHUB_ACTIONS") != "true":
+        return
+    if level not in ("error", "warning", "notice"):
+        level = "notice"
+    print(f"::{level} title={_gha_escape(title, prop=True)}::{_gha_escape(message)}", flush=True)
+
+
+def evaluate_integrity_gate(
+    unresolved: list[str],
+    sector_stocks: list,
+    benchmarks: list[dict],
+    *,
+    max_dropped: int = MAX_DROPPED_TICKERS,
+    max_sector_fraction: float = MAX_SECTOR_DROP_FRACTION,
+) -> tuple[bool, list[str]]:
+    """Decide whether a run may proceed with *unresolved* tickers excluded.
+
+    Returns (ok, reasons). The run is blocked when any benchmark is unusable,
+    when too many stock tickers are unusable, or when any one sector would lose
+    too large a share of its stocks (which would distort its averages/ranks).
+    """
+    reasons: list[str] = []
+    unresolved_set = set(unresolved)
+    bench_tickers = {b["ticker"] for b in benchmarks}
+
+    bad_bench = sorted(unresolved_set & bench_tickers)
+    if bad_bench:
+        reasons.append(f"benchmark ticker(s) unusable: {bad_bench}")
+
+    stock_unresolved = unresolved_set - bench_tickers
+    if len(stock_unresolved) > max_dropped:
+        reasons.append(
+            f"{len(stock_unresolved)} unusable stock tickers exceeds the limit of {max_dropped}"
+        )
+
+    for sector_name, stocks in sector_stocks:
+        tickers = [t for t, _ in stocks]
+        if not tickers:
+            continue
+        lost = [t for t in tickers if t in unresolved_set]
+        if lost and len(lost) / len(tickers) > max_sector_fraction:
+            reasons.append(
+                f"sector '{sector_name}' would lose {len(lost)}/{len(tickers)} stocks: {lost}"
+            )
+
+    return (not reasons, reasons)
+
+
 def recover_missing_close_history(closes: pd.DataFrame, tickers: list[str]) -> pd.DataFrame:
     """Retry failed bulk-download symbols serially to avoid yfinance cache lock races.
 
@@ -827,12 +906,41 @@ def main():
         log.warning(f"  Bulk download missing usable historical data for: {missing_history}")
         closes = recover_missing_close_history(closes, missing_history)
         missing_history = tickers_without_usable_returns(closes, all_tickers)
-    if missing_history:
-        log.error(f"  Data-integrity gate blocked this run; no DB writes will occur. Unresolved history: {missing_history}")
-        log.error("  Existing sector holdings, aggregates, ranks, breadth, and snapshots were preserved unchanged")
-        sys.exit(1)
 
-    regular_market_prices = fetch_regular_market_prices(all_tickers)
+    dropped_tickers: list[str] = sorted(missing_history)
+    if dropped_tickers:
+        gate_ok, gate_reasons = evaluate_integrity_gate(dropped_tickers, SECTOR_STOCKS, BENCHMARKS)
+        if not gate_ok:
+            log.error(f"  Data-integrity gate blocked this run; no DB writes will occur. Unresolved history: {dropped_tickers}")
+            for reason in gate_reasons:
+                log.error(f"    • {reason}")
+            log.error("  Existing sector holdings, aggregates, ranks, breadth, and snapshots were preserved unchanged")
+            gha_annotate(
+                "error",
+                "Eagleview sync blocked: unusable tickers",
+                f"No DB writes were made. Unusable tickers: {', '.join(dropped_tickers)}. "
+                f"Likely delisted, merged or renamed - remove or replace them in SECTOR_STOCKS "
+                f"(scripts/update_sectors.py). Why blocked: {'; '.join(gate_reasons)}",
+            )
+            sys.exit(1)
+
+        log.warning(
+            f"  Data-integrity gate tolerating {len(dropped_tickers)} unusable ticker(s); "
+            f"excluded from this run: {dropped_tickers}"
+        )
+        gha_annotate(
+            "warning",
+            "Eagleview sync ran without some tickers",
+            f"Excluded from this run: {', '.join(dropped_tickers)}. They have no usable price history "
+            f"(likely delisted, merged or renamed). Remove or replace them in SECTOR_STOCKS "
+            f"(scripts/update_sectors.py). Their existing holdings rows are left untouched "
+            f"until they are removed from the list.",
+        )
+
+    dropped_set = set(dropped_tickers)
+    usable_tickers = [t for t in all_tickers if t not in dropped_set]
+
+    regular_market_prices = fetch_regular_market_prices(usable_tickers)
     if regular_market_prices:
         log.info(f"  Current regular-session prices collected: {len(regular_market_prices)} tickers")
     else:
@@ -840,11 +948,12 @@ def main():
 
     ticker_returns: dict[str, dict] = {
         t: (calc_returns(closes[t], regular_market_prices.get(t)) if t in closes.columns else {})
-        for t in all_tickers}
+        for t in usable_tickers}
 
     missing = [t for t, r in ticker_returns.items() if not r]
     if missing:
         # Defensive backstop: the pre-write gate above should make this impossible.
+        # (Tickers deliberately excluded by the tolerant gate are not in ticker_returns.)
         log.error(f"  Data-integrity gate blocked this run after return calculation: {missing}")
         sys.exit(1)
 
@@ -856,7 +965,7 @@ def main():
     # behaviour. This keeps displayed price and performance math on the same
     # sync-time anchor without introducing pre/post-market prices.
     price_map: dict[str, float] = dict(regular_market_prices)
-    for t in all_tickers:
+    for t in usable_tickers:
         if t in price_map:
             continue
         if t in closes.columns:
@@ -1112,6 +1221,11 @@ def main():
             log.error(f"  ✗ {bm['name']}: {e}")
 
     log.info(f"══ Done: {sector_ok}/{len(SECTOR_STOCKS)} sectors ══")
+    if dropped_tickers:
+        log.warning(
+            f"Completed WITHOUT {len(dropped_tickers)} unusable ticker(s): {dropped_tickers} "
+            f"— remove or replace them in SECTOR_STOCKS"
+        )
     if sector_fail:
         log.warning(f"Failed: {sector_fail}")
         sys.exit(1)
