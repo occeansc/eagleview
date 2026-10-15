@@ -213,7 +213,7 @@ SECTOR_STOCKS = [
         ('LVS','Las Vegas Sands'), ('WYNN','Wynn Resorts'), ('CHDN','Churchill Downs'),
         ('PENN','PENN Entertainment'), ('RSI','Rush Street Interactive'), ('GENI','Genius Sports'),
         ('SRAD','Sportradar'), ('LYV','Live Nation Entertainment'), ('TKO','TKO Group'),
-        ('EA','Electronic Arts'), ('TTWO','Take-Two Interactive'), ('RBLX','Roblox'),
+        ('TTWO','Take-Two Interactive'), ('RBLX','Roblox'),
     ]),
     ('Traditional Finance', [
         ('JPM','JPMorgan Chase'), ('BAC','Bank of America'), ('WFC','Wells Fargo'),
@@ -227,8 +227,8 @@ SECTOR_STOCKS = [
     ]),
     ('Real Estate & REITs', [
         ('AMT','American Tower'), ('PLD','Prologis'), ('EQIX','Equinix'), ('CCI','Crown Castle'),
-        ('SPG','Simon Property'), ('PSA','Public Storage'), ('EQR','Equity Residential'),
-        ('AVB','AvalonBay Communities'), ('WELL','Welltower'), ('VTR','Ventas'), ('O','Realty Income'),
+        ('SPG','Simon Property'), ('PSA','Public Storage'), ('VMRK','Vivmark Residential'),
+        ('WELL','Welltower'), ('VTR','Ventas'), ('O','Realty Income'),
         ('STAG','STAG Industrial'), ('IIPR','Innovative Industrial Properties'),
         ('REXR','Rexford Industrial Realty'), ('EXR','Extra Space Storage'), ('CUBE','CubeSmart'),
         ('IRM','Iron Mountain'), ('COLD','Americold Realty'), ('DLR','Digital Realty'),
@@ -287,11 +287,11 @@ SECTOR_STOCKS = [
         ('HTZ','Hertz Global'), ('CAR','Avis Budget Group'),
     ]),
     ('Media, Telecom & Entertainment', [
-        ('DIS','Walt Disney'), ('NFLX','Netflix'), ('WBD','Warner Bros Discovery'),
-        ('PSKY','Paramount Skydance'), ('CMCSA','Comcast'), ('T','AT&T'), ('VZ','Verizon'),
+        ('DIS','Walt Disney'), ('NFLX','Netflix'), ('SKYD','Skydance'),
+        ('CMCSA','Comcast'), ('T','AT&T'), ('VZ','Verizon'),
         ('TMUS','T-Mobile US'), ('CHTR','Charter Communications'), ('SPOT','Spotify Technology'),
         ('LYV','Live Nation Entertainment'), ('ROKU','Roku'), ('FOXA','Fox'), ('SIRI','Sirius XM'),
-        ('EA','Electronic Arts'), ('TTWO','Take-Two Interactive'), ('RBLX','Roblox'),
+        ('TTWO','Take-Two Interactive'), ('RBLX','Roblox'),
         ('PINS','Pinterest'), ('SNAP','Snap'), ('TKO','TKO Group'), ('NWSA','News Corp'),
         ('NYT','New York Times'), ('WMG','Warner Music Group'), ('IMAX','IMAX'), ('MTCH','Match Group'),
     ]),
@@ -300,7 +300,7 @@ SECTOR_STOCKS = [
         ('GDRX','GoodRx'), ('DOCS','Doximity'), ('PGNY','Progyny'), ('AMWL','American Well'),
         ('LFST','LifeStance Health'), ('EVH','Evolent Health'), ('HCAT','Health Catalyst'),
         ('HQY','HealthEquity'), ('CLOV','Clover Health'), ('ALHC','Alignment Healthcare'),
-        ('TEM','Tempus AI'), ('PHR','Phreesia'), ('PRVA','Privia Health'), ('TALK','Talkspace'),
+        ('TEM','Tempus AI'), ('PHR','Phreesia'), ('PRVA','Privia Health'),
         ('LFMD','LifeMD'), ('WAY','Waystar'),
     ]),
     ('Healthcare Tools & Diagnostics', [
