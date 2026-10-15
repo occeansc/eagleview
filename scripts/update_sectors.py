@@ -15,13 +15,19 @@ Env vars:
   SUPABASE_SERVICE_KEY  legacy eyJ... service_role key
 """
 
-import os, sys, logging, time
+import os, sys, logging, time, tempfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from zoneinfo import ZoneInfo
 import requests
 import pandas as pd
 import yfinance as yf
+
+# Avoid shared runner cache races (Errno 17 / sqlite "database is locked") on GHA
+try:
+    yf.set_tz_cache_location(tempfile.mkdtemp(prefix="yfinance-tz-"))
+except Exception:
+    pass
 
 logging.basicConfig(
     level=logging.INFO,
@@ -477,6 +483,17 @@ def chunks(items: list[str], size: int):
         yield items[i:i + size]
 
 
+def _normalize_price_index(idx) -> pd.DatetimeIndex:
+    """Force a consistent tz-naive daily index so bulk + serial downloads align."""
+    if idx is None:
+        return pd.DatetimeIndex([])
+    idx = pd.DatetimeIndex(idx)
+    if idx.tz is not None:
+        idx = idx.tz_convert("America/New_York").tz_localize(None)
+    # Collapse to calendar date so 16:00 ET closes match midnight stamps, etc.
+    return pd.DatetimeIndex(idx.normalize())
+
+
 def close_frame_from_download(raw: pd.DataFrame, requested_tickers: list[str]) -> pd.DataFrame:
     """Normalize yfinance's single- and multi-ticker Close response shape."""
     if raw is None or raw.empty:
@@ -486,6 +503,9 @@ def close_frame_from_download(raw: pd.DataFrame, requested_tickers: list[str]) -
     else:
         closes = raw[["Close"]].copy()
         closes.columns = [requested_tickers[0]]
+    closes.index = _normalize_price_index(closes.index)
+    # Drop duplicate dates (keep last) after normalization
+    closes = closes[~closes.index.duplicated(keep="last")].sort_index()
     return closes.reindex(columns=requested_tickers)
 
 
@@ -512,15 +532,45 @@ def tickers_without_usable_returns(closes: pd.DataFrame, tickers: list[str]) -> 
 
 
 def recover_missing_close_history(closes: pd.DataFrame, tickers: list[str]) -> pd.DataFrame:
-    """Retry failed bulk-download symbols serially to avoid yfinance cache lock races."""
+    """Retry failed bulk-download symbols serially to avoid yfinance cache lock races.
+
+    Serial yfinance responses often carry a different timezone (or stamp) than the
+    bulk matrix. A plain ``closes[ticker] = recovered[ticker]`` then aligns on
+    index labels and can produce an all-NaN column even though recovery succeeded.
+    We normalize indexes and outer-join so recovered history is preserved.
+    """
+    if closes is None:
+        closes = pd.DataFrame()
+    else:
+        closes = closes.copy()
+        if len(closes.index):
+            closes.index = _normalize_price_index(closes.index)
+            closes = closes[~closes.index.duplicated(keep="last")].sort_index()
+
     for ticker in tickers:
         try:
             recovered = download_close_history([ticker], threads=False)
-            if ticker in recovered.columns and recovered[ticker].notna().any():
-                closes[ticker] = recovered[ticker]
+            if ticker not in recovered.columns or not recovered[ticker].notna().any():
+                log.warning(f"  Serial retry returned no usable history for {ticker}")
+                continue
+            series = recovered[ticker].dropna()
+            if series.empty:
+                log.warning(f"  Serial retry returned no usable history for {ticker}")
+                continue
+            # Drop any prior empty/bad column, then outer-join on the normalized index
+            if ticker in closes.columns:
+                closes = closes.drop(columns=[ticker])
+            piece = series.to_frame(name=ticker)
+            closes = closes.join(piece, how="outer") if len(closes.columns) or len(closes.index) else piece
+            closes = closes.sort_index()
+            # Confirm the merged column is actually usable for returns
+            if calc_returns(closes[ticker]):
                 log.info(f"  Recovered historical data for {ticker} with serial retry")
             else:
-                log.warning(f"  Serial retry returned no usable history for {ticker}")
+                log.warning(
+                    f"  Serial retry for {ticker} produced {closes[ticker].notna().sum()} points "
+                    f"but still failed the returns gate"
+                )
         except Exception as exc:
             log.warning(f"  Serial retry failed for {ticker}: {exc}")
     return closes
