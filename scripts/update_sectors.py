@@ -822,17 +822,28 @@ def main():
     # weekday run late—before the open, after the close, or after its original
     # slot—the full sync must still run. Only dates when the NYSE is entirely
     # closed are skipped. Manual dispatch remains available at any time.
-    is_manual = os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+    #
+    # External scheduler: an off-GitHub timer (e.g. cron-job.org) triggers the
+    # workflow through the workflow_dispatch API with input trigger=external,
+    # because GitHub's own cron is best-effort and drops/delays slots. Those
+    # runs must behave like scheduled runs (skip NYSE holidays), not like a
+    # human clicking "Run workflow", so they are NOT treated as manual here.
+    is_external = (
+        os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch"
+        and os.environ.get("EAGLEVIEW_TRIGGER", "").strip().lower() == "external"
+    )
+    is_manual = os.environ.get("GITHUB_EVENT_NAME") == "workflow_dispatch" and not is_external
     if is_manual:
         log.info("Manual dispatch — running full sync")
     else:
         ET = ZoneInfo("America/New_York")
         et_now = datetime.now(ET)
+        source = "external-scheduler" if is_external else "scheduled"
         if not is_nyse_trading_day(et_now):
-            log.info(f"NYSE closed ({et_now.strftime('%a %Y-%m-%d')}) — skipping scheduled sync")
+            log.info(f"NYSE closed ({et_now.strftime('%a %Y-%m-%d')}) — skipping {source} sync")
             sys.exit(0)
         log.info(
-            "NYSE trading day confirmed — running scheduled sync regardless of "
+            f"NYSE trading day confirmed — running {source} sync regardless of "
             f"actual start time ({et_now.strftime('%a %H:%M %Z')})"
         )
 
