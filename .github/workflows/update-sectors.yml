@@ -1,23 +1,39 @@
 name: Update Sector Data
 
-# GitHub Actions cron is UTC-only and can be congested at :00/:30. The regular
-# half-hour schedule is deliberately offset to :07/:37. Each scheduled slot is
-# intentional: if GitHub starts it late, the updater completes the full sync
-# even outside cash-market hours. It skips only dates when the NYSE is closed.
+# TRIGGERING
+# GitHub's own cron is best-effort on shared runners: slots are routinely
+# delayed by hours or dropped entirely, which left the market session without
+# updates and then fired a burst of late runs overnight. The sync is therefore
+# started by an external scheduler (cron-job.org, America/New_York time zone)
+# that calls the workflow_dispatch API with  inputs.trigger = "external".
 #
-# The 4:17 PM ET run remains the preferred timely settled-close capture for the
-# authoritative daily close (and Friday weekly close). A delayed start still
-# runs rather than being discarded by a time-of-day gate.
+#   POST https://api.github.com/repos/occeansc/eagleview/actions/workflows/update-sectors.yml/dispatches
+#   body: {"ref":"main","inputs":{"trigger":"external"}}
+#
+# External runs behave like scheduled runs: scripts/update_sectors.py skips NYSE
+# holidays for them. A run started by hand from the Actions tab (trigger left at
+# its default, "manual") still syncs unconditionally, exactly as before.
+#
+# The GitHub cron below is deliberately DISABLED so that it cannot double-fire
+# alongside the external scheduler or add late overnight syncs. To fall back to
+# GitHub-only scheduling, uncomment the `schedule:` block (and pause the
+# external jobs).
 
 on:
-  schedule:
-    # Intraday: every 30 minutes during the NYSE/Nasdaq cash session, DST-safe.
-    - cron: '7,37 13-20 * * 1-5'
-    - cron: '7 21 * * 1-5'
-    # One settled-close write: 16:17 America/New_York (EDT / EST).
-    - cron: '17 20 * * 1-5'
-    - cron: '17 21 * * 1-5'
+  # schedule:
+  #   # Intraday: every 30 minutes during the NYSE/Nasdaq cash session, DST-safe.
+  #   - cron: '7,37 13-20 * * 1-5'
+  #   - cron: '7 21 * * 1-5'
+  #   # One settled-close write: 16:17 America/New_York (EDT / EST).
+  #   - cron: '17 20 * * 1-5'
+  #   - cron: '17 21 * * 1-5'
   workflow_dispatch:
+    inputs:
+      trigger:
+        description: 'Who started this run: "manual" (default) or "external" (scheduler)'
+        required: false
+        default: 'manual'
+        type: string
 
 jobs:
   update-sectors:
@@ -40,4 +56,5 @@ jobs:
         env:
           SUPABASE_URL:         ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          EAGLEVIEW_TRIGGER:    ${{ github.event.inputs.trigger }}
         run: python scripts/update_sectors.py
