@@ -32,10 +32,10 @@ UPDATE_SECTORS = ROOT / "scripts" / "update_sectors.py"
 # EagleView normally wants live US common stocks / US-listed ADRs. Keep explicit
 # exceptions small and documented. Additions here should be rare and deliberate.
 APPROVED_EXCEPTIONS: dict[str, str] = {
-    # SpaceX proxy retained by product decision even though it is not a normal
-    # listed US common share in Yahoo. Validator reports it as approved instead
-    # of silently treating it as a standard equity.
-    "SPCX": "approved SpaceX/private-market proxy exception",
+    # None at present. SPCX (SpaceX) previously lived here as a private-market
+    # proxy; it is now a regular Nasdaq listing (IPO June 2026) and is validated
+    # like every other symbol. Add an entry only for a deliberate, documented
+    # product decision.
 }
 
 EXPECTED_CURRENCY = "USD"
