@@ -190,6 +190,7 @@ const GROWTH_SECTORS = new Set([
   'Semiconductors', 'Software & Cloud', 'AI & Machine Learning',
   'Digital Assets & Crypto', 'Space & Satellites', 'Photonics & Optical',
   'Quantum Computing', 'Power & Data Centers', 'Robotics & Automation',
+  'Neoclouds', 'AI Labs',
 ])
 
 const DEFENSIVE_SECTORS = new Set([
