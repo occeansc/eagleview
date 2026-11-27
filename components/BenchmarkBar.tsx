@@ -34,9 +34,6 @@ export default function BenchmarkBar({ benchmarks, period }: Props) {
         </span>
       </div>
 
-      <p className="text-[9px] text-slate-400 dark:text-slate-500 mb-3 px-0.5">
-        DXY: US Dollar Index · BTC: Bitcoin / USD · Synced with sector data, not live. BTC trades 24/7.
-      </p>
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 sm:gap-3">
         {benchmarks.map(b => {
           const val  = getPeriodValue(b, period)

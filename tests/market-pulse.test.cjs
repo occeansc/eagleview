@@ -40,8 +40,7 @@ test('renders the original four and DXY/BTC as six unchanged-style tiles', () =>
   assert.equal((html.match(/class="bench-tile /g) || []).length, 6)
   assert.match(html, /grid-cols-2 sm:grid-cols-3 lg:grid-cols-6/)
   assert.match(html, /rounded-\[20px\]/)
-  assert.match(html, /not live/)
-  assert.match(html, /BTC trades 24\/7/)
+  assert.doesNotMatch(html, /DXY: US Dollar Index|Synced with sector data|BTC trades 24\/7/)
 })
 test('every period selects and formats its actual return for all six tiles', () => {
   periods.forEach((period, i) => {
