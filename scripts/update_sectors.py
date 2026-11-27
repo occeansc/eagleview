@@ -747,6 +747,25 @@ def fetch_regular_market_prices(tickers: list[str]) -> dict[str, float]:
     return prices
 
 
+def return_anchor(series: pd.Series, current_override: float | None = None) -> float | None:
+    """One unrounded price for benchmark display and return numerators.
+
+    Invalid/missing live quotes fall back to the latest non-null daily close;
+    an invalid close is never published as a zero or invented price.
+    """
+    def valid(value):
+        return value is not None and 0 < float(value) < float('inf')
+
+    if current_override is not None and valid(current_override):
+        return float(current_override)
+    if series is None:
+        return None
+    closes = series.dropna()
+    if closes.empty or not valid(closes.iloc[-1]):
+        return None
+    return float(closes.iloc[-1])
+
+
 def calc_returns(
     series: pd.Series, current_override: float | None = None, *, calendar_days: bool = False,
 ) -> dict:
@@ -757,8 +776,10 @@ def calc_returns(
     if len(series) < 2:
         return {}
 
-    use_live_anchor = current_override is not None and current_override > 0
-    current = float(current_override) if use_live_anchor else float(series.iloc[-1])
+    current = return_anchor(series, current_override)
+    if current is None:
+        return {}
+    use_live_anchor = current_override is not None and 0 < current_override < float('inf')
 
     # During regular market hours, current_override is a same-day live regular
     # session quote. Denominators should be completed historical closes: 1D means
@@ -1285,6 +1306,7 @@ def main():
         try:
             db.upsert("benchmarks", {
                 "name": bm["name"], "ticker": bm["ticker"],
+                "price": return_anchor(closes[bm["ticker"]], regular_market_prices.get(bm["ticker"])),
                 **r, "updated_at": datetime.now(timezone.utc).isoformat(),
             }, "ticker")
             log.info(f"  ✓ {bm['name']}  1W={r.get('week_pct')}%  YTD={r.get('ytd_pct')}%")

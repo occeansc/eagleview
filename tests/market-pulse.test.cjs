@@ -30,6 +30,7 @@ const periods = ['1D', '1W', '1M', '3M', '6M', 'YTD', '1Y', '5Y']
 const tickers = ['^GSPC', '^IXIC', '^DJI', 'EFA', 'DX-Y.NYB', 'BTC-USD']
 const fixtures = tickers.map((ticker, i) => ({
   id: i + 1, ticker, name: `fixture-${i}`, updated_at: '2026-01-01T00:00:00Z',
+  price: [6123.456, 20123.4, 44123, 98.1, 103.456, 102345.6789][i],
   ...Object.fromEntries(fields.map((field, j) => [field, j % 2 ? -j - 1.25 : j + 1.25])),
 }))
 const render = (benchmarks = fixtures, period = '1M') => renderToStaticMarkup(React.createElement(BenchmarkBar, { benchmarks, period }))
@@ -63,4 +64,20 @@ test('null stays a dash, zero stays +0.00%, negatives retain their sign', () => 
 test('empty and pre-migration four-row datasets remain supported', () => {
   assert.equal(render([]), '')
   assert.equal((render(fixtures.slice(0, 4)).match(/class="bench-tile /g) || []).length, 4)
+})
+
+const priceLabels = html => [...html.matchAll(/<p class="[^"]*text-\[8px\][^"]*">([^<]*)<\/p>/g)].map(match => match[1])
+test('latest prices use two decimals and grouping, with dollars only for EFA/BTC', () => {
+  const html = render()
+  assert.deepEqual(priceLabels(html), ['6,123.46', '20,123.40', '44,123.00', '$98.10', '103.46', '$102,345.68'])
+  assert.match(html, /text-right text-\[8px\].*text-slate-400 dark:text-slate-500/)
+  assert.equal((html.match(/width="13" height="13"/g) || []).length, 6)
+})
+test('price/index level is invariant while all eight return periods change', () => {
+  for (const period of periods) assert.deepEqual(priceLabels(render(fixtures, period)), priceLabels(render()))
+})
+test('null, missing, nonfinite and nonpositive prices display dashes, never invented quotes', () => {
+  const data = fixtures.map((row, i) => ({ ...row, price: [null, undefined, NaN, Infinity, 0, -1][i] }))
+  assert.deepEqual(priceLabels(render(data)), Array(6).fill('—'))
+  assert.doesNotMatch(render(data), /NaN|undefined|Infinity|\$0\.00/)
 })

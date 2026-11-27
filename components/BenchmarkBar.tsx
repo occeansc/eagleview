@@ -20,6 +20,12 @@ const META: Record<string, {
   'BTC-USD':  { Icon: BitcoinIcon, short: 'BTC'      },
 }
 
+function formatBenchmarkPrice(price: number | null | undefined, ticker: string): string {
+  if (price == null || !Number.isFinite(price) || price <= 0) return '—'
+  const value = price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  return `${ticker === 'EFA' || ticker === 'BTC-USD' ? '$' : ''}${value}`
+}
+
 export default function BenchmarkBar({ benchmarks, period }: Props) {
   if (!benchmarks.length) return null
 
@@ -87,6 +93,9 @@ export default function BenchmarkBar({ benchmarks, period }: Props) {
                   : 'text-rose-600 dark:text-rose-400 group-hover:text-rose-700 dark:group-hover:text-rose-300'
               } transition-colors`}>
                 {val !== null ? `${pos ? '+' : ''}${val.toFixed(2)}%` : '—'}
+              </p>
+              <p className="relative z-10 mt-1.5 text-right text-[8px] leading-none font-mono tabular-nums text-slate-400 dark:text-slate-500">
+                {formatBenchmarkPrice(b.price, b.ticker)}
               </p>
             </div>
           )

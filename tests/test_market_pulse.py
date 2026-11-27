@@ -70,10 +70,10 @@ class MarketPulseTests(unittest.TestCase):
                 self.assertFalse(ok)
                 self.assertIn('benchmark', reasons[0])
 
-    def run_mock_sync(self, missing=None):
+    def run_mock_sync(self, missing=None, quotes=None, series=None):
         db = Mock()
         db.get.return_value = []
-        closes = pd.DataFrame({symbol: self.series for symbol in SYMBOLS})
+        closes = pd.DataFrame({symbol: self.series if series is None else series for symbol in SYMBOLS})
         if missing:
             closes[missing] = float('nan')
         with patch.dict('os.environ', {'SUPABASE_URL': 'https://db.invalid', 'SUPABASE_SERVICE_KEY': 'test-only',
@@ -82,7 +82,7 @@ class MarketPulseTests(unittest.TestCase):
              patch.object(updater, 'SECTOR_STOCKS', []), \
              patch.object(updater, 'download_close_history', return_value=closes) as download, \
              patch.object(updater, 'recover_missing_close_history', return_value=closes), \
-             patch.object(updater, 'fetch_regular_market_prices', return_value={}):
+             patch.object(updater, 'fetch_regular_market_prices', return_value=quotes or {}):
             if missing:
                 with self.assertRaises(SystemExit):
                     updater.main()
@@ -99,7 +99,66 @@ class MarketPulseTests(unittest.TestCase):
             self.assertEqual((table, payload['ticker'], conflict), ('benchmarks', symbol, 'ticker'))
             self.assertEqual(payload['month_pct'], updater.calc_returns(self.series, calendar_days=symbol == 'BTC-USD')['month_pct'])
             self.assertIn('updated_at', payload)
+            self.assertEqual(payload['price'], float(self.series.iloc[-1]))
             self.assertEqual(len([key for key in payload if key.endswith('_pct')]), 8)
+
+    def test_pipeline_persists_exact_daily_anchor_without_display_rounding(self):
+        series = self.series.astype(float) + 0.123456789
+        db = self.run_mock_sync(series=series)
+        for call in db.upsert.call_args_list:
+            payload = call.args[1]
+            self.assertEqual(payload['price'], float(series.iloc[-1]))
+            self.assertNotEqual(payload['price'], round(payload['price'], 4))
+
+    def test_pipeline_live_quote_is_same_anchor_as_returns_for_every_benchmark(self):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        fixed = datetime(2025, 12, 31, 12, tzinfo=ZoneInfo('America/New_York'))
+        class Clock:
+            @staticmethod
+            def now(tz=None):
+                return fixed
+        quotes = {symbol: 3250.123456 + i for i, symbol in enumerate(SYMBOLS)}
+        with patch.object(updater, 'datetime', Clock):
+            db = self.run_mock_sync(quotes=quotes)
+            for call in db.upsert.call_args_list:
+                payload = call.args[1]
+                symbol = payload['ticker']
+                self.assertEqual(payload['price'], quotes[symbol])
+                expected = updater.calc_returns(self.series, quotes[symbol], calendar_days=symbol == 'BTC-USD')
+                for key, value in expected.items():
+                    self.assertEqual(payload[key], value)
+                # Today's in-progress daily candle is not the 1D denominator.
+                self.assertEqual(payload['day_pct'], round((quotes[symbol] / self.series.iloc[-2] - 1) * 100, 2))
+
+    def test_invalid_live_quotes_fall_back_to_close_in_pipeline(self):
+        quotes = dict(zip(SYMBOLS, [None, 0, -1, float('nan'), float('inf'), -float('inf')]))
+        db = self.run_mock_sync(quotes=quotes)
+        for call in db.upsert.call_args_list:
+            payload = call.args[1]
+            self.assertEqual(payload['price'], float(self.series.iloc[-1]))
+            expected = updater.calc_returns(self.series, calendar_days=payload['ticker'] == 'BTC-USD')
+            self.assertEqual(payload['day_pct'], expected['day_pct'])
+
+    def test_missing_or_invalid_daily_anchor_never_becomes_a_price(self):
+        for value in [0, -1, float('inf'), -float('inf')]:
+            series = self.series.astype(float).copy()
+            series.iloc[-1] = value
+            self.assertIsNone(updater.return_anchor(series))
+            self.assertEqual(updater.calc_returns(series), {})
+        self.assertIsNone(updater.return_anchor(pd.Series(dtype=float)))
+        self.assertIsNone(updater.return_anchor(pd.Series([float('nan')])))
+        self.assertIsNone(updater.return_anchor(None))
+        series = pd.concat([self.series, pd.Series([float('nan')], index=[pd.Timestamp('2026-01-01')])])
+        self.assertEqual(updater.return_anchor(series), float(self.series.iloc[-1]))
+
+    def test_price_migration_is_nullable_additive_and_idempotent(self):
+        sql = (ROOT / 'supabase/migrate_v464_benchmark_price.sql').read_text()
+        statements = '\n'.join(line for line in sql.splitlines() if not line.startswith('--')).upper()
+        self.assertIn('ALTER TABLE PUBLIC.BENCHMARKS', statements)
+        self.assertIn('ADD COLUMN IF NOT EXISTS PRICE DOUBLE PRECISION', statements)
+        for forbidden in ['NOT NULL', 'DEFAULT', 'UPDATE ', 'DELETE ', 'DROP ', 'INSERT ']:
+            self.assertNotIn(forbidden, statements)
 
     def test_missing_new_benchmark_blocks_all_writes(self):
         for symbol in SYMBOLS[-2:]:

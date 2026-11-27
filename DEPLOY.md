@@ -10,11 +10,20 @@ All free. Takes ~20 minutes end-to-end.
 
 For an existing, fully migrated EagleView installation, follow
 [`RELEASE_NOTES_v4.6.4.md`](RELEASE_NOTES_v4.6.4.md): deploy this source, apply
-`supabase/migrate_v464_market_pulse.sql` in the Supabase SQL Editor, then manually
+`supabase/migrate_v464_market_pulse.sql` and then
+`supabase/migrate_v464_benchmark_price.sql` in the Supabase SQL Editor **before
+the updated updater runs**, then manually
 run **Update Sector Data**. The additive migration is safe to re-run and does not
 replace your existing benchmark returns. A fresh installation also needs the
 existing period-column migrations before running the updater; v4.6.4 does not
 replace those earlier migrations. No new secrets or scheduler changes are required.
+
+The price migration adds a nullable `benchmarks.price` with no default or backfill.
+After sync, verify `ticker, price, updated_at` for all six symbols. Tiles show the
+same sync-time anchor used for returns (not a live feed); period toggles change
+only percentages. Missing/unpopulated prices show `—`. Only EFA/BTC use `$`;
+the other four values are index levels. The new migration is safe to rerun and
+does not change returns, permissions or existing data.
 
 ---
 
@@ -86,7 +95,7 @@ Verify in Supabase **Table Editor → benchmarks** and **→ sectors** — all r
 
 ## What you'll see
 
-- **Market Pulse bar** at the top: S&P 500, Nasdaq, Dow, Intl Dev, DXY, BTC — updates with each period toggle
+- **Market Pulse bar** at the top: S&P 500, Nasdaq, Dow, Intl Dev, DXY, BTC — returns update with each period toggle; latest price/index level stays fixed
 - **Sector grid** sorted by selected period (1W / 1M / 3M / YTD)
 - **Tap any card** → modal shows:
   - Top 10 holdings with animated weight bars

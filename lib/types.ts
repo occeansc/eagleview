@@ -75,6 +75,7 @@ export interface Benchmark extends HasPeriodValues {
   id:         number
   name:       string
   ticker:     string
+  price:      number | null
   updated_at: string
 }
 
