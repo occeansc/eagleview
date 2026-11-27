@@ -86,7 +86,8 @@ export default function BenchmarkBar({ benchmarks, period }: Props) {
                 />
               </div>
 
-              {/* Value */}
+              {/* Shared baseline; wrap only if unusually long values need room. */}
+              <div className="relative z-10 flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
               <p className={`font-mono font-bold text-[18px] tracking-tight leading-none tabular-nums relative z-10 ${
                 val === null ? 'text-slate-300 dark:text-slate-600'
                   : pos ? 'text-emerald-600 dark:text-emerald-400 group-hover:text-emerald-700 dark:group-hover:text-emerald-300'
@@ -94,9 +95,10 @@ export default function BenchmarkBar({ benchmarks, period }: Props) {
               } transition-colors`}>
                 {val !== null ? `${pos ? '+' : ''}${val.toFixed(2)}%` : '—'}
               </p>
-              <p className="relative z-10 mt-1.5 text-right text-[8px] leading-none font-mono tabular-nums text-slate-400 dark:text-slate-500">
+              <p className="ml-auto whitespace-nowrap text-right text-[8px] leading-none font-mono tabular-nums text-slate-400 dark:text-slate-500">
                 {formatBenchmarkPrice(b.price, b.ticker)}
               </p>
+              </div>
             </div>
           )
         })}
