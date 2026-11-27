@@ -268,3 +268,25 @@ export function PlusSquareIcon({ size = 24, className, ...p }: IconProps) {
     </svg>
   )
 }
+
+
+export function DollarIcon({ size = 24, className, ...p }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      className={className} {...p}>
+      <line x1="12" y1="2" x2="12" y2="22" />
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+    </svg>
+  )
+}
+
+export function BitcoinIcon({ size = 24, className, ...p }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+      className={className} {...p}>
+      <path d="M7 5h7a3.5 3.5 0 0 1 0 7H7m2 0h6a3.5 3.5 0 0 1 0 7H7M9 5v14M10 2v3m4-3v3m-4 14v3m4-3v3" />
+    </svg>
+  )
+}

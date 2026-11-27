@@ -1,7 +1,7 @@
 'use client'
 
 import { Benchmark, Period, getPeriodValue } from '@/lib/types'
-import { BarChartIcon, LineChartIcon, BuildingIcon, GlobeIcon } from './Icons'
+import { BarChartIcon, LineChartIcon, BuildingIcon, GlobeIcon, DollarIcon, BitcoinIcon } from './Icons'
 
 interface Props {
   benchmarks: Benchmark[]
@@ -16,8 +16,8 @@ const META: Record<string, {
   '^IXIC': { Icon: LineChartIcon, short: 'Nasdaq'      },
   '^DJI':  { Icon: BuildingIcon,  short: 'Dow'         },
   'EFA':   { Icon: GlobeIcon,     short: 'Intl Dev'    },
-  'DX-Y.NYB': { Icon: GlobeIcon,  short: 'DXY'         },
-  'BTC-USD':  { Icon: LineChartIcon, short: 'BTC'      },
+  'DX-Y.NYB': { Icon: DollarIcon,  short: 'DXY'         },
+  'BTC-USD':  { Icon: BitcoinIcon, short: 'BTC'      },
 }
 
 export default function BenchmarkBar({ benchmarks, period }: Props) {
