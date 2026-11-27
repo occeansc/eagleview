@@ -6,6 +6,18 @@ All free. Takes ~20 minutes end-to-end.
 
 ---
 
+## Market Pulse upgrade — v4.6.4
+
+For an existing, fully migrated EagleView installation, follow
+[`RELEASE_NOTES_v4.6.4.md`](RELEASE_NOTES_v4.6.4.md): deploy this source, apply
+`supabase/migrate_v464_market_pulse.sql` in the Supabase SQL Editor, then manually
+run **Update Sector Data**. The additive migration is safe to re-run and does not
+replace your existing benchmark returns. A fresh installation also needs the
+existing period-column migrations before running the updater; v4.6.4 does not
+replace those earlier migrations. No new secrets or scheduler changes are required.
+
+---
+
 ## Step 1 — Supabase Setup
 
 1. Go to **https://supabase.com** → Sign up → **New project**
@@ -52,7 +64,7 @@ Repo → **Settings → Secrets and variables → Actions → New repository sec
 2. Click **"Update Sector Data"** → **Run workflow** → **Run workflow**
 3. Wait ~3 minutes — check the run log
 
-You should see 3 benchmarks + 20 sectors processed.
+After all schema migrations and the v4.6.4 upgrade, verify six benchmarks plus the configured sector universe.
 Verify in Supabase **Table Editor → benchmarks** and **→ sectors** — all rows should have numbers.
 
 ---
@@ -74,7 +86,7 @@ Verify in Supabase **Table Editor → benchmarks** and **→ sectors** — all r
 
 ## What you'll see
 
-- **Market Pulse bar** at the top: S&P 500, Nasdaq, Dow — updates with each period toggle
+- **Market Pulse bar** at the top: S&P 500, Nasdaq, Dow, Intl Dev, DXY, BTC — updates with each period toggle
 - **Sector grid** sorted by selected period (1W / 1M / 3M / YTD)
 - **Tap any card** → modal shows:
   - Top 10 holdings with animated weight bars
@@ -84,7 +96,7 @@ Verify in Supabase **Table Editor → benchmarks** and **→ sectors** — all r
 
 ## Update Schedule
 
-GitHub Actions cron: **Mon, Wed, Fri at 22:00 UTC** (after US market close).
+The committed workflow uses an external NYSE-calendar scheduler; native GitHub cron is disabled. DXY and BTC refresh only when the sector updater runs, not as live feeds. BTC trades 24/7, but this change does not add weekend/holiday scheduling.
 
 To sync manually: GitHub → Actions → "Update Sector Data" → Run workflow.
 

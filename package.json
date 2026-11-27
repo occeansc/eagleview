@@ -1,12 +1,13 @@
 {
   "name": "eagleview",
-  "version": "4.6.3",
+  "version": "4.6.4",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node --test tests/market-pulse.test.cjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.39.7",

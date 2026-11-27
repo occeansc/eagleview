@@ -361,6 +361,8 @@ BENCHMARKS = [
     {"name": "Nasdaq",  "ticker": "^IXIC"},
     {"name": "Dow",     "ticker": "^DJI"},
     {"name": "Intl Developed", "ticker": "EFA"},
+    {"name": "DXY", "ticker": "DX-Y.NYB"},  # Dollar index, not a USD ETF proxy
+    {"name": "BTC", "ticker": "BTC-USD"},   # Bitcoin spot in USD, not a futures/ETF proxy
 ]
 
 
@@ -745,7 +747,10 @@ def fetch_regular_market_prices(tickers: list[str]) -> dict[str, float]:
     return prices
 
 
-def calc_returns(series: pd.Series, current_override: float | None = None) -> dict:
+def calc_returns(
+    series: pd.Series, current_override: float | None = None, *, calendar_days: bool = False,
+) -> dict:
+    """Session-based returns by default; 24/7 assets use elapsed calendar windows."""
     if series is None or series.empty:
         return {}
     series = series.dropna()
@@ -778,8 +783,26 @@ def calc_returns(series: pd.Series, current_override: float | None = None) -> di
     # universe) completely untouched.
     SHORT_PERIOD_CAPS = {1: 100.0, 5: 150.0}  # {days: max abs % swing}
 
+    # A Bitcoin daily history includes weekends: 21 rows is NOT one month.
+    # Keep existing session-count semantics for stocks, indices and EFA intact.
+    calendar_offsets = {
+        1: pd.DateOffset(days=1), 5: pd.DateOffset(weeks=1),
+        21: pd.DateOffset(months=1), 63: pd.DateOffset(months=3),
+        126: pd.DateOffset(months=6), 252: pd.DateOffset(years=1),
+        1260: pd.DateOffset(years=5),
+    } if calendar_days else {}
+    anchor_date = (
+        pd.Timestamp(datetime.now(ZoneInfo("America/New_York")).date())
+        if use_live_anchor else series.index[-1]
+    )
+
     def pct(days: int):
-        if use_live_anchor:
+        if calendar_days:
+            history = ref_series[ref_series.index <= anchor_date - calendar_offsets[days]]
+            if history.empty:
+                return None
+            past = float(history.iloc[-1])
+        elif use_live_anchor:
             if len(ref_series) < days:
                 return None
             past = float(ref_series.iloc[-days])
@@ -994,7 +1017,8 @@ def main():
         log.info("  Off-hours or no REGULAR quotes available — using latest daily close anchors")
 
     ticker_returns: dict[str, dict] = {
-        t: (calc_returns(closes[t], regular_market_prices.get(t)) if t in closes.columns else {})
+        t: (calc_returns(closes[t], regular_market_prices.get(t), calendar_days=t == "BTC-USD")
+            if t in closes.columns else {})
         for t in usable_tickers}
 
     missing = [t for t, r in ticker_returns.items() if not r]
